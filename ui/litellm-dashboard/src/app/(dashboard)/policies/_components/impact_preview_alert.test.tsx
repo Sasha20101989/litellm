@@ -1,7 +1,24 @@
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/../tests/test-utils";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import ImpactPreviewAlert from "./impact_preview_alert";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      typeof copy === "string" ? copy : key,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
 
 const globalImpact = {
   affected_keys_count: -1,
@@ -18,6 +35,18 @@ const specificImpact = {
 };
 
 describe("ImpactPreviewAlert", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders the global impact warning in Russian", () => {
+    localization.language = "ru";
+    renderWithProviders(<ImpactPreviewAlert impactResult={globalImpact} />);
+
+    expect(screen.getByText("Оценка влияния")).toBeInTheDocument();
+    expect(screen.getByText(/все ключи и команды/i)).toBeInTheDocument();
+  });
+
   it("should render", () => {
     renderWithProviders(<ImpactPreviewAlert impactResult={specificImpact} />);
     expect(screen.getByText("Impact Preview")).toBeInTheDocument();
