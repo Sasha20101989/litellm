@@ -768,4 +768,18 @@ export const enSettings = {
       },
     },
   },
+  theme: {
+    title: "UI Theme Customization",
+    description: "Customize the LiteLLM admin dashboard with your logo and favicon.",
+    logoUrl: "Custom Logo URL",
+    logoHint: "Enter a URL for your custom logo or leave it empty to use the default.",
+    faviconUrl: "Custom Favicon URL",
+    faviconHint: "Enter a URL for a custom favicon (.ico, .png, or .svg) or leave it empty to use the default.",
+    save: "Save Changes",
+    reset: "Reset to Default",
+    updated: "Theme settings updated successfully!",
+    updateFailed: "Failed to update theme settings",
+    resetSuccess: "Theme settings reset to default!",
+    resetFailed: "Failed to reset theme settings",
+  },
 } as const;
