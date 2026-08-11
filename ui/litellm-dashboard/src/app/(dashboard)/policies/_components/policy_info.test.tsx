@@ -6,6 +6,29 @@ import * as networking from "@/components/networking";
 import PolicyInfoView from "./policy_info";
 import { Policy } from "@/components/policies/types";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/components/networking");
 vi.mock("./pipeline_flow_builder", () => ({
   PipelineInfoDisplay: () => <div data-testid="pipeline-info" />,
@@ -32,7 +55,20 @@ const defaultProps = {
 
 describe("PolicyInfoView", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders policy details in Russian", async () => {
+    localization.language = "ru";
+    defaultProps.getPolicy.mockResolvedValue(basePolicy);
+    vi.mocked(networking.getResolvedGuardrails).mockResolvedValue({ resolved_guardrails: [] });
+
+    renderWithProviders(<PolicyInfoView {...defaultProps} />);
+
+    expect(await screen.findByText("ID политики")).toBeInTheDocument();
+    expect(screen.getByText("Настройка защитных механизмов")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Назад к политикам/ })).toBeInTheDocument();
   });
 
   it("should not show policy content while the fetch is in flight", () => {
