@@ -61,6 +61,7 @@ export const enNavigation = {
       "transform-request": "API Playground",
       "tag-management": "Tag Management",
       "4": "Old Usage",
+      usage: "Old Usage",
       settings: "Settings",
       "router-settings": "Router Settings",
       "logging-and-alerts": "Logging & Alerts",

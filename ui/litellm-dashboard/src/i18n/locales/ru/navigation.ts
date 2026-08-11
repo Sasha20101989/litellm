@@ -61,6 +61,7 @@ export const ruNavigation = {
       "transform-request": "API-песочница",
       "tag-management": "Управление тегами",
       "4": "Старое использование",
+      usage: "Старое использование",
       settings: "Настройки",
       "router-settings": "Настройки роутера",
       "logging-and-alerts": "Логи и оповещения",
