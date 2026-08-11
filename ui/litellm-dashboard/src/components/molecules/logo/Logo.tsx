@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { getProviderLogoAndName } from "@/components/provider_info_helpers";
 import { resolveLogoSrc } from "@/lib/assetPaths";
 
-type LogoProps = { className?: string } & (
+type LogoProps = { className?: string; alt?: string } & (
   | { provider: string; src?: never; label?: string }
   | { provider?: never; src: string | null | undefined; label: string }
 );
 
-export const Logo: React.FC<LogoProps> = ({ provider, src, label, className = "w-4 h-4" }) => {
+export const Logo: React.FC<LogoProps> = ({ provider, src, label, alt, className = "w-4 h-4" }) => {
   const [erroredSrc, setErroredSrc] = useState<string | null>(null);
   const resolvedSrc = provider !== undefined ? getProviderLogoAndName(provider).logo : resolveLogoSrc(src) ?? "";
   const name = label ?? provider ?? "";
@@ -23,7 +23,7 @@ export const Logo: React.FC<LogoProps> = ({ provider, src, label, className = "w
   return (
     <img
       src={resolvedSrc}
-      alt={`${name || "-"} logo`}
+      alt={alt ?? `${name || "-"} logo`}
       className={className}
       onError={() => {
         console.warn(`Logo failed to load: ${resolvedSrc}`);

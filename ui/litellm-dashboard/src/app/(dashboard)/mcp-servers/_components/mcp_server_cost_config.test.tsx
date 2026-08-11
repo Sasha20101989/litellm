@@ -1,7 +1,25 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import MCPServerCostConfig from "./mcp_server_cost_config";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
 
 const tools = [
   { name: "search", description: "Search the index" },
@@ -9,6 +27,18 @@ const tools = [
 ];
 
 describe("MCPServerCostConfig", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders the cost controls in Russian", () => {
+    localization.language = "ru";
+    render(<MCPServerCostConfig value={{}} tools={[]} />);
+
+    expect(screen.getByText("Настройка стоимости")).toBeInTheDocument();
+    expect(screen.getByText("Стоимость запроса по умолчанию ($)")).toBeInTheDocument();
+  });
+
   it("renders the default cost field with the current value", () => {
     render(<MCPServerCostConfig value={{ default_cost_per_query: 0.02 }} tools={[]} />);
 

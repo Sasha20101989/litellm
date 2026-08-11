@@ -14,6 +14,7 @@ import { cn } from "@/lib/cva.config";
 import { AUTH_TYPE, type MCPServer } from "@/components/mcp_tools/types";
 import { Logo } from "@/components/molecules/logo/Logo";
 import { getMaskedAndFullUrl } from "./utils";
+import { useTranslation } from "react-i18next";
 
 interface MCPServerCardProps {
   server: MCPServer;
@@ -50,6 +51,7 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
   onOpenFillFields,
   onDelete,
 }) => {
+  const { t } = useTranslation("gateway");
   const alias = server.alias || server.server_name || "";
   const name = server.server_name || alias || server.server_id;
   // Logo is sourced exclusively from the admin-set `mcp_info.logo_url`.
@@ -155,7 +157,7 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
                     type="button"
                     onClick={stop}
                     onKeyDown={stop}
-                    aria-label="Server actions"
+                    aria-label={t("mcpServers.card.actions")}
                     className="-mr-1 -mt-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     <Ellipsis className="size-5" />
@@ -172,7 +174,7 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
                     }}
                   >
                     <Zap />
-                    Test Connection
+                    {t("mcpServers.card.testConnection")}
                   </DropdownMenuItem>
                 )}
                 {onRecheckHealth && onDelete && <DropdownMenuSeparator />}
@@ -185,7 +187,7 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
                     }}
                   >
                     <Trash2 />
-                    Delete
+                    {t("mcpServers.card.delete")}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -222,19 +224,16 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
                 render={
                   <Badge variant="outline">
                     <CircleAlert />
-                    OAuth flow not set
+                    {t("mcpServers.card.oauthUnset")}
                   </Badge>
                 }
               />
-              <TooltipContent>
-                This OAuth server has no flow set (Machine-to-Machine vs Interactive). Open it and choose an OAuth Flow
-                Type so LiteLLM authenticates it as you intend.
-              </TooltipContent>
+              <TooltipContent>{t("mcpServers.card.oauthUnsetHint")}</TooltipContent>
             </Tooltip>
           )}
           <Badge variant="outline">
             <span className={cn("h-1.5 w-1.5 rounded-full", isPublic ? "bg-green-500" : "bg-orange-500")} />
-            {isPublic ? "Public" : "Internal"}
+            {isPublic ? t("mcpServers.card.public") : t("mcpServers.card.internal")}
           </Badge>
           {accessGroups.slice(0, 2).map((g) => (
             <Tooltip key={g}>
@@ -266,13 +265,12 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
                     render={
                       <span className="inline-flex items-center gap-1 font-semibold text-destructive">
                         <CircleAlert className="size-3.5" />
-                        {missing.length} user field
-                        {missing.length === 1 ? "" : "s"} missing
+                        {t("mcpServers.card.missingFields", { count: missing.length })}
                       </span>
                     }
                   />
                   <TooltipContent>
-                    <div className="mb-1 font-semibold">Missing user fields:</div>
+                    <div className="mb-1 font-semibold">{t("mcpServers.card.missingFieldsTitle")}</div>
                     <ul className="ml-3">
                       {missing.map((m) => (
                         <li key={m}>• {m}</li>
@@ -289,7 +287,7 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
                       onOpenFillFields();
                     }}
                   >
-                    Set
+                    {t("mcpServers.card.set")}
                   </Button>
                 )}
               </div>
@@ -320,11 +318,18 @@ const HealthChip: FC<HealthChipProps> = ({
   error,
   dotClass,
 }) => {
+  const { t, i18n } = useTranslation("gateway");
+  const statusLabel =
+    status === "healthy"
+      ? t("mcpServers.card.healthy")
+      : status === "unhealthy"
+        ? t("mcpServers.card.unhealthy")
+        : t("mcpServers.card.unknown");
   if (isLoadingHealth || isRechecking) {
     return (
       <Badge variant="outline" className="text-muted-foreground">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground" />
-        Checking
+        {t("mcpServers.card.checking")}
       </Badge>
     );
   }
@@ -345,21 +350,25 @@ const HealthChip: FC<HealthChipProps> = ({
             }
           >
             <span className={cn("h-1.5 w-1.5 rounded-full", dotClass)} />
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {statusLabel}
           </Badge>
         }
       />
       <TooltipContent side="top" className="max-w-xs">
-        <div className="mb-1 font-semibold">Health: {status}</div>
-        {lastCheck && <div className="mb-1 text-xs">Last check: {new Date(lastCheck).toLocaleString()}</div>}
+        <div className="mb-1 font-semibold">{t("mcpServers.card.health", { status: statusLabel })}</div>
+        {lastCheck && (
+          <div className="mb-1 text-xs">
+            {t("mcpServers.card.lastCheck", { date: new Date(lastCheck).toLocaleString(i18n.language) })}
+          </div>
+        )}
         {error && (
           <div className="text-xs">
-            <div className="mb-1 font-medium">Error</div>
+            <div className="mb-1 font-medium">{t("mcpServers.card.error")}</div>
             <div className="wrap-break-word">{error}</div>
           </div>
         )}
-        {!lastCheck && !error && <div className="text-xs">No health data</div>}
-        {onRecheck && <div className="mt-1 text-xs">Click to recheck</div>}
+        {!lastCheck && !error && <div className="text-xs">{t("mcpServers.card.noHealth")}</div>}
+        {onRecheck && <div className="mt-1 text-xs">{t("mcpServers.card.recheck")}</div>}
       </TooltipContent>
     </Tooltip>
   );
@@ -371,13 +380,14 @@ interface ByokRowProps {
 }
 
 const ByokRow: FC<ByokRowProps> = ({ connected, onConnect }) => {
+  const { t } = useTranslation("gateway");
   if (connected) {
     return (
       <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="text-muted-foreground">BYOK credential</span>
+        <span className="text-muted-foreground">{t("mcpServers.card.byok")}</span>
         <div className="flex items-center gap-2">
           <Badge variant="outline">
-            <Check /> Connected
+            <Check /> {t("mcpServers.card.connected")}
           </Badge>
           {onConnect && (
             <Button
@@ -388,7 +398,7 @@ const ByokRow: FC<ByokRowProps> = ({ connected, onConnect }) => {
                 onConnect();
               }}
             >
-              Update
+              {t("mcpServers.card.update")}
             </Button>
           )}
         </div>
@@ -397,7 +407,7 @@ const ByokRow: FC<ByokRowProps> = ({ connected, onConnect }) => {
   }
   return (
     <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="text-muted-foreground">BYOK credential</span>
+      <span className="text-muted-foreground">{t("mcpServers.card.byok")}</span>
       {onConnect ? (
         <Button
           size="sm"
@@ -406,7 +416,7 @@ const ByokRow: FC<ByokRowProps> = ({ connected, onConnect }) => {
             onConnect();
           }}
         >
-          Connect
+          {t("mcpServers.card.connect")}
         </Button>
       ) : (
         <span className="text-muted-foreground">—</span>

@@ -6,6 +6,24 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MCPServers from "./mcp_servers";
 import * as networking from "@/components/networking";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 // Mock the networking module
 vi.mock("@/components/networking", () => ({
   fetchMCPServers: vi.fn(),
@@ -45,7 +63,25 @@ describe("MCPServers", () => {
   };
 
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the MCP server list in Russian", async () => {
+    localization.language = "ru";
+    vi.mocked(networking.fetchMCPServers).mockResolvedValue([]);
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MCPServers {...defaultProps} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "MCP-серверы" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Все серверы" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Наборы инструментов" })).toBeInTheDocument();
+    expect(screen.getByText("+ Добавить MCP-сервер")).toBeInTheDocument();
   });
 
   it("should render the MCPServers component with title", async () => {
