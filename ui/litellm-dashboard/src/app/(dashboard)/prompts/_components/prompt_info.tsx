@@ -32,6 +32,7 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import NotificationsManager from "@/components/molecules/notifications_manager";
 import PromptCodeSnippets from "./prompt_editor_view/PromptCodeSnippets";
 import { extractModel, extractTemplateVariables, getBasePromptId, getCurrentVersion } from "./prompt_utils";
+import { useTranslation } from "react-i18next";
 
 export interface PromptInfoProps {
   promptId: string;
@@ -43,6 +44,7 @@ export interface PromptInfoProps {
 }
 
 const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessToken, isAdmin, onDelete, onEdit }) => {
+  const { t, i18n } = useTranslation("prompts");
   const [promptData, setPromptData] = useState<PromptSpec | null>(null);
   const [promptTemplate, setPromptTemplate] = useState<PromptTemplateBase | null>(null);
   const [rawApiResponse, setRawApiResponse] = useState<any>(null);
@@ -77,7 +79,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
       }
       setSelectedVersion(response.prompt_spec.version || null);
     } catch (error) {
-      NotificationsManager.fromBackend("Failed to load prompt information");
+      NotificationsManager.fromBackend(t("details.loadFailed"));
       console.error("Error fetching prompt info:", error);
     } finally {
       setLoading(false);
@@ -124,17 +126,17 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
   }, [selectedEnv]);
 
   if (loading && !promptData) {
-    return <div className="p-4">Loading...</div>;
+    return <div className="p-4">{t("details.loading")}</div>;
   }
 
   if (!promptData) {
-    return <div className="p-4">Prompt not found</div>;
+    return <div className="p-4">{t("details.notFound")}</div>;
   }
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return date.toLocaleString(i18n.language === "ru" ? "ru-RU" : "en-US");
   };
 
   const copyToClipboard = async (text: string | null | undefined, key: string) => {
@@ -156,12 +158,12 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
     setIsDeleting(true);
     try {
       await deletePromptCall(accessToken, basePromptId);
-      NotificationsManager.success(`Prompt "${basePromptId}" deleted successfully`);
+      NotificationsManager.success(t("list.deleted", { name: basePromptId }));
       onDelete?.();
       onClose();
     } catch (error) {
       console.error("Error deleting prompt:", error);
-      NotificationsManager.fromBackend("Failed to delete prompt");
+      NotificationsManager.fromBackend(t("list.deleteFailed"));
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -184,7 +186,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
       setPromptTemplate(response.raw_prompt_template);
       setRawApiResponse(response);
     } catch {
-      NotificationsManager.fromBackend(`Failed to load version v${versionNum}`);
+      NotificationsManager.fromBackend(t("details.versionLoadFailed", { version: versionNum }));
     }
   };
 
@@ -198,11 +200,11 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
     <div className="p-4">
       <div>
         <TremorButton icon={ArrowLeftIcon} variant="light" onClick={onClose} className="mb-4">
-          Back to Prompts
+          {t("details.back")}
         </TremorButton>
         <div className="flex justify-between items-start mb-4">
           <div>
-            <Title>Prompt Details</Title>
+            <Title>{t("details.title")}</Title>
             <div className="flex items-center cursor-pointer">
               <Text className="text-gray-500 font-mono">{basePromptId}</Text>
               <Button
@@ -232,7 +234,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
               onClick={() => onEdit?.(rawApiResponse)}
               className="flex items-center"
             >
-              Prompt Studio
+              {t("details.studio")}
             </TremorButton>
             {isAdmin && (
               <TremorButton
@@ -241,7 +243,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                 onClick={handleDeleteClick}
                 className="flex items-center"
               >
-                Delete Prompt
+                {t("details.delete")}
               </TremorButton>
             )}
           </div>
@@ -273,7 +275,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                     : "bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200"
                 }`}
               >
-                {env}
+                {t(`environments.${env}`, { defaultValue: env })}
                 {versionHistory.length > 0 && selectedEnv === env && (
                   <span className="ml-1 text-xs opacity-75">(v{latestVersion})</span>
                 )}
@@ -286,7 +288,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
       {isViewingOldVersion && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
           <Text className="text-amber-800">
-            Viewing v{selectedVersion} — not the latest version (v{latestVersion})
+            {t("details.oldVersion", { current: selectedVersion, latest: latestVersion })}
           </Text>
           <TremorButton
             variant="light"
@@ -296,16 +298,16 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
               if (latest) handleVersionClick(latest);
             }}
           >
-            Go to latest
+            {t("details.goLatest")}
           </TremorButton>
         </div>
       )}
 
       <TabGroup>
         <TabList className="mb-4">
-          <Tab key="overview">Overview</Tab>
-          {promptTemplate ? <Tab key="prompt-template">Prompt Template</Tab> : <></>}
-          <Tab key="raw-json">Raw JSON</Tab>
+          <Tab key="overview">{t("details.overview")}</Tab>
+          {promptTemplate ? <Tab key="prompt-template">{t("details.template")}</Tab> : <></>}
+          <Tab key="raw-json">{t("details.rawJson")}</Tab>
         </TabList>
 
         <TabPanels>
@@ -313,7 +315,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
           <TabPanel>
             <Grid numItems={1} numItemsSm={2} numItemsLg={4} className="gap-4">
               <Card>
-                <Text>Version</Text>
+                <Text>{t("details.version")}</Text>
                 <div className="mt-2">
                   <Title>{currentVersion}</Title>
                   <Badge color="blue" className="mt-1">
@@ -323,41 +325,47 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
               </Card>
 
               <Card>
-                <Text>Prompt Type</Text>
+                <Text>{t("details.promptType")}</Text>
                 <div className="mt-2">
                   <Title>{promptData.prompt_info?.prompt_type || "-"}</Title>
                 </div>
               </Card>
 
               <Card>
-                <Text>Created By</Text>
+                <Text>{t("details.createdBy")}</Text>
                 <div className="mt-2">
                   <Title className="text-sm">{promptData.created_by || "-"}</Title>
                 </div>
               </Card>
 
               <Card>
-                <Text>Created At</Text>
+                <Text>{t("details.createdAt")}</Text>
                 <div className="mt-2">
                   <Title className="text-sm">{formatDate(promptData.created_at)}</Title>
-                  <Text className="text-xs">Updated: {formatDate(promptData.updated_at)}</Text>
+                  <Text className="text-xs">{t("details.updatedAt", { date: formatDate(promptData.updated_at) })}</Text>
                 </div>
               </Card>
             </Grid>
 
             {/* Version History Table */}
             <Card className="mt-6">
-              <Title className="mb-3">Version History — {selectedEnv}</Title>
+              <Title className="mb-3">
+                {t("details.history", {
+                  environment: selectedEnv
+                    ? t(`environments.${selectedEnv}`, { defaultValue: selectedEnv })
+                    : "",
+                })}
+              </Title>
               {loadingVersions ? (
-                <Text>Loading versions...</Text>
+                <Text>{t("details.loadingVersions")}</Text>
               ) : versionHistory.length > 0 ? (
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableHeaderCell>Version</TableHeaderCell>
-                      <TableHeaderCell>Created By</TableHeaderCell>
-                      <TableHeaderCell>Date</TableHeaderCell>
-                      <TableHeaderCell>Actions</TableHeaderCell>
+                      <TableHeaderCell>{t("details.version")}</TableHeaderCell>
+                      <TableHeaderCell>{t("details.createdBy")}</TableHeaderCell>
+                      <TableHeaderCell>{t("details.date")}</TableHeaderCell>
+                      <TableHeaderCell>{t("details.actions")}</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -377,7 +385,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                             <span className={isSelected ? "font-bold" : ""}>v{vNum}</span>
                             {isLatest && (
                               <Badge color="blue" className="ml-2" size="xs">
-                                latest
+                                {t("details.latest")}
                               </Badge>
                             )}
                           </TableCell>
@@ -406,7 +414,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                                 onEdit?.(editData);
                               }}
                             >
-                              Edit
+                              {t("details.edit")}
                             </TremorButton>
                           </TableCell>
                         </TableRow>
@@ -415,7 +423,13 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                   </TableBody>
                 </Table>
               ) : (
-                <Text className="text-gray-400">No versions found in {selectedEnv}</Text>
+                <Text className="text-gray-400">
+                  {t("details.noVersions", {
+                    environment: selectedEnv
+                      ? t(`environments.${selectedEnv}`, { defaultValue: selectedEnv })
+                      : "",
+                  })}
+                </Text>
               )}
             </Card>
           </TabPanel>
@@ -425,7 +439,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
             <TabPanel>
               <Card>
                 <div className="flex justify-between items-center mb-4">
-                  <Title>Prompt Template</Title>
+                  <Title>{t("details.template")}</Title>
                   <Button
                     type="text"
                     size="small"
@@ -437,20 +451,20 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                         : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    {copiedStates["prompt-content"] ? "Copied!" : "Copy Content"}
+                    {copiedStates["prompt-content"] ? t("details.copied") : t("details.copyContent")}
                   </Button>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Text className="font-medium">Template ID</Text>
+                    <Text className="font-medium">{t("details.templateId")}</Text>
                     <div className="font-mono text-sm bg-gray-50 p-2 rounded-sm">
                       {promptTemplate.litellm_prompt_id}
                     </div>
                   </div>
 
                   <div>
-                    <Text className="font-medium">Content</Text>
+                    <Text className="font-medium">{t("details.content")}</Text>
                     <div className="mt-2 p-4 bg-gray-50 rounded-md border overflow-auto max-h-96">
                       <pre className="text-sm text-gray-800 whitespace-pre-wrap">{promptTemplate.content}</pre>
                     </div>
@@ -458,7 +472,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
 
                   {promptTemplate.metadata && Object.keys(promptTemplate.metadata).length > 0 && (
                     <div>
-                      <Text className="font-medium">Template Metadata</Text>
+                      <Text className="font-medium">{t("details.metadata")}</Text>
                       <div className="mt-2 p-3 bg-gray-50 rounded-md border">
                         <pre className="text-xs text-gray-800 whitespace-pre-wrap overflow-auto max-h-64">
                           {JSON.stringify(promptTemplate.metadata, null, 2)}
@@ -475,7 +489,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
           <TabPanel>
             <Card>
               <div className="flex justify-between items-center mb-4">
-                <Title>Raw API Response</Title>
+                <Title>{t("details.rawResponse")}</Title>
                 <Button
                   type="text"
                   size="small"
@@ -487,7 +501,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                       : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  {copiedStates["raw-json"] ? "Copied!" : "Copy JSON"}
+                  {copiedStates["raw-json"] ? t("details.copied") : t("details.copyJson")}
                 </Button>
               </div>
 
@@ -503,18 +517,18 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
 
       {/* Delete Confirmation Modal */}
       <Modal
-        title="Delete Prompt"
+        title={t("list.deleteTitle")}
         open={showDeleteConfirm}
         onOk={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         confirmLoading={isDeleting}
-        okText="Delete"
+        okText={t("list.delete")}
         okButtonProps={{ danger: true }}
       >
         <p>
-          Are you sure you want to delete prompt: <strong>{basePromptId}</strong>?
+          {t("details.deleteConfirm", { name: basePromptId })}
         </p>
-        <p>This action cannot be undone.</p>
+        <p>{t("details.irreversible")}</p>
       </Modal>
     </div>
   );

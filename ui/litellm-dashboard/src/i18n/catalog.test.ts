@@ -23,6 +23,7 @@ describe("translation catalog", () => {
       "logs",
       "management",
       "settings",
+      "prompts",
     ]);
   });
 

@@ -3,6 +3,7 @@ import { Text } from "@tremor/react";
 import { Input } from "antd";
 import { SettingsIcon } from "lucide-react";
 import ModelSelector from "@/components/common_components/ModelSelector";
+import { useTranslation } from "react-i18next";
 
 interface ModelConfigCardProps {
   model: string;
@@ -23,6 +24,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
   onTemperatureChange,
   onMaxTokensChange,
 }) => {
+  const { t } = useTranslation("prompts");
   const [showConfig, setShowConfig] = useState(false);
 
   return (
@@ -36,14 +38,14 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
         className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
       >
         <SettingsIcon size={16} />
-        <span>Parameters</span>
+        <span>{t("editor.parameters")}</span>
       </button>
 
       {showConfig && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-lg shadow-xl p-6 w-96">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Model Parameters</h3>
+              <h3 className="text-lg font-semibold">{t("editor.modelParameters")}</h3>
               <button onClick={() => setShowConfig(false)} className="text-gray-400 hover:text-gray-600">
                 ✕
               </button>
@@ -51,7 +53,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Text className="text-sm text-gray-700">Temperature</Text>
+                  <Text className="text-sm text-gray-700">{t("editor.temperature")}</Text>
                   <Input
                     type="number"
                     size="small"
@@ -66,7 +68,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Text className="text-sm text-gray-700">Max Tokens</Text>
+                  <Text className="text-sm text-gray-700">{t("editor.maxTokens")}</Text>
                   <Input
                     type="number"
                     size="small"

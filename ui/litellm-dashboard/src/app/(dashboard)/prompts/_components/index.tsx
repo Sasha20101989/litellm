@@ -19,17 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const ALL_ENVIRONMENTS_LABEL = "All Environments";
-
-const ENVIRONMENT_OPTIONS = [
-  { label: "Development", value: "development" },
-  { label: "Staging", value: "staging" },
-  { label: "Production", value: "production" },
-];
-
-// SelectValue falls back to the raw value unless the root can map it to a label.
-const ENVIRONMENT_ITEMS = [{ label: ALL_ENVIRONMENTS_LABEL, value: null }, ...ENVIRONMENT_OPTIONS];
+import { useTranslation } from "react-i18next";
 
 interface PromptsProps {
   accessToken: string | null;
@@ -37,6 +27,13 @@ interface PromptsProps {
 }
 
 const PromptsPanel: React.FC<PromptsProps> = ({ accessToken, userRole }) => {
+  const { t } = useTranslation("prompts");
+  const environmentOptions = [
+    { label: t("environments.development"), value: "development" },
+    { label: t("environments.staging"), value: "staging" },
+    { label: t("environments.production"), value: "production" },
+  ];
+  const environmentItems = [{ label: t("environments.all"), value: null }, ...environmentOptions];
   const [promptsList, setPromptsList] = useState<PromptSpec[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEnvironment, setSelectedEnvironment] = useState<string | undefined>(undefined);
@@ -121,11 +118,11 @@ const PromptsPanel: React.FC<PromptsProps> = ({ accessToken, userRole }) => {
     setIsDeleting(true);
     try {
       await deletePromptCall(accessToken, promptToDelete.id);
-      NotificationsManager.success(`Prompt "${promptToDelete.name}" deleted successfully`);
+      NotificationsManager.success(t("list.deleted", { name: promptToDelete.name }));
       fetchPrompts(); // Refresh the list
     } catch (error) {
       console.error("Error deleting prompt:", error);
-      NotificationsManager.fromBackend("Failed to delete prompt");
+      NotificationsManager.fromBackend(t("list.deleteFailed"));
     } finally {
       setIsDeleting(false);
       setPromptToDelete(null);
@@ -162,26 +159,26 @@ const PromptsPanel: React.FC<PromptsProps> = ({ accessToken, userRole }) => {
                 <>
                   <Button onClick={handleAddPrompt} disabled={!accessToken}>
                     <Plus />
-                    Add New Prompt
+                    {t("list.add")}
                   </Button>
                   <Button onClick={handleAddPromptFromFile} disabled={!accessToken} variant="secondary">
                     <Upload />
-                    Upload .prompt File
+                    {t("list.upload")}
                   </Button>
                 </>
               )}
             </div>
             <Select
-              items={ENVIRONMENT_ITEMS}
+              items={environmentItems}
               value={selectedEnvironment ?? null}
               onValueChange={(value) => setSelectedEnvironment((value as string | null) ?? undefined)}
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={ALL_ENVIRONMENTS_LABEL} />
+                <SelectValue placeholder={t("environments.all")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>{ALL_ENVIRONMENTS_LABEL}</SelectItem>
-                {ENVIRONMENT_OPTIONS.map((option) => (
+                <SelectItem value={null}>{t("environments.all")}</SelectItem>
+                {environmentOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -217,15 +214,15 @@ const PromptsPanel: React.FC<PromptsProps> = ({ accessToken, userRole }) => {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Prompt</AlertDialogTitle>
+              <AlertDialogTitle>{t("list.deleteTitle")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete prompt: {promptToDelete.name} ? This action cannot be undone.
+                {t("list.deleteConfirm", { name: promptToDelete.name })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeleting}>{t("list.cancel")}</AlertDialogCancel>
               <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
-                Delete
+                {t("list.delete")}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
