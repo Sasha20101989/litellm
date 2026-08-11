@@ -3,20 +3,21 @@
 import { getAvailablePages } from "@/components/page_utils";
 import { Button, Checkbox, Collapse, Space, Tag, Typography } from "antd";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface PageVisibilitySettingsProps {
   enabledPagesInternalUsers: string[] | null | undefined;
-  enabledPagesPropertyDescription?: string;
   isUpdating: boolean;
   onUpdate: (settings: { enabled_ui_pages_internal_users: string[] | null }) => void;
 }
 
 export default function PageVisibilitySettings({
   enabledPagesInternalUsers,
-  enabledPagesPropertyDescription,
   isUpdating,
   onUpdate,
 }: PageVisibilitySettingsProps) {
+  const { t } = useTranslation("settings");
+  const { t: tNavigation } = useTranslation("navigation");
   // Check if page visibility is set (null/undefined means "not set" = all pages visible)
   const isPageVisibilitySet = enabledPagesInternalUsers !== null && enabledPagesInternalUsers !== undefined;
 
@@ -56,31 +57,44 @@ export default function PageVisibilitySettings({
     onUpdate({ enabled_ui_pages_internal_users: null });
   };
 
+  const translateGroup = (groupName: string) => {
+    const groups: Record<string, string> = {
+      "AI GATEWAY": tNavigation("sidebar.groups.AI GATEWAY"),
+      OBSERVABILITY: tNavigation("sidebar.groups.OBSERVABILITY"),
+      "ACCESS CONTROL": tNavigation("sidebar.groups.ACCESS CONTROL"),
+      "DEVELOPER TOOLS": tNavigation("sidebar.groups.DEVELOPER TOOLS"),
+      SETTINGS: tNavigation("sidebar.groups.SETTINGS"),
+      Tools: tNavigation("sidebar.items.tools"),
+      Experimental: tNavigation("sidebar.items.experimental"),
+      Settings: tNavigation("sidebar.items.settings"),
+    };
+    return groupName
+      .split(" > ")
+      .map((part) => groups[part] || part)
+      .join(" > ");
+  };
+
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <Space direction="vertical" size={4}>
         <Space align="center">
-          <Typography.Text strong>Internal User Page Visibility</Typography.Text>
+          <Typography.Text strong>{t("admin.ui.visibility.title")}</Typography.Text>
           {!isPageVisibilitySet && (
             <Tag color="default" style={{ marginLeft: "8px" }}>
-              Not set (all pages visible)
+              {t("admin.ui.visibility.notSet")}
             </Tag>
           )}
           {isPageVisibilitySet && (
             <Tag color="blue" style={{ marginLeft: "8px" }}>
-              {selectedPages.length} page{selectedPages.length !== 1 ? "s" : ""} selected
+              {t("admin.ui.visibility.selected", { count: selectedPages.length })}
             </Tag>
           )}
         </Space>
-        {enabledPagesPropertyDescription && (
-          <Typography.Text type="secondary">{enabledPagesPropertyDescription}</Typography.Text>
-        )}
         <Typography.Text type="secondary" style={{ fontSize: "12px", fontStyle: "italic" }}>
-          By default, all pages are visible to internal users. Select specific pages to restrict visibility.
+          {t("admin.ui.visibility.description")}
         </Typography.Text>
         <Typography.Text type="secondary" style={{ fontSize: "12px", color: "#8b5cf6" }}>
-          Note: Only pages accessible to internal user roles are shown here. Admin-only pages are excluded as they
-          cannot be made visible to internal users regardless of this setting.
+          {t("admin.ui.visibility.adminNote")}
         </Typography.Text>
       </Space>
 
@@ -88,7 +102,7 @@ export default function PageVisibilitySettings({
         items={[
           {
             key: "page-visibility",
-            label: "Configure Page Visibility",
+            label: t("admin.ui.visibility.configure"),
             children: (
               <Space direction="vertical" size="middle" style={{ width: "100%" }}>
                 <Checkbox.Group value={selectedPages} onChange={setSelectedPages} style={{ width: "100%" }}>
@@ -105,16 +119,20 @@ export default function PageVisibilitySettings({
                             marginBottom: "8px",
                           }}
                         >
-                          {groupName}
+                          {translateGroup(groupName)}
                         </Typography.Text>
                         <Space direction="vertical" size="small" style={{ marginLeft: "16px", width: "100%" }}>
                           {pages.map((page) => (
                             <div key={page.page} style={{ marginBottom: "4px" }}>
                               <Checkbox value={page.page}>
                                 <Space direction="vertical" size={0}>
-                                  <Typography.Text>{page.label}</Typography.Text>
+                                  <Typography.Text>
+                                    {tNavigation(`sidebar.items.${page.page}`, { defaultValue: page.label })}
+                                  </Typography.Text>
                                   <Typography.Text type="secondary" style={{ fontSize: "12px" }}>
-                                    {page.description}
+                                    {t("admin.ui.visibility.pageDescription", {
+                                      page: tNavigation(`sidebar.items.${page.page}`, { defaultValue: page.label }),
+                                    })}
                                   </Typography.Text>
                                 </Space>
                               </Checkbox>
@@ -128,11 +146,11 @@ export default function PageVisibilitySettings({
 
                 <Space>
                   <Button type="primary" onClick={handleSavePageVisibility} loading={isUpdating} disabled={isUpdating}>
-                    Save Page Visibility Settings
+                    {t("admin.ui.visibility.save")}
                   </Button>
                   {isPageVisibilitySet && (
                     <Button onClick={handleResetToDefault} loading={isUpdating} disabled={isUpdating}>
-                      Reset to Default (All Pages)
+                      {t("admin.ui.visibility.reset")}
                     </Button>
                   )}
                 </Space>
