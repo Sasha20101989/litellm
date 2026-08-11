@@ -1,6 +1,7 @@
 import { Form, Input, Switch } from "antd";
 import React from "react";
 import { CoordinationField } from "./coordinationRedisFields";
+import { useTranslation } from "react-i18next";
 
 export const SECRET_ALREADY_SET_PLACEHOLDER = "Already set. Enter a new value to replace it.";
 
@@ -24,16 +25,21 @@ const renderControl = (field: CoordinationField, placeholder: string): React.Rea
   }
 };
 
-const CoordinationRedisFormField: React.FC<CoordinationRedisFormFieldProps> = ({ field, isSecretConfigured }) => (
-  <Form.Item
-    name={field.name}
-    label={field.label}
-    extra={field.helpText}
-    rules={field.rules}
-    valuePropName={field.type === "boolean" ? "checked" : "value"}
-  >
-    {renderControl(field, isSecretConfigured ? SECRET_ALREADY_SET_PLACEHOLDER : field.helpText)}
-  </Form.Item>
-);
+const CoordinationRedisFormField: React.FC<CoordinationRedisFormFieldProps> = ({ field, isSecretConfigured }) => {
+  const { t } = useTranslation("settings");
+  const label = t(`caching.fields.${field.name}.label`, { defaultValue: field.label });
+  const help = t(`caching.fields.${field.name}.help`, { defaultValue: field.helpText });
+  return (
+    <Form.Item
+      name={field.name}
+      label={label}
+      extra={help}
+      rules={field.rules}
+      valuePropName={field.type === "boolean" ? "checked" : "value"}
+    >
+      {renderControl(field, isSecretConfigured ? t("caching.settings.secretSet") : help)}
+    </Form.Item>
+  );
+};
 
 export default CoordinationRedisFormField;

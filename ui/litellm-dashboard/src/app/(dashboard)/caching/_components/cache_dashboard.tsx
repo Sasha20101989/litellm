@@ -26,20 +26,15 @@ import { useCacheActivity, type CacheActivityGroup } from "@/app/(dashboard)/hoo
 import { CacheHealthTab } from "./cache_health";
 import CacheSettings from "./cache_settings";
 import CoordinationRedisSettings from "./coordination_redis_settings";
+import { useTranslation } from "react-i18next";
 
-const REQUEST_SERIES = {
-  apiRequests: "LLM API requests",
-  cacheHits: "Cache hit",
-  failed: "Failed requests",
-} as const;
-
-const toChartDatum = (group: CacheActivityGroup) => ({
+const toChartDatum = (group: CacheActivityGroup, series: Record<string, string>) => ({
   name: group.call_type,
-  [REQUEST_SERIES.apiRequests]: group.api_requests,
-  [REQUEST_SERIES.cacheHits]: group.cache_hits,
-  [REQUEST_SERIES.failed]: group.failed_requests,
-  "Cached Completion Tokens": group.cached_completion_tokens,
-  "Generated Completion Tokens": group.generated_completion_tokens,
+  [series.apiRequests]: group.api_requests,
+  [series.cacheHits]: group.cache_hits,
+  [series.failed]: group.failed_requests,
+  [series.cachedTokens]: group.cached_completion_tokens,
+  [series.generatedTokens]: group.generated_completion_tokens,
 });
 
 const formatDateWithoutTZ = (date: Date | undefined) => {
@@ -47,8 +42,8 @@ const formatDateWithoutTZ = (date: Date | undefined) => {
   return date.toISOString().split("T")[0];
 };
 
-function valueFormatterNumbers(number: number) {
-  const formatter = new Intl.NumberFormat("en-US", {
+function valueFormatterNumbers(number: number, locale: string) {
+  const formatter = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 0,
     notation: "compact",
     compactDisplay: "short",
@@ -68,6 +63,15 @@ interface CachePageProps {
 // Helper function to deep-parse a JSON string if possible
 
 const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole, userID, premiumUser }) => {
+  const { t, i18n } = useTranslation("settings");
+  const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-US";
+  const requestSeries = {
+    apiRequests: t("caching.series.apiRequests"),
+    cacheHits: t("caching.series.cacheHits"),
+    failed: t("caching.series.failed"),
+    cachedTokens: t("caching.series.cachedTokens"),
+    generatedTokens: t("caching.series.generatedTokens"),
+  };
   const [selectedApiKeys, setSelectedApiKeys] = useState<string[]>([]);
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
 
@@ -87,21 +91,21 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
   });
 
   useEffect(() => {
-    setLastRefreshed(new Date().toLocaleString());
-  }, []);
+    setLastRefreshed(new Date().toLocaleString(locale));
+  }, [locale]);
 
   const uniqueApiKeys = activity?.filter_options.key_aliases ?? [];
   const uniqueModels = activity?.filter_options.models ?? [];
-  const chartData = (activity?.groups ?? []).map(toChartDatum);
+  const chartData = (activity?.groups ?? []).map((group) => toChartDatum(group, requestSeries));
 
   const handleRefreshClick = () => {
     refetch();
-    setLastRefreshed(new Date().toLocaleString());
+    setLastRefreshed(new Date().toLocaleString(locale));
   };
 
   const runCachingHealthCheck = async () => {
     try {
-      NotificationsManager.info("Running cache health check...");
+      NotificationsManager.info(t("caching.runningHealth"));
       setHealthCheckResponse("");
       const response = await cachingHealthCheckCall(accessToken !== null ? accessToken : "");
       setHealthCheckResponse(response);
@@ -121,7 +125,7 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
           errorData = { message: error.message };
         }
       } else {
-        errorData = { message: "Unknown error occurred" };
+        errorData = { message: t("caching.unknownError") };
       }
       setHealthCheckResponse({ error: errorData });
     }
@@ -130,9 +134,9 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
   const totals = activity?.totals;
   const hasRequests = totals != null && totals.api_requests + totals.cache_hits + totals.failed_requests > 0;
   const statCards = [
-    { label: "Cache Hit Ratio", value: `${hasRequests ? totals.cache_hit_ratio.toFixed(2) : "0"}%` },
-    { label: "Cache Hits", value: valueFormatterNumbers(totals?.cache_hits ?? 0) },
-    { label: "Cached Completion Tokens", value: valueFormatterNumbers(totals?.cached_completion_tokens ?? 0) },
+    { label: t("caching.hitRatio"), value: `${hasRequests ? totals.cache_hit_ratio.toFixed(2) : "0"}%` },
+    { label: t("caching.hits"), value: valueFormatterNumbers(totals?.cache_hits ?? 0, locale) },
+    { label: t("caching.cachedTokens"), value: valueFormatterNumbers(totals?.cached_completion_tokens ?? 0, locale) },
   ];
 
   return (
@@ -140,22 +144,22 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
       <div className="mt-2 flex w-full items-center justify-between">
         <TabsList>
           <TabsTrigger value="analytics" className="flex-none">
-            Cache Analytics
+            {t("caching.tabs.analytics")}
           </TabsTrigger>
           <TabsTrigger value="health" className="flex-none">
-            Cache Health
+            {t("caching.tabs.health")}
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex-none">
-            Cache Settings
+            {t("caching.tabs.settings")}
           </TabsTrigger>
           <TabsTrigger value="coordination" className="flex-none">
-            Coordination Redis
+            {t("caching.tabs.coordination")}
           </TabsTrigger>
         </TabsList>
 
         <div className="flex items-center space-x-2">
-          {lastRefreshed && <p className="text-sm text-muted-foreground">Last Refreshed: {lastRefreshed}</p>}
-          <Button variant="outline" size="icon-sm" onClick={handleRefreshClick} aria-label="Refresh">
+          {lastRefreshed && <p className="text-sm text-muted-foreground">{t("caching.lastRefreshed")}: {lastRefreshed}</p>}
+          <Button variant="outline" size="icon-sm" onClick={handleRefreshClick} aria-label={t("caching.refresh")}>
             <RefreshCw />
           </Button>
         </div>
@@ -165,26 +169,25 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
         <Card>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Analytics for LiteLLM&apos;s{" "}
+              {t("caching.analyticsBefore")} {" "}
               <a
                 href="https://docs.litellm.ai/docs/proxy/caching"
                 target="_blank"
                 rel="noreferrer"
                 className="underline"
               >
-                response cache
+                {t("caching.responseCache")}
               </a>{" "}
-              (e.g. Redis / in-memory): requests answered from cache without calling the LLM provider. Provider-side{" "}
+              {t("caching.analyticsMiddle")} {" "}
               <a
                 href="https://docs.litellm.ai/docs/completion/prompt_caching"
                 target="_blank"
                 rel="noreferrer"
                 className="underline"
               >
-                prompt caching
+                {t("caching.promptCaching")}
               </a>{" "}
-              (cached input tokens from Anthropic, OpenAI, etc.) is not shown here; see &quot;Prompt Caching
-              Metrics&quot; on the Usage page or individual requests in the Logs page.
+              {t("caching.analyticsAfter")}
             </p>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -204,10 +207,10 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
                       ))
                     }
                   </ComboboxValue>
-                  <ComboboxChipsInput placeholder="Select Virtual Keys" className="border-0 bg-transparent" />
+                  <ComboboxChipsInput placeholder={t("caching.selectKeys")} className="border-0 bg-transparent" />
                 </ComboboxChips>
                 <ComboboxContent>
-                  <ComboboxEmpty>No virtual keys found</ComboboxEmpty>
+                  <ComboboxEmpty>{t("caching.noKeys")}</ComboboxEmpty>
                   <ComboboxList>
                     {(key: string) => (
                       <ComboboxItem key={key} value={key}>
@@ -234,10 +237,10 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
                       ))
                     }
                   </ComboboxValue>
-                  <ComboboxChipsInput placeholder="Select Models" className="border-0 bg-transparent" />
+                  <ComboboxChipsInput placeholder={t("caching.selectModels")} className="border-0 bg-transparent" />
                 </ComboboxChips>
                 <ComboboxContent>
-                  <ComboboxEmpty>No models found</ComboboxEmpty>
+                  <ComboboxEmpty>{t("caching.noModels")}</ComboboxEmpty>
                   <ComboboxList>
                     {(model: string) => (
                       <ComboboxItem key={model} value={model}>
@@ -271,15 +274,15 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
 
             <Card className="mt-4">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">Cache Hits vs API Requests</CardTitle>
+                <CardTitle className="text-base font-semibold">{t("caching.requestsChart")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <BarChart
                   data={chartData}
                   stack={true}
                   index="name"
-                  valueFormatter={valueFormatterNumbers}
-                  categories={[REQUEST_SERIES.apiRequests, REQUEST_SERIES.cacheHits, REQUEST_SERIES.failed]}
+                  valueFormatter={(value) => valueFormatterNumbers(value, locale)}
+                  categories={[requestSeries.apiRequests, requestSeries.cacheHits, requestSeries.failed]}
                   colors={["sky", "teal", "red"]}
                   yAxisWidth={48}
                 />
@@ -289,7 +292,7 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle className="text-base font-semibold">
-                  Cached Completion Tokens vs Generated Completion Tokens
+                  {t("caching.tokensChart")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -297,8 +300,8 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
                   data={chartData}
                   stack={true}
                   index="name"
-                  valueFormatter={valueFormatterNumbers}
-                  categories={["Generated Completion Tokens", "Cached Completion Tokens"]}
+                  valueFormatter={(value) => valueFormatterNumbers(value, locale)}
+                  categories={[requestSeries.generatedTokens, requestSeries.cachedTokens]}
                   colors={["sky", "teal"]}
                   yAxisWidth={48}
                 />

@@ -7,6 +7,7 @@ import { enUsage } from "./locales/en/usage";
 import { enCostOptimization } from "./locales/en/costOptimization";
 import { enLogs } from "./locales/en/logs";
 import { enManagement } from "./locales/en/management";
+import { enSettings } from "./locales/en/settings";
 import { ruAuth } from "./locales/ru/auth";
 import { ruCommon } from "./locales/ru/common";
 import { ruChat } from "./locales/ru/chat";
@@ -16,6 +17,7 @@ import { ruUsage } from "./locales/ru/usage";
 import { ruCostOptimization } from "./locales/ru/costOptimization";
 import { ruLogs } from "./locales/ru/logs";
 import { ruManagement } from "./locales/ru/management";
+import { ruSettings } from "./locales/ru/settings";
 
 export const TRANSLATION_NAMESPACES = [
   "common",
@@ -27,6 +29,7 @@ export const TRANSLATION_NAMESPACES = [
   "costOptimization",
   "logs",
   "management",
+  "settings",
 ] as const;
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
@@ -42,6 +45,7 @@ export const resources = {
     costOptimization: enCostOptimization,
     logs: enLogs,
     management: enManagement,
+    settings: enSettings,
   },
   ru: {
     common: ruCommon,
@@ -53,5 +57,6 @@ export const resources = {
     costOptimization: ruCostOptimization,
     logs: ruLogs,
     management: ruManagement,
+    settings: ruSettings,
   },
 } as const;

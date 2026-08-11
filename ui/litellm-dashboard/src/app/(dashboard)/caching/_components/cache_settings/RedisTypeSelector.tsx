@@ -1,5 +1,6 @@
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 
 interface RedisTypeSelectorProps {
   redisType: string;
@@ -7,23 +8,23 @@ interface RedisTypeSelectorProps {
   onTypeChange: (type: string) => void;
 }
 
-const REDIS_TYPE_LABELS: Readonly<Record<string, string>> = {
-  node: "Node (Single Instance)",
-  cluster: "Cluster",
-  sentinel: "Sentinel",
-  semantic: "Semantic",
-};
-
 const RedisTypeSelector: React.FC<RedisTypeSelectorProps> = ({ redisType, redisTypeDescriptions, onTypeChange }) => {
+  const { t } = useTranslation("settings");
+  const labels: Record<string, string> = {
+    node: t("caching.settings.types.node"),
+    cluster: t("caching.settings.types.cluster"),
+    sentinel: t("caching.settings.types.sentinel"),
+    semantic: t("caching.settings.types.semantic"),
+  };
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Redis Type</label>
+      <label className="text-sm font-medium">{t("caching.settings.redisType")}</label>
       <Select value={redisType} onValueChange={(value) => value !== null && onTypeChange(value)}>
         <SelectTrigger className="w-full">
-          <SelectValue>{REDIS_TYPE_LABELS[redisType] ?? redisType}</SelectValue>
+          <SelectValue>{labels[redisType] ?? redisType}</SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {Object.entries(REDIS_TYPE_LABELS).map(([value, label]) => (
+          {Object.entries(labels).map(([value, label]) => (
             <SelectItem key={value} value={value}>
               {label}
             </SelectItem>
@@ -31,7 +32,9 @@ const RedisTypeSelector: React.FC<RedisTypeSelectorProps> = ({ redisType, redisT
         </SelectContent>
       </Select>
       <p className="text-xs text-muted-foreground">
-        {redisTypeDescriptions[redisType] || "Select the type of Redis deployment you're using"}
+        {t(`caching.settings.typeDescriptions.${redisType}`, {
+          defaultValue: redisTypeDescriptions[redisType] || t("caching.settings.selectType"),
+        })}
       </p>
     </div>
   );

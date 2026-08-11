@@ -18,8 +18,10 @@ import {
   inferRedisType,
   sourceBadge,
 } from "./coordinationRedisUtils";
+import { useTranslation } from "react-i18next";
 
 const CoordinationRedisSettings: React.FC = () => {
+  const { t } = useTranslation("settings");
   const [form] = Form.useForm<CoordinationFormValues>();
   const [selectedRedisType, setSelectedRedisType] = useState<CoordinationRedisType | null>(null);
 
@@ -37,7 +39,7 @@ const CoordinationRedisSettings: React.FC = () => {
 
   useEffect(() => {
     if (isError) {
-      NotificationsManager.fromBackend("Failed to load coordination Redis settings");
+      NotificationsManager.fromBackend(t("caching.coordination.loadFailed"));
     }
   }, [isError]);
 
@@ -58,13 +60,17 @@ const CoordinationRedisSettings: React.FC = () => {
     try {
       const result = await testConnection.mutateAsync(buildCoordinationPayload(redisType, values));
       if (result.status === "healthy") {
-        NotificationsManager.success("Coordination Redis connection test successful!");
+        NotificationsManager.success(t("caching.coordination.testSuccess"));
       } else {
-        NotificationsManager.fromBackend(`Connection test failed: ${result.error ?? "Unknown error"}`);
+        NotificationsManager.fromBackend(
+          t("caching.settings.testFailed", { error: result.error ?? t("caching.unknownError") }),
+        );
       }
     } catch (error) {
       NotificationsManager.fromBackend(
-        `Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        t("caching.settings.testFailed", {
+          error: error instanceof Error ? error.message : t("caching.unknownError"),
+        }),
       );
     }
   };
@@ -77,13 +83,16 @@ const CoordinationRedisSettings: React.FC = () => {
 
     try {
       await updateSettings.mutateAsync(buildCoordinationPayload(redisType, values));
-      NotificationsManager.success("Coordination Redis settings saved. Restart the proxy to apply them.");
+      NotificationsManager.success(t("caching.coordination.saved"));
     } catch {
-      NotificationsManager.fromBackend("Failed to update coordination Redis settings");
+      NotificationsManager.fromBackend(t("caching.coordination.updateFailed"));
     }
   };
 
   const badge = sourceBadge(data?.source);
+  const sourceKey = ["coordination_redis", "cache_backend", "environment"].includes(data?.source ?? "")
+    ? data!.source!
+    : "none";
   const configuredSecrets = useMemo(() => configuredSecretFields(data?.values ?? {}), [data]);
 
   return (
@@ -91,22 +100,29 @@ const CoordinationRedisSettings: React.FC = () => {
       <Form form={form} layout="vertical" requiredMark={false} className="space-y-6">
         <div className="max-w-3xl space-y-2">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-medium text-gray-900">Coordination Redis</h3>
-            {!isLoading && <StatusBadge tone={badge.tone} label={badge.label} dataTestId="coordination-redis-source" />}
+            <h3 className="text-sm font-medium text-gray-900">{t("caching.coordination.title")}</h3>
+            {!isLoading && (
+              <StatusBadge
+                tone={badge.tone}
+                label={t(`caching.coordination.source.${sourceKey}`, { defaultValue: badge.label })}
+                dataTestId="coordination-redis-source"
+              />
+            )}
           </div>
           <p className="text-xs text-gray-500">
-            Redis used to coordinate work across proxy pods: cross-pod rate limits, spend tracking, and the pod lock
-            manager. It is configured independently of the response cache.
+            {t("caching.coordination.description")}
           </p>
-          <p className="text-xs text-gray-500">{badge.tooltip}</p>
-          <p className="text-xs text-amber-600">Saved changes take effect on proxy restart.</p>
+          <p className="text-xs text-gray-500">
+            {t(`caching.coordination.sourceTooltip.${sourceKey}`, { defaultValue: badge.tooltip })}
+          </p>
+          <p className="text-xs text-amber-600">{t("caching.coordination.restartNote")}</p>
         </div>
 
         <CoordinationRedisTypeSelector redisType={redisType} onTypeChange={setSelectedRedisType} />
 
         <div className="pt-4 border-t border-gray-200">
           <CoordinationRedisFieldSection
-            title="Connection Settings"
+            title={t("caching.settings.connection")}
             section="connection"
             redisType={redisType}
             configuredSecrets={configuredSecrets}
@@ -116,7 +132,7 @@ const CoordinationRedisSettings: React.FC = () => {
         {redisType === "cluster" && (
           <div className="pt-4 border-t border-gray-200">
             <CoordinationRedisFieldSection
-              title="Cluster Configuration"
+              title={t("caching.settings.cluster")}
               section="cluster"
               redisType={redisType}
               configuredSecrets={configuredSecrets}
@@ -128,7 +144,7 @@ const CoordinationRedisSettings: React.FC = () => {
         {redisType === "sentinel" && (
           <div className="pt-4 border-t border-gray-200">
             <CoordinationRedisFieldSection
-              title="Sentinel Configuration"
+              title={t("caching.settings.sentinel")}
               section="sentinel"
               redisType={redisType}
               configuredSecrets={configuredSecrets}
@@ -138,7 +154,7 @@ const CoordinationRedisSettings: React.FC = () => {
 
         <div className="pt-4 border-t border-gray-200">
           <CoordinationRedisFieldSection
-            title="SSL Settings"
+            title={t("caching.settings.ssl")}
             section="ssl"
             redisType={redisType}
             configuredSecrets={configuredSecrets}
@@ -148,10 +164,10 @@ const CoordinationRedisSettings: React.FC = () => {
 
       <div className="border-t border-gray-200 pt-6 flex justify-end gap-3">
         <Button onClick={handleTestConnection} loading={testConnection.isPending}>
-          {testConnection.isPending ? "Testing..." : "Test Connection"}
+          {testConnection.isPending ? t("caching.settings.testing") : t("caching.settings.test")}
         </Button>
         <Button type="primary" onClick={handleSaveChanges} loading={updateSettings.isPending}>
-          {updateSettings.isPending ? "Saving..." : "Save Changes"}
+          {updateSettings.isPending ? t("caching.settings.saving") : t("caching.settings.save")}
         </Button>
       </div>
     </div>
