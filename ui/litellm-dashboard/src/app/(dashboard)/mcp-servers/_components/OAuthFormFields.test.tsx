@@ -4,6 +4,24 @@ import { render, screen, waitFor, act, fireEvent } from "@testing-library/react"
 import { Form } from "antd";
 import OAuthFormFields from "./OAuthFormFields";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 /** Minimal Ant Form wrapper so Form.Item registers correctly. */
@@ -25,6 +43,19 @@ const WithForm: React.FC<{ children: React.ReactNode; onFinish?: (values: any) =
 describe("OAuthFormFields", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
+  });
+
+  it("renders OAuth fields in Russian", () => {
+    localization.language = "ru";
+    render(
+      <WithForm>
+        <OAuthFormFields isM2M={false} />
+      </WithForm>,
+    );
+
+    expect(screen.getByText("Тип потока OAuth")).toBeInTheDocument();
+    expect(screen.getByText("URL авторизации (необязательно)")).toBeInTheDocument();
   });
 
   // ── visibility by flow type ─────────────────────────────────────────────────
