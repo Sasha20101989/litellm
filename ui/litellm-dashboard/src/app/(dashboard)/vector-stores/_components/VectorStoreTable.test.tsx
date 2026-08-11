@@ -6,6 +6,29 @@ import { VectorStore } from "@/components/vector_store_management/types";
 
 import VectorStoreTable from "./VectorStoreTable";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/components/provider_info_helpers", () => ({
   getProviderLogoAndName: (provider: string) => {
     const providerMap: Record<string, { displayName: string; logo: string }> = {
@@ -54,7 +77,20 @@ const defaultProps = {
 
 describe("VectorStoreTable", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders columns and the empty state in Russian", () => {
+    localization.language = "ru";
+    const { rerender } = render(<VectorStoreTable {...defaultProps} />);
+
+    expect(screen.getByText("ID векторного хранилища")).toBeInTheDocument();
+    expect(screen.getByText("Название")).toBeInTheDocument();
+    expect(screen.getByText("Провайдер")).toBeInTheDocument();
+
+    rerender(<VectorStoreTable {...defaultProps} data={[]} />);
+    expect(screen.getByText("Векторных хранилищ нет")).toBeInTheDocument();
   });
 
   it("should render every column header", () => {
