@@ -5,6 +5,29 @@ import SearchConnectionTest from "./SearchConnectionTest";
 import * as networking from "@/components/networking";
 import NotificationsManager from "@/components/molecules/notifications_manager";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/components/networking", () => ({
   testSearchToolConnection: vi.fn(),
 }));
@@ -16,7 +39,23 @@ const defaultProps = {
 
 describe("SearchConnectionTest", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the connection check in Russian", async () => {
+    localization.language = "ru";
+    vi.mocked(networking.testSearchToolConnection).mockResolvedValue({
+      status: "success",
+      message: "ok",
+      results_count: 3,
+    });
+
+    render(<SearchConnectionTest {...defaultProps} />);
+
+    expect(await screen.findByText("Подключение к tavily установлено!")).toBeInTheDocument();
+    expect(screen.getByText("Получено результатов: 3")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Открыть документацию по поиску" })).toBeInTheDocument();
   });
 
   it("passes the access token and params to the connection test", async () => {

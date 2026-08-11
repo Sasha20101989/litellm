@@ -4,6 +4,7 @@ import { Card, Flex, Input } from "antd";
 import { KeyIcon, SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ProjectKeysTable } from "./ProjectKeysTable";
+import { useTranslation } from "react-i18next";
 
 interface ProjectKeysSectionProps {
   projectId: string;
@@ -12,6 +13,7 @@ interface ProjectKeysSectionProps {
 const PAGE_SIZE = 5;
 
 export function ProjectKeysSection({ projectId }: ProjectKeysSectionProps) {
+  const { t } = useTranslation("management");
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [keyAlias, setKeyAlias] = useState<string>("");
 
@@ -32,7 +34,7 @@ export function ProjectKeysSection({ projectId }: ProjectKeysSectionProps) {
       title={
         <Flex align="center" gap={8}>
           <KeyIcon size={16} />
-          Keys
+          {t("projects.keys")}
         </Flex>
       }
       style={{ height: "100%" }}
@@ -40,7 +42,7 @@ export function ProjectKeysSection({ projectId }: ProjectKeysSectionProps) {
       <Flex justify="flex-start" align="center" style={{ marginBottom: 12 }}>
         <Input
           prefix={<SearchIcon size={14} />}
-          placeholder="Filter by key name..."
+          placeholder={t("projects.filterKeys")}
           style={{ maxWidth: 220 }}
           value={keyAlias}
           onChange={(e) => setKeyAlias(e.target.value)}

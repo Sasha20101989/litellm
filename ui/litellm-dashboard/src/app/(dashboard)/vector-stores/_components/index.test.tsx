@@ -6,6 +6,29 @@ import { credentialListCall, indexesListCall, vectorStoreListCall } from "@/comp
 
 import VectorStoreManagement from "./index";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/components/networking", () => ({
   vectorStoreListCall: vi.fn(),
   vectorStoreDeleteCall: vi.fn(),
@@ -40,7 +63,17 @@ const openManageTab = async (user: ReturnType<typeof userEvent.setup>) => {
 
 describe("VectorStoreManagement loading state", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the vector store overview in Russian", () => {
+    localization.language = "ru";
+    render(<VectorStoreManagement accessToken={null} userID={null} userRole={null} />);
+
+    expect(screen.getByRole("heading", { name: "Управление векторными хранилищами" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Создать хранилище" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Управление хранилищами" })).toBeInTheDocument();
   });
 
   it("should resolve the loading state when accessToken is null instead of showing the skeleton forever", async () => {
@@ -71,6 +104,7 @@ describe("VectorStoreManagement loading state", () => {
 
 describe("VectorStoreManagement Indexes tab", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     mockVectorStoreListCall.mockResolvedValue({ data: [] });
     mockCredentialListCall.mockResolvedValue({ credentials: [] });

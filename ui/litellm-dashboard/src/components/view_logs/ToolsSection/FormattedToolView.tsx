@@ -4,6 +4,7 @@
 
 import { Typography, Table } from "antd";
 import { ParsedTool, ParameterRow } from "./types";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -12,6 +13,7 @@ interface FormattedToolViewProps {
 }
 
 export function FormattedToolView({ tool }: FormattedToolViewProps) {
+  const { t } = useTranslation("logs");
   // Parse parameters for table display
   const parameterRows: ParameterRow[] = Object.entries(tool.parameters?.properties || {}).map(
     ([name, schema]: [string, any]) => ({
@@ -25,7 +27,7 @@ export function FormattedToolView({ tool }: FormattedToolViewProps) {
 
   const columns = [
     {
-      title: "Parameter",
+      title: t("tools.parameter"),
       dataIndex: "name",
       key: "name",
       render: (name: string, record: ParameterRow) => (
@@ -36,7 +38,7 @@ export function FormattedToolView({ tool }: FormattedToolViewProps) {
       ),
     },
     {
-      title: "Type",
+      title: t("tools.type"),
       dataIndex: "type",
       key: "type",
       render: (type: string) => (
@@ -46,7 +48,7 @@ export function FormattedToolView({ tool }: FormattedToolViewProps) {
       ),
     },
     {
-      title: "Description",
+      title: t("tools.description"),
       dataIndex: "description",
       key: "description",
       render: (desc: string) => <Text type="secondary">{desc}</Text>,
@@ -80,7 +82,7 @@ export function FormattedToolView({ tool }: FormattedToolViewProps) {
               marginBottom: 8,
             }}
           >
-            Parameters
+            {t("tools.parameters")}
           </Text>
           <Table dataSource={parameterRows} columns={columns} pagination={false} size="small" bordered />
         </div>
@@ -97,7 +99,7 @@ export function FormattedToolView({ tool }: FormattedToolViewProps) {
               marginBottom: 8,
             }}
           >
-            Called With
+            {t("tools.calledWith")}
           </Text>
           <div
             style={{

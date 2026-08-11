@@ -3,6 +3,30 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import CreateVectorStore from "./CreateVectorStore";
 import * as networking from "@/components/networking";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    const defaultValue = typeof values?.defaultValue === "string" ? values.defaultValue : key;
+    const text = typeof copy === "string" ? copy : defaultValue;
+    return Object.entries(values ?? {}).reduce(
+      (result, [name, value]) => result.replaceAll(`{{${name}}}`, String(value)),
+      text,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 // Mock the networking module
 vi.mock("@/components/networking", () => ({
   ragIngestCall: vi.fn(),
@@ -71,7 +95,17 @@ vi.mock("@/components/vector_store_providers", () => ({
 
 describe("CreateVectorStore", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the creation flow in Russian", () => {
+    localization.language = "ru";
+    render(<CreateVectorStore accessToken="test-token" />);
+
+    expect(screen.getAllByText("Создание векторного хранилища").length).toBeGreaterThan(0);
+    expect(screen.getByText("Шаг 1. Загрузка документов")).toBeInTheDocument();
+    expect(screen.getByText("Шаг 2. Настройка векторного хранилища")).toBeInTheDocument();
   });
 
   it("should render the component successfully", () => {

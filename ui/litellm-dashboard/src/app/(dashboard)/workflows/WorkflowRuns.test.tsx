@@ -1,8 +1,30 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import WorkflowRuns from "./WorkflowRuns";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  return {
+    useTranslation: (namespace: keyof (typeof resources)["en"] = "common") => ({
+      t: (key: string, values?: Record<string, unknown>) => {
+        const copy = key.split(".").reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, resources[localization.language][namespace]);
+        if (typeof copy !== "string") return key;
+        return Object.entries(values ?? {}).reduce(
+          (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+          copy,
+        );
+      },
+      i18n: { language: localization.language },
+    }),
+  };
+});
 
 vi.mock("@/components/networking", () => ({
   proxyBaseUrl: "",
@@ -53,7 +75,21 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+beforeEach(() => {
+  localization.language = "en";
+});
+
 describe("WorkflowRuns (migrated onto shared DataTable)", () => {
+  it("renders workflow runs in Russian", async () => {
+    localization.language = "ru";
+    vi.stubGlobal("fetch", mockFetch([]));
+
+    render(<WorkflowRuns accessToken="tok" />);
+
+    expect(screen.getByText("Запуски рабочих процессов")).toBeInTheDocument();
+    expect(await screen.findByText("Запусков пока нет")).toBeInTheDocument();
+  });
+
   it("renders one DataTable row per fetched run", async () => {
     vi.stubGlobal("fetch", mockFetch(RUNS));
     const { container } = render(<WorkflowRuns accessToken="tok" />);

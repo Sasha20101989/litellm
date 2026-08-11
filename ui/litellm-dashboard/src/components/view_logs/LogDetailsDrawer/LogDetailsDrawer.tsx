@@ -16,6 +16,7 @@ import { getSpendString } from "@/utils/dataUtils";
 import { normalizeGuardrailEntries, sortSessionLogs, SessionLogSortMode } from "./utils";
 import { DRAWER_WIDTH } from "./constants";
 import { useLogDetails } from "@/app/(dashboard)/hooks/logDetails/useLogDetails";
+import { useTranslation } from "react-i18next";
 
 export interface LogDetailsDrawerProps {
   open: boolean;
@@ -120,6 +121,7 @@ export function LogDetailsDrawer({
   onSelectLog,
   startTime,
 }: LogDetailsDrawerProps) {
+  const { t } = useTranslation("logs");
   const isSessionMode = Boolean(sessionId);
   const [selectedSessionRequestId, setSelectedSessionRequestId] = useState<string | null>(null);
   const [sessionSortMode, setSessionSortMode] = useState<SessionLogSortMode>("duration");
@@ -263,9 +265,9 @@ export function LogDetailsDrawer({
   const metadata = currentLog?.metadata || {};
 
   // Status display values
-  const statusLabel = metadata.status === "failure" ? "Failure" : "Success";
+  const statusLabel = metadata.status === "failure" ? t("details.failure") : t("details.success");
   const statusColor = metadata.status === "failure" ? ("error" as const) : ("success" as const);
-  const environment = metadata?.user_api_key_team_alias || "default";
+  const environment = metadata?.user_api_key_team_alias || t("details.defaultEnvironment");
 
   const totalSessionCost = sessionLogs.reduce((sum, row) => sum + (row.spend || 0), 0);
   const sessionStart =
@@ -319,7 +321,7 @@ export function LogDetailsDrawer({
             icon={<LeftOutlined />}
             onClick={() => setIsSidebarCollapsed(true)}
             className="absolute top-2 left-2 z-20 bg-white! border! border-slate-200! rounded-md!"
-            aria-label="Collapse trace sidebar"
+            aria-label={t("details.collapseSidebar")}
           />
         ) : (
           <Button
@@ -328,7 +330,7 @@ export function LogDetailsDrawer({
             icon={<RightOutlined />}
             onClick={() => setIsSidebarCollapsed(false)}
             className="absolute top-2 left-2 z-20 bg-white! border! border-slate-200! rounded-md!"
-            aria-label="Expand trace sidebar"
+            aria-label={t("details.expandSidebar")}
           />
         )}
         {!isSidebarCollapsed && (
@@ -337,7 +339,7 @@ export function LogDetailsDrawer({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-slate-500">
-                    {isSessionMode ? "Session" : "Trace"}
+                    {isSessionMode ? t("details.session") : t("details.trace")}
                   </div>
                   <div className="font-mono text-[12px] text-slate-900 leading-tight flex items-center gap-1">
                     <span className="truncate">{leftPanelDisplayId}</span>
@@ -345,7 +347,7 @@ export function LogDetailsDrawer({
                       type="button"
                       onClick={handleCopyLeftPanelId}
                       className="text-slate-400 hover:text-slate-600"
-                      aria-label="Copy trace id"
+                      aria-label={t("details.copyTraceId")}
                     >
                       {copiedLeftPanelId ? (
                         <CheckOutlined className="text-[11px]" />
@@ -357,7 +359,7 @@ export function LogDetailsDrawer({
                 </div>
               </div>
               <div className="mt-1 text-[11px] text-slate-500 font-mono">
-                {logsForList.length} req
+                {logsForList.length} {t("details.requestsShort")}
                 {[
                   isSessionMode
                     ? llmCount
@@ -369,7 +371,7 @@ export function LogDetailsDrawer({
                     : logsForList.filter((row) => AGENT_CALL_TYPES.includes(row.call_type)).length,
                   isSessionMode ? mcpCount : logsForList.filter((row) => MCP_CALL_TYPES.includes(row.call_type)).length,
                 ].map((count, i) => {
-                  const label = [" LLM", " Agent", " MCP"][i];
+                  const label = [" LLM", ` ${t("details.agent")}`, " MCP"][i];
                   return count > 0 ? (
                     <span key={label}>
                       <span className="mx-1.5">·</span>
@@ -389,7 +391,7 @@ export function LogDetailsDrawer({
               </div>
               {isSessionMode && sessionTruncated && (
                 <div className="mt-1 text-[11px] text-amber-600 font-mono">
-                  Showing most recent {logsForList.length} of {sessionTotalCount}
+                  {t("details.showingRecent", { shown: logsForList.length, total: sessionTotalCount })}
                 </div>
               )}
               {isSessionMode && (
@@ -398,8 +400,8 @@ export function LogDetailsDrawer({
                   size="small"
                   className="mt-1.5 [&_.ant-segmented-item-label]:text-[11px]"
                   options={[
-                    { label: "Duration", value: "duration" },
-                    { label: "Start time", value: "start_time" },
+                    { label: t("details.sortDuration"), value: "duration" },
+                    { label: t("details.sortStartTime"), value: "start_time" },
                   ]}
                   value={sessionSortMode}
                   onChange={(value) => setSessionSortMode(value as SessionLogSortMode)}

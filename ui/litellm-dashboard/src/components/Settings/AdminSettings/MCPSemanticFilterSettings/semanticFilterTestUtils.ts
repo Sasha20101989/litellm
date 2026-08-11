@@ -7,6 +7,20 @@ export interface TestResult {
   tools: string[];
 }
 
+interface SemanticFilterTestMessages {
+  missingInput: string;
+  notEnabled: string;
+  completed: string;
+  failed: string;
+}
+
+const DEFAULT_MESSAGES: SemanticFilterTestMessages = {
+  missingInput: "Please enter a query and select a model",
+  notEnabled: "Semantic filter is not enabled or no tools were filtered",
+  completed: "Semantic filter test completed successfully",
+  failed: "Failed to test semantic filter",
+};
+
 interface FilterHeaders {
   filter: string | null;
   tools: string | null;
@@ -30,6 +44,7 @@ export const runSemanticFilterTest = async ({
   setIsTesting,
   setTestResult,
   setTestError,
+  messages = DEFAULT_MESSAGES,
 }: {
   accessToken: string;
   testModel: string;
@@ -37,9 +52,10 @@ export const runSemanticFilterTest = async ({
   setIsTesting: (value: boolean) => void;
   setTestResult: (result: TestResult | null) => void;
   setTestError: (error: string | null) => void;
+  messages?: SemanticFilterTestMessages;
 }) => {
   if (!testQuery || !testModel || !accessToken) {
-    NotificationManager.error("Please enter a query and select a model");
+    NotificationManager.error(messages.missingInput);
     return;
   }
 
@@ -52,23 +68,23 @@ export const runSemanticFilterTest = async ({
     const parsedResult = parseFilterHeaders(headers);
 
     if (!parsedResult) {
-      NotificationManager.warning("Semantic filter is not enabled or no tools were filtered");
+      NotificationManager.warning(messages.notEnabled);
       return;
     }
 
     setTestResult(parsedResult);
-    NotificationManager.success("Semantic filter test completed successfully");
+    NotificationManager.success(messages.completed);
   } catch (error) {
     console.error("Test failed:", error);
-    const message = error instanceof Error && error.message ? error.message : "Failed to test semantic filter";
+    const message = error instanceof Error && error.message ? error.message : messages.failed;
     setTestError(message);
-    NotificationManager.error("Failed to test semantic filter");
+    NotificationManager.error(messages.failed);
   } finally {
     setIsTesting(false);
   }
 };
 
-export const getCurlCommand = (testModel: string, testQuery: string) =>
+export const getCurlCommand = (testModel: string, testQuery: string, queryFallback = "Your query here") =>
   `curl --location 'http://localhost:4000/v1/responses' \\
 --header 'Content-Type: application/json' \\
 --header 'Authorization: Bearer sk-1234' \\
@@ -77,7 +93,7 @@ export const getCurlCommand = (testModel: string, testQuery: string) =>
     "input": [
     {
       "role": "user",
-      "content": "${testQuery || "Your query here"}",
+      "content": "${testQuery || queryFallback}",
       "type": "message"
     }
   ],

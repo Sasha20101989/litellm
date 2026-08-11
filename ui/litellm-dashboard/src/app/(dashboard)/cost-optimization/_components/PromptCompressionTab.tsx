@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Button, Form, Input, Switch } from "antd";
+import { useTranslation } from "react-i18next";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createGuardrailCall, getGuardrailsList } from "@/components/networking";
@@ -24,6 +25,7 @@ interface CompressionFormValues {
 }
 
 const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken }) => {
+  const { t } = useTranslation("costOptimization");
   const [form] = Form.useForm<CompressionFormValues>();
   const [guardrails, setGuardrails] = useState<GuardrailListItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -37,10 +39,10 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
       .then((response) => setGuardrails(compressionGuardrailsOf(response as GuardrailListResponse)))
       .catch((error) => {
         console.error("Failed to load compression guardrails:", error);
-        NotificationsManager.fromBackend("Failed to load compression guardrails");
+        NotificationsManager.fromBackend(t("compression.loadError"));
       })
       .finally(() => setIsLoading(false));
-  }, [accessToken]);
+  }, [accessToken, t]);
 
   useEffect(() => {
     loadGuardrails();
@@ -60,12 +62,12 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
           defaultOn: values.defaultOn ?? true,
         }),
       );
-      NotificationsManager.success("Compression guardrail created");
+      NotificationsManager.success(t("compression.created"));
       form.resetFields();
       await loadGuardrails();
     } catch (error) {
       console.error("Failed to create compression guardrail:", error);
-      NotificationsManager.fromBackend("Failed to create compression guardrail");
+      NotificationsManager.fromBackend(t("compression.createError"));
     } finally {
       setIsSaving(false);
     }
@@ -75,26 +77,23 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
     <div className="w-full space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Headroom prompt compression</CardTitle>
+          <CardTitle>{t("compression.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
-            Headroom is a native LiteLLM guardrail that compresses your prompts before they reach the model, so you pay
-            for fewer input tokens. The tokens it removes are priced and shown on the Usage tab as compression savings.{" "}
+            {t("compression.description")}{" "}
             <a
               href="https://docs.litellm.ai/docs/proxy/headroom"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 underline"
             >
-              Headroom setup docs
+              {t("compression.docs")}
             </a>
           </p>
-          {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+          {isLoading && <p className="text-sm text-muted-foreground">{t("compression.loading")}</p>}
           {!isLoading && guardrails.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No prompt compression guardrails configured yet. Add one below to start saving on input tokens
-            </p>
+            <p className="text-sm text-muted-foreground">{t("compression.empty")}</p>
           )}
           {!isLoading && guardrails.length > 0 && (
             <ul className="divide-y divide-gray-200">
@@ -111,7 +110,7 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
                         : "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    {guardrail.litellm_params?.default_on ? "Always on" : "Opt-in"}
+                    {guardrail.litellm_params?.default_on ? t("compression.alwaysOn") : t("compression.optIn")}
                   </span>
                 </li>
               ))}
@@ -122,7 +121,7 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
 
       <Card>
         <CardHeader>
-          <CardTitle>Add Headroom compression guardrail</CardTitle>
+          <CardTitle>{t("compression.addTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form
@@ -132,38 +131,41 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
             onFinish={handleAdd}
             initialValues={{ defaultOn: true }}
           >
-            <Form.Item name="name" label="Name" rules={[{ required: true, message: "Name is required" }]}>
+            <Form.Item
+              name="name"
+              label={t("compression.name")}
+              rules={[{ required: true, message: t("compression.nameRequired") }]}
+            >
               <Input placeholder="headroom-compression" />
             </Form.Item>
             <Form.Item
               name="apiBase"
-              label="Headroom API base"
-              tooltip="Base URL of your Headroom compression service (LiteLLM calls its /v1/compress endpoint)"
-              extra="The URL where your Headroom compression service is hosted"
-              rules={[{ required: true, message: "API base is required" }]}
+              label={t("compression.apiBase")}
+              tooltip={t("compression.apiBaseTooltip")}
+              extra={t("compression.apiBaseExtra")}
+              rules={[{ required: true, message: t("compression.apiBaseRequired") }]}
             >
               <Input placeholder="https://your-headroom-endpoint" />
             </Form.Item>
-            <Form.Item name="defaultOn" label="Apply to all requests" valuePropName="checked">
+            <Form.Item name="defaultOn" label={t("compression.applyAll")} valuePropName="checked">
               <Switch />
             </Form.Item>
             <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               <p className="text-sm text-yellow-800">
-                Applying compression to all requests is available to all users. Enabling it selectively per key or team
-                is a LiteLLM Enterprise feature. Get a trial key{" "}
+                {t("compression.enterpriseNotice")}{" "}
                 <a
                   href="https://www.litellm.ai/#pricing"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline"
                 >
-                  here
+                  {t("page.here")}
                 </a>
               </p>
             </div>
             <div className="flex justify-end">
               <Button type="primary" htmlType="submit" loading={isSaving}>
-                Add guardrail
+                {t("compression.add")}
               </Button>
             </div>
           </Form>

@@ -1,9 +1,32 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import TruePassthroughWarning from "./TruePassthroughWarning";
 import { AUTH_TYPE } from "@/components/mcp_tools/types";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string) =>
+    key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway) as string;
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 describe("TruePassthroughWarning", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders the warning in Russian", () => {
+    localization.language = "ru";
+    render(<TruePassthroughWarning authType={AUTH_TYPE.TRUE_PASSTHROUGH} />);
+
+    expect(screen.getByText("Прямой прокси отключает аутентификацию LiteLLM для этого сервера")).toBeInTheDocument();
+  });
+
   it("warns when auth type is true_passthrough", () => {
     render(<TruePassthroughWarning authType={AUTH_TYPE.TRUE_PASSTHROUGH} />);
 

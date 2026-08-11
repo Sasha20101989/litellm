@@ -1,8 +1,31 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import TestVectorStoreTab from "./TestVectorStoreTab";
 import { VectorStore } from "@/components/vector_store_management/types";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
 
 // Mock VectorStoreTester component
 vi.mock("./VectorStoreTester", () => ({
@@ -34,6 +57,19 @@ const mockVectorStores: VectorStore[] = [
 ];
 
 describe("TestVectorStoreTab", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders vector store selection in Russian", () => {
+    localization.language = "ru";
+    render(<TestVectorStoreTab accessToken="test-token" vectorStores={mockVectorStores} />);
+
+    expect(screen.getByText("Выбор векторного хранилища")).toBeInTheDocument();
+    expect(screen.getByText("Выберите векторное хранилище для проверки поисковых запросов")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Выберите векторное хранилище")).toBeInTheDocument();
+  });
+
   it("should render the component successfully", () => {
     render(<TestVectorStoreTab accessToken="test-token" vectorStores={mockVectorStores} />);
 

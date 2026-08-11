@@ -1,6 +1,7 @@
 import { Drawer, List, Skeleton, Tag, Typography } from "antd";
 import React, { useEffect, useState } from "react";
 import { getPromptVersions, PromptSpec } from "@/components/networking";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -21,6 +22,7 @@ const VersionHistorySidePanel: React.FC<VersionHistorySidePanelProps> = ({
   activeVersionId,
   onSelectVersion,
 }) => {
+  const { t, i18n } = useTranslation("prompts");
   const [versions, setVersions] = useState<PromptSpec[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -63,12 +65,12 @@ const VersionHistorySidePanel: React.FC<VersionHistorySidePanelProps> = ({
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleString();
+    return new Date(dateString).toLocaleString(i18n.language === "ru" ? "ru-RU" : "en-US");
   };
 
   return (
     <Drawer
-      title="Version History"
+      title={t("editor.versionHistory")}
       placement="right"
       onClose={onClose}
       open={isOpen}
@@ -79,7 +81,7 @@ const VersionHistorySidePanel: React.FC<VersionHistorySidePanelProps> = ({
       {loading ? (
         <Skeleton active paragraph={{ rows: 4 }} />
       ) : versions.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">No version history available.</div>
+        <div className="text-center py-8 text-gray-500">{t("editor.noHistory")}</div>
       ) : (
         <List
           dataSource={versions}
@@ -113,13 +115,13 @@ const VersionHistorySidePanel: React.FC<VersionHistorySidePanelProps> = ({
                     <Tag className="m-0">{getVersionNumber(item)}</Tag>
                     {index === 0 && (
                       <Tag color="blue" className="m-0">
-                        Latest
+                        {t("editor.latest")}
                       </Tag>
                     )}
                   </div>
                   {isSelected && (
                     <Tag color="green" className="m-0">
-                      Active
+                      {t("editor.active")}
                     </Tag>
                   )}
                 </div>
@@ -127,7 +129,7 @@ const VersionHistorySidePanel: React.FC<VersionHistorySidePanelProps> = ({
                 <div className="flex flex-col gap-1">
                   <Text className="text-sm text-gray-600 font-medium">{formatDate(item.created_at)}</Text>
                   <Text type="secondary" className="text-xs">
-                    {item.prompt_info?.prompt_type === "db" ? "Saved to Database" : "Config Prompt"}
+                    {item.prompt_info?.prompt_type === "db" ? t("editor.savedToDatabase") : t("editor.configPrompt")}
                   </Text>
                 </div>
               </div>

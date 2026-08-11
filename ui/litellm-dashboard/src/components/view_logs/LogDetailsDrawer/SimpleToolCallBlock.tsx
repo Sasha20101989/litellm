@@ -5,6 +5,7 @@
 
 import { Typography } from "antd";
 import { ToolCall } from "./prettyMessagesTypes";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -14,6 +15,7 @@ interface SimpleToolCallBlockProps {
 }
 
 export function SimpleToolCallBlock({ tool, compact = false }: SimpleToolCallBlockProps) {
+  const { t } = useTranslation("logs");
   return (
     <div
       style={{
@@ -41,7 +43,7 @@ export function SimpleToolCallBlock({ tool, compact = false }: SimpleToolCallBlo
           borderRadius: 3,
         }}
       >
-        function
+        {t("details.function")}
       </div>
 
       <Text strong style={{ fontSize: 13, display: "block", marginBottom: 6 }}>

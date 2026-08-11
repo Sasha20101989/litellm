@@ -55,6 +55,7 @@ import EndpointUsage from "../EndpointUsage/EndpointUsage";
 import ModelViewToggle, { ModelViewType } from "../ModelViewToggle";
 import TopKeyView from "@/components/UsagePage/components/EntityUsage/TopKeyView";
 import TopModelView from "./TopModelView";
+import { useTranslation } from "react-i18next";
 
 interface EntityMetrics {
   metrics: {
@@ -121,6 +122,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
   userRole,
   dateValue,
 }) => {
+  const { t } = useTranslation("usage");
   const { teams } = useTeams();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [modelViewType, setModelViewType] = useState<ModelViewType>("groups");
@@ -260,14 +262,14 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
   };
 
   const getFilterLabel = (entityType: string) => {
-    return `Filter by ${entityType}`;
+    return t("entity.filterBy", { entity: t(`entity.labels.${entityType}`) });
   };
 
   const getFilterPlaceholder = (entityType: string) => {
-    return `Select ${entityType} to filter...`;
+    return t("entity.selectToFilter", { entity: t(`entity.labels.${entityType}`) });
   };
 
-  const capitalizedEntityLabel = entityType.charAt(0).toUpperCase() + entityType.slice(1);
+  const capitalizedEntityLabel = t(`entity.labels.${entityType}`);
   const showFlatCost = entityType === "team" && hasFlatCost(spendData.metadata);
 
   const chev = "text-gray-400 text-xs";
@@ -289,16 +291,18 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
     </Card>
   );
 
-  const breakdownTiles = showFlatCost && showCostBreakdown ? buildCostBreakdownTiles(spendData.metadata) : [];
-  const summaryTiles = [...buildSummaryTiles(spendData.metadata, showFlatCost), ...breakdownTiles];
+  const breakdownTiles = showFlatCost && showCostBreakdown ? buildCostBreakdownTiles(spendData.metadata, t) : [];
+  const summaryTiles = [...buildSummaryTiles(spendData.metadata, showFlatCost, t), ...breakdownTiles];
 
-  const modelViewTitle = modelViewType === "groups" ? "Top Public Model Names" : "Top Litellm Models";
+  const modelViewTitle = modelViewType === "groups" ? t("common.topPublicModels") : t("common.topLiteLLMModels");
+  const requestCostLabel = t("entity.requestCost");
+  const flatCostLabel = t("entity.flatCost");
 
   const costPanel = (
     <Grid numItems={2} className="gap-2 w-full">
       <Col numColSpan={2}>
         <Card>
-          <Title>{capitalizedEntityLabel} Spend Overview</Title>
+          <Title>{t("entity.spendOverview", { entity: capitalizedEntityLabel })}</Title>
           <Grid numItems={5} className="gap-4 mt-4">
             {summaryTiles.map(renderSummaryTile)}
           </Grid>
@@ -309,7 +313,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
       <Col numColSpan={2}>
         <ShadcnCard>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Daily Spend</CardTitle>
+            <CardTitle className="text-base font-semibold">{t("common.dailySpend")}</CardTitle>
           </CardHeader>
           <CardContent>
             <BarChart
@@ -317,11 +321,11 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                 .map((row) => ({
                   ...row,
-                  "Request cost": row.metrics.spend ?? 0,
-                  "Flat cost": row.metrics.flat_cost ?? 0,
+                  [requestCostLabel]: row.metrics.spend ?? 0,
+                  [flatCostLabel]: row.metrics.flat_cost ?? 0,
                 }))}
               index="date"
-              categories={showFlatCost ? ["Request cost", "Flat cost"] : ["metrics.spend"]}
+              categories={showFlatCost ? [requestCostLabel, flatCostLabel] : ["metrics.spend"]}
               colors={showFlatCost ? ["cyan", "violet"] : ["cyan"]}
               stack={showFlatCost}
               valueFormatter={valueFormatterSpend}
@@ -338,24 +342,38 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                     <p className="font-bold">{data.date}</p>
                     {showFlatCost ? (
                       <>
-                        <p className="text-cyan-500">Request cost: ${formatNumberWithCommas(requestSpend, 2)}</p>
-                        <p className="text-violet-500">Flat cost: ${formatNumberWithCommas(flatCost, 2)}</p>
+                        <p className="text-cyan-500">
+                          {requestCostLabel}: ${formatNumberWithCommas(requestSpend, 2)}
+                        </p>
+                        <p className="text-violet-500">
+                          {flatCostLabel}: ${formatNumberWithCommas(flatCost, 2)}
+                        </p>
                         <p className="font-semibold">
-                          Total cost: ${formatNumberWithCommas(requestSpend + flatCost, 2)}
+                          {t("entity.totalCost")}: ${formatNumberWithCommas(requestSpend + flatCost, 2)}
                         </p>
                       </>
                     ) : (
-                      <p className="text-cyan-500">Total Spend: ${formatNumberWithCommas(data.metrics.spend, 2)}</p>
+                      <p className="text-cyan-500">
+                        {t("common.totalSpend")}: ${formatNumberWithCommas(data.metrics.spend, 2)}
+                      </p>
                     )}
-                    <p className="text-gray-600">Total Requests: {data.metrics.api_requests}</p>
-                    <p className="text-gray-600">Successful: {data.metrics.successful_requests}</p>
-                    <p className="text-gray-600">Failed: {data.metrics.failed_requests}</p>
-                    <p className="text-gray-600">Total Tokens: {data.metrics.total_tokens}</p>
                     <p className="text-gray-600">
-                      Total {capitalizedEntityLabel}s: {entityCount}
+                      {t("common.totalRequests")}: {data.metrics.api_requests}
+                    </p>
+                    <p className="text-gray-600">
+                      {t("common.successful")}: {data.metrics.successful_requests}
+                    </p>
+                    <p className="text-gray-600">
+                      {t("common.failed")}: {data.metrics.failed_requests}
+                    </p>
+                    <p className="text-gray-600">
+                      {t("common.totalTokens")}: {data.metrics.total_tokens}
+                    </p>
+                    <p className="text-gray-600">
+                      {t("entity.totalEntities", { entity: capitalizedEntityLabel, count: entityCount })}
                     </p>
                     <div className="mt-2 border-t pt-2">
-                      <p className="font-semibold">Spend by {capitalizedEntityLabel}:</p>
+                      <p className="font-semibold">{t("entity.spendBy", { entity: capitalizedEntityLabel })}</p>
                       {Object.entries(data.breakdown.entities || {})
                         .sort(([, a], [, b]) => {
                           const spendA = (a as EntityMetrics).metrics.spend;
@@ -372,7 +390,9 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                             </p>
                           );
                         })}
-                      {entityCount > 5 && <p className="text-sm text-gray-500 italic">...and {entityCount - 5} more</p>}
+                      {entityCount > 5 && (
+                        <p className="text-sm text-gray-500 italic">{t("entity.more", { count: entityCount - 5 })}</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -387,15 +407,15 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
         <Card>
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col space-y-2">
-              <Title>Spend Per {capitalizedEntityLabel}</Title>
-              <Subtitle className="text-xs">Showing Top 5 by Spend</Subtitle>
+              <Title>{t("entity.spendPer", { entity: capitalizedEntityLabel })}</Title>
+              <Subtitle className="text-xs">{t("entity.showingTopFive")}</Subtitle>
               <div className="flex items-center text-sm text-gray-500">
-                <span>Get Started by Tracking cost per {capitalizedEntityLabel} </span>
+                <span>{t("entity.trackingPrefix", { entity: capitalizedEntityLabel })} </span>
                 <a
                   href="https://docs.litellm.ai/docs/proxy/enterprise#spend-tracking"
                   className="text-blue-500 hover:text-blue-700 ml-1"
                 >
-                  here
+                  {t("entity.here")}
                 </a>
               </div>
             </div>
@@ -417,13 +437,21 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                     return (
                       <div className="bg-white p-4 shadow-lg rounded-lg border">
                         <p className="font-bold">{data.metadata.alias}</p>
-                        <p className="text-cyan-500">Spend: ${formatNumberWithCommas(data.metrics.spend, 4)}</p>
-                        <p className="text-gray-600">Requests: {data.metrics.api_requests.toLocaleString()}</p>
-                        <p className="text-green-600">
-                          Successful: {data.metrics.successful_requests.toLocaleString()}
+                        <p className="text-cyan-500">
+                          {t("common.spend")}: ${formatNumberWithCommas(data.metrics.spend, 4)}
                         </p>
-                        <p className="text-red-600">Failed: {data.metrics.failed_requests.toLocaleString()}</p>
-                        <p className="text-gray-600">Tokens: {data.metrics.total_tokens.toLocaleString()}</p>
+                        <p className="text-gray-600">
+                          {t("common.requests")}: {data.metrics.api_requests.toLocaleString()}
+                        </p>
+                        <p className="text-green-600">
+                          {t("common.successful")}: {data.metrics.successful_requests.toLocaleString()}
+                        </p>
+                        <p className="text-red-600">
+                          {t("common.failed")}: {data.metrics.failed_requests.toLocaleString()}
+                        </p>
+                        <p className="text-gray-600">
+                          {t("common.tokens")}: {data.metrics.total_tokens.toLocaleString()}
+                        </p>
                       </div>
                     );
                   }}
@@ -435,10 +463,10 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                     <TableHead>
                       <TableRow>
                         <TableHeaderCell>{capitalizedEntityLabel}</TableHeaderCell>
-                        <TableHeaderCell>Spend</TableHeaderCell>
-                        <TableHeaderCell className="text-green-600">Successful</TableHeaderCell>
-                        <TableHeaderCell className="text-red-600">Failed</TableHeaderCell>
-                        <TableHeaderCell>Tokens</TableHeaderCell>
+                        <TableHeaderCell>{t("common.spend")}</TableHeaderCell>
+                        <TableHeaderCell className="text-green-600">{t("common.successful")}</TableHeaderCell>
+                        <TableHeaderCell className="text-red-600">{t("common.failed")}</TableHeaderCell>
+                        <TableHeaderCell>{t("common.tokens")}</TableHeaderCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -471,7 +499,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
       {/* Top API Keys */}
       <Col numColSpan={1}>
         <Card>
-          <Title>Top Virtual Keys</Title>
+          <Title>{t("common.topVirtualKeys")}</Title>
           <TopKeyView
             topKeys={getTopAPIKeys(spendData.results, topKeysLimit)}
             teams={null}
@@ -486,7 +514,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
       <Col numColSpan={1}>
         <Card>
           <div className="flex justify-between items-center">
-            <Title>{entityType === "agent" ? "Top Agents" : modelViewTitle}</Title>
+            <Title>{entityType === "agent" ? t("common.topAgents") : modelViewTitle}</Title>
             <ModelViewToggle value={modelViewType} onChange={setModelViewType} />
           </div>
           <TopModelView
@@ -500,7 +528,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
       {showAgentBreakdown && (
         <Col numColSpan={2}>
           <Card>
-            <Title>Top Agents Driving Spend</Title>
+            <Title>{t("entity.topAgentsDrivingSpend")}</Title>
             <TopModelView
               topModels={getTopAgents(agentSpendData.results, topAgentsLimit)}
               topModelsLimit={topAgentsLimit}
@@ -514,7 +542,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
       <Col numColSpan={2}>
         <Card>
           <div className="flex flex-col space-y-4">
-            <Title>Provider Usage</Title>
+            <Title>{t("entity.providerUsage")}</Title>
             <Grid numItems={2}>
               <Col numColSpan={1}>
                 <DonutChart
@@ -533,11 +561,11 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableHeaderCell>Provider</TableHeaderCell>
-                      <TableHeaderCell>Spend</TableHeaderCell>
-                      <TableHeaderCell className="text-green-600">Successful</TableHeaderCell>
-                      <TableHeaderCell className="text-red-600">Failed</TableHeaderCell>
-                      <TableHeaderCell>Tokens</TableHeaderCell>
+                      <TableHeaderCell>{t("common.provider")}</TableHeaderCell>
+                      <TableHeaderCell>{t("common.spend")}</TableHeaderCell>
+                      <TableHeaderCell className="text-green-600">{t("common.successful")}</TableHeaderCell>
+                      <TableHeaderCell className="text-red-600">{t("common.failed")}</TableHeaderCell>
+                      <TableHeaderCell>{t("common.tokens")}</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -570,10 +598,10 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
   );
 
   const tabs: readonly { key: string; label: string; content: ReactNode }[] = [
-    { key: "cost", label: "Cost", content: costPanel },
+    { key: "cost", label: t("common.cost"), content: costPanel },
     {
       key: "models",
-      label: entityType === "agent" ? "Request / Token Consumption" : "Model Activity",
+      label: entityType === "agent" ? t("common.requestTokenConsumption") : t("common.modelActivity"),
       content: (
         <>
           <div className="flex justify-end mt-2 mb-4">
@@ -584,14 +612,14 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
       ),
     },
     ...(showAgentBreakdown
-      ? [{ key: "agents", label: "Agent Activity", content: <ActivityMetrics modelMetrics={agentMetrics} /> }]
+      ? [{ key: "agents", label: t("common.agentActivity"), content: <ActivityMetrics modelMetrics={agentMetrics} /> }]
       : []),
     {
       key: "keys",
-      label: "Key Activity",
+      label: t("common.keyActivity"),
       content: <ActivityMetrics modelMetrics={keyMetrics} hidePromptCachingMetrics={entityType === "agent"} />,
     },
-    { key: "endpoints", label: "Endpoint Activity", content: <EndpointUsage userSpendData={spendData} /> },
+    { key: "endpoints", label: t("common.endpointActivity"), content: <EndpointUsage userSpendData={spendData} /> },
   ];
 
   return (
@@ -605,16 +633,14 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
             <div className="flex items-center justify-between">
               <span>
                 <LoadingOutlined spin className="mr-2" />
-                Currently fetching spend data: fetched {progress.currentPage} / {progress.totalPages} pages. Charts will
-                update periodically as data loads. Moving off of this page will stop and reset this. To continue using
-                the UI in the meantime,{" "}
+                {t("entity.fetchingSpend", { current: progress.currentPage, total: progress.totalPages })}{" "}
                 <a href={window.location.href} target="_blank" rel="noopener noreferrer">
-                  open a new tab <ExportOutlined />
+                  {t("common.openNewTab")} <ExportOutlined />
                 </a>
                 .
               </span>
               <Button type="primary" danger onClick={cancel}>
-                Stop
+                {t("common.stop")}
               </Button>
             </div>
           }
@@ -626,9 +652,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
           type="info"
           className="mb-2"
           message={
-            <span>
-              Showing partial data ({progress.currentPage}/{progress.totalPages} pages loaded)
-            </span>
+            <span>{t("entity.partialData", { current: progress.currentPage, total: progress.totalPages })}</span>
           }
         />
       )}
@@ -641,16 +665,17 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
             <div className="flex items-center justify-between">
               <span>
                 <LoadingOutlined spin className="mr-2" />
-                Currently fetching agent data: fetched {agentProgress.currentPage} / {agentProgress.totalPages} pages.
-                Charts will update periodically as data loads. Moving off of this page will stop and reset this. To
-                continue using the UI in the meantime,{" "}
+                {t("entity.fetchingAgents", {
+                  current: agentProgress.currentPage,
+                  total: agentProgress.totalPages,
+                })}{" "}
                 <a href={window.location.href} target="_blank" rel="noopener noreferrer">
-                  open a new tab <ExportOutlined />
+                  {t("common.openNewTab")} <ExportOutlined />
                 </a>
                 .
               </span>
               <Button type="primary" danger onClick={agentCancel}>
-                Stop
+                {t("common.stop")}
               </Button>
             </div>
           }
@@ -663,15 +688,18 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
           className="mb-2"
           message={
             <span>
-              Showing partial agent data ({agentProgress.currentPage}/{agentProgress.totalPages} pages loaded)
+              {t("entity.partialAgentData", {
+                current: agentProgress.currentPage,
+                total: agentProgress.totalPages,
+              })}
             </span>
           }
         />
       )}
       {entityType === "team" && (
         <div className="mb-4">
-          <Text className="mb-2">Filter by team</Text>
-          <TeamMultiSelect value={selectedTags} onChange={setSelectedTags} />
+          <Text className="mb-2">{t("entity.filterByTeam")}</Text>
+          <TeamMultiSelect value={selectedTags} onChange={setSelectedTags} placeholder={t("entity.searchTeams")} />
         </div>
       )}
       <UsageExportHeader

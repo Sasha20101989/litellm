@@ -14774,7 +14774,7 @@ async def get_image():
 
     # get current_dir
     current_dir: Final = os.path.dirname(os.path.abspath(__file__))
-    default_site_logo: Final = os.path.join(current_dir, "logo.jpg")
+    default_site_logo: Final = os.path.join(current_dir, "nexoplane.jpg")
 
     is_non_root: Final = os.getenv("LITELLM_NON_ROOT", "").lower() == "true"
 
@@ -14797,7 +14797,7 @@ async def get_image():
             assets_dir = current_dir
 
     # Determine default logo path
-    default_logo = os.path.join(assets_dir, "logo.jpg") if assets_dir != current_dir else default_site_logo
+    default_logo = os.path.join(assets_dir, "nexoplane.jpg") if assets_dir != current_dir else default_site_logo
     if assets_dir != current_dir and not os.path.exists(default_logo):
         default_logo = default_site_logo
 

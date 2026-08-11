@@ -6,6 +6,7 @@ import { uiAuditLogsCall } from "../networking";
 import { AuditLogEntry } from "./AuditLogsTableColumns";
 import { AuditLogsTable } from "./AuditLogsTable";
 import { AuditLogDrawer } from "./AuditLogDrawer/AuditLogDrawer";
+import { useTranslation } from "react-i18next";
 
 interface AuditLogsProps {
   accessToken: string | null;
@@ -37,6 +38,7 @@ export default function AuditLogsPanel({
   isActive,
   premiumUser,
 }: AuditLogsProps) {
+  const { t } = useTranslation("logs");
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
@@ -88,16 +90,12 @@ export default function AuditLogsPanel({
   if (!premiumUser) {
     return (
       <div style={{ textAlign: "center", marginTop: "20px" }}>
-        <h1 style={{ display: "block", marginBottom: "10px" }}>✨ Enterprise Feature.</h1>
-        <p style={{ display: "block", marginBottom: "10px" }}>
-          This is a LiteLLM Enterprise feature, and requires a valid key to use.
-        </p>
-        <p style={{ display: "block", marginBottom: "20px", fontStyle: "italic" }}>
-          Here&apos;s a preview of what Audit Logs offer:
-        </p>
+        <h1 style={{ display: "block", marginBottom: "10px" }}>✨ {t("audit.enterpriseTitle")}</h1>
+        <p style={{ display: "block", marginBottom: "10px" }}>{t("audit.enterpriseDescription")}</p>
+        <p style={{ display: "block", marginBottom: "20px", fontStyle: "italic" }}>{t("audit.preview")}</p>
         <img
           src={resolveLogoSrc(auditLogsPreviewImg)}
-          alt="Audit Logs Preview"
+          alt={t("audit.previewAlt")}
           style={{
             maxWidth: "100%",
             maxHeight: "700px",
@@ -116,7 +114,7 @@ export default function AuditLogsPanel({
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Audit Logs</h1>
+        <h1 className="text-xl font-semibold">{t("audit.title")}</h1>
       </div>
 
       <AuditLogsTable

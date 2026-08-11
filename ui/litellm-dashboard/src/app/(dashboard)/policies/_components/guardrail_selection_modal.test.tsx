@@ -5,6 +5,24 @@ import { renderWithProviders } from "@/../tests/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import GuardrailSelectionModal from "./guardrail_selection_modal";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    const defaultValue = typeof values?.defaultValue === "string" ? values.defaultValue : key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      typeof copy === "string" ? copy : defaultValue,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 const makeGuardrailDef = (name: string, description = "A guardrail description") => ({
   guardrail_name: name,
   guardrail_info: { description },
@@ -28,6 +46,18 @@ const defaultProps = {
 describe("GuardrailSelectionModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
+  });
+
+  it("renders guardrail selection in Russian", async () => {
+    localization.language = "ru";
+    renderWithProviders(<GuardrailSelectionModal {...defaultProps} />);
+
+    expect(
+      await screen.findByText("Просмотрите и выберите защитные механизмы для создания из этого шаблона"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Отменить выбор" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Создать защитные механизмы: 2/ })).toBeInTheDocument();
   });
 
   it("should render guardrail names from the template", async () => {

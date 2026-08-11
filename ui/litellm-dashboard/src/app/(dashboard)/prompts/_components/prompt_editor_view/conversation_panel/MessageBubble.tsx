@@ -5,12 +5,14 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { coy } from "react-syntax-highlighter/dist/esm/styles/prism";
 import ResponseMetrics from "@/components/chat_ui/ResponseMetrics";
 import { Message } from "./types";
+import { useTranslation } from "react-i18next";
 
 interface MessageBubbleProps {
   message: Message;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+  const { t } = useTranslation("prompts");
   return (
     <div className={`mb-4 flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
       <div
@@ -33,7 +35,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               <RobotOutlined style={{ fontSize: "12px", color: "#4b5563" }} />
             )}
           </div>
-          <strong className="text-sm capitalize">{message.role}</strong>
+          <strong className="text-sm capitalize">{t(`editor.${message.role}`, { defaultValue: message.role })}</strong>
           {message.role === "assistant" && message.model && (
             <span className="text-xs px-2 py-0.5 rounded-sm bg-gray-100 text-gray-600 font-normal">
               {message.model}

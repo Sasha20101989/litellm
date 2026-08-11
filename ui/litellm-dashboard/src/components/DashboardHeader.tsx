@@ -19,6 +19,8 @@ import { useWorker } from "@/hooks/useWorker";
 import { useDisableShowPrompts } from "@/app/(dashboard)/hooks/useDisableShowPrompts";
 import { clearTokenCookies } from "@/utils/cookieUtils";
 import { clearStoredReturnUrl, getLoginUrl } from "@/utils/returnUrlUtils";
+import LanguageSelector from "@/components/LanguageSelector/LanguageSelector";
+import { useTranslation } from "react-i18next";
 
 interface DashboardHeaderProps {
   page: string;
@@ -28,6 +30,8 @@ interface DashboardHeaderProps {
 // lives in the sidebar header); mirrors the design's breadcrumb-left / tools-right layout.
 export function DashboardHeader({ page }: DashboardHeaderProps) {
   const { title } = getBreadcrumb(page);
+  const { t } = useTranslation("navigation");
+  const localizedTitle = t(`sidebar.items.${page}`, { defaultValue: title });
   const { isControlPlane, selectedWorker } = useWorker();
   const showWorkerSwitch = isControlPlane && selectedWorker !== null;
   const hideCommunityLinks = useDisableShowPrompts();
@@ -49,7 +53,7 @@ export function DashboardHeader({ page }: DashboardHeaderProps) {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem className="min-w-0">
-            <BreadcrumbPage className="truncate">{title}</BreadcrumbPage>
+            <BreadcrumbPage className="truncate">{localizedTitle}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -68,10 +72,11 @@ export function DashboardHeader({ page }: DashboardHeaderProps) {
           render={<a href="https://docs.litellm.ai/docs/" target="_blank" rel="noopener noreferrer" />}
           className="text-muted-foreground"
         >
-          Docs
+          {t("header.docs")}
         </Button>
         <BlogDropdown />
         {!hideCommunityLinks && <CommunityEngagementButtons />}
+        <LanguageSelector />
         <ToolbarSeparator />
         <NotificationsBell />
       </div>

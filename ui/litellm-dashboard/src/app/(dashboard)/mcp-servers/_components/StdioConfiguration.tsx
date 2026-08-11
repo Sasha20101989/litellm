@@ -1,6 +1,7 @@
 import React from "react";
 import { Form, Input, Tooltip } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 
 interface StdioConfigurationProps {
   isVisible: boolean;
@@ -12,21 +13,22 @@ interface StdioConfigurationProps {
 }
 
 const StdioConfiguration: React.FC<StdioConfigurationProps> = ({ isVisible, required = true }) => {
+  const { t } = useTranslation("gateway");
   if (!isVisible) return null;
 
   return (
     <Form.Item
       label={
         <span className="text-sm font-medium text-gray-700 flex items-center">
-          Stdio Configuration (JSON)
-          <Tooltip title="Paste your stdio MCP server configuration in JSON format. You can use the full mcpServers structure from config.yaml or just the inner server configuration.">
+          {t("mcpServers.forms.stdio.title")}
+          <Tooltip title={t("mcpServers.forms.stdio.tooltip")}>
             <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
           </Tooltip>
         </span>
       }
       name="stdio_config"
       rules={[
-        ...(required ? [{ required: true, message: "Please enter stdio configuration" }] : []),
+        ...(required ? [{ required: true, message: t("mcpServers.forms.stdio.required") }] : []),
         {
           validator: (_, value) => {
             if (!value) return Promise.resolve();
@@ -34,7 +36,7 @@ const StdioConfiguration: React.FC<StdioConfigurationProps> = ({ isVisible, requ
               JSON.parse(value);
               return Promise.resolve();
             } catch {
-              return Promise.reject("Please enter valid JSON");
+              return Promise.reject(t("mcpServers.forms.stdio.validJson"));
             }
           },
         },

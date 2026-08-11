@@ -3,12 +3,46 @@ import { notification as staticNotification } from "antd";
 import type { NotificationInstance } from "antd/es/notification/interface";
 import { parseErrorMessage } from "../shared/errorUtils";
 import { ArgsProps } from "antd/es/notification";
+import { CloseOutlined } from "@ant-design/icons";
 
 let notificationInstance: NotificationInstance | null = null;
+let notificationLanguage: "en" | "ru" = "en";
 
 export const setNotificationInstance = (instance: NotificationInstance) => {
   notificationInstance = instance;
 };
+
+export const setNotificationLanguage = (language: "en" | "ru") => {
+  notificationLanguage = language;
+};
+
+const RUSSIAN_TITLES: Record<string, string> = {
+  "Authentication Error": "Ошибка аутентификации",
+  "Access Denied": "Доступ запрещён",
+  "Service Unavailable": "Сервис недоступен",
+  "Budget Exceeded": "Бюджет превышен",
+  "Feature Unavailable": "Функция недоступна",
+  "Routing Error": "Ошибка маршрутизации",
+  "Already Exists": "Уже существует",
+  "Content Blocked": "Содержимое заблокировано",
+  "Validation Error": "Ошибка проверки",
+  "Integration Error": "Ошибка интеграции",
+  "Not Found": "Не найдено",
+  "Rate Limit Exceeded": "Превышен лимит запросов",
+  "Server Error": "Ошибка сервера",
+  "Request Error": "Ошибка запроса",
+  "Feature Notice": "Уведомление о функции",
+  "Configuration Warning": "Предупреждение о настройке",
+  "Rate Limit": "Лимит запросов",
+  Error: "Ошибка",
+  Warning: "Предупреждение",
+  Info: "Информация",
+  Success: "Успешно",
+  Close: "Закрыть",
+};
+
+const localizedTitle = (title: string): string =>
+  notificationLanguage === "ru" ? RUSSIAN_TITLES[title] ?? title : title;
 
 // Helper to get the best available notification instance
 const getNotification = () => notificationInstance || staticNotification;
@@ -250,6 +284,11 @@ export const COMMON_NOTIFICATION_PROPS: Partial<ArgsProps> = {
   pauseOnHover: true,
 };
 
+const commonNotificationProps = (): Partial<ArgsProps> => ({
+  ...COMMON_NOTIFICATION_PROPS,
+  closeIcon: <CloseOutlined aria-label={localizedTitle("Close")} />,
+});
+
 function looksErrorPayload(input: any, status?: number): boolean {
   if (status !== undefined) return true;
   if (input instanceof Error) return true;
@@ -260,9 +299,9 @@ function looksErrorPayload(input: any, status?: number): boolean {
 
 const NotificationManager = {
   error(input: string | NotificationConfig) {
-    const cfg = normalize(input, "Error");
+    const cfg = normalize(input, localizedTitle("Error"));
     getNotification().error({
-      ...COMMON_NOTIFICATION_PROPS,
+      ...commonNotificationProps(),
       ...cfg,
       placement: cfg.placement ?? defaultPlacement(),
       duration: cfg.duration ?? 6,
@@ -270,9 +309,9 @@ const NotificationManager = {
   },
 
   warning(input: string | NotificationConfig) {
-    const cfg = normalize(input, "Warning");
+    const cfg = normalize(input, localizedTitle("Warning"));
     getNotification().warning({
-      ...COMMON_NOTIFICATION_PROPS,
+      ...commonNotificationProps(),
       ...cfg,
       placement: cfg.placement ?? defaultPlacement(),
       duration: cfg.duration ?? 5,
@@ -280,9 +319,9 @@ const NotificationManager = {
   },
 
   info(input: string | NotificationConfig) {
-    const cfg = normalize(input, "Info");
+    const cfg = normalize(input, localizedTitle("Info"));
     getNotification().info({
-      ...COMMON_NOTIFICATION_PROPS,
+      ...commonNotificationProps(),
       ...cfg,
       placement: cfg.placement ?? defaultPlacement(),
       duration: cfg.duration ?? 4,
@@ -292,17 +331,17 @@ const NotificationManager = {
   success(input: string | React.ReactNode | NotificationConfig) {
     if (React.isValidElement(input)) {
       getNotification().success({
-        ...COMMON_NOTIFICATION_PROPS,
-        message: "Success",
+        ...commonNotificationProps(),
+        message: localizedTitle("Success"),
         description: input,
         placement: defaultPlacement(),
         duration: 3.5,
       });
       return;
     }
-    const cfg = normalize(input as string | NotificationConfig, "Success");
+    const cfg = normalize(input as string | NotificationConfig, localizedTitle("Success"));
     getNotification().success({
-      ...COMMON_NOTIFICATION_PROPS,
+      ...commonNotificationProps(),
       ...cfg,
       placement: cfg.placement ?? defaultPlacement(),
       duration: cfg.duration ?? 3.5,
@@ -316,7 +355,7 @@ const NotificationManager = {
 
     if (looksErrorPayload(input, status)) {
       const title = titleFor(status, description);
-      const payload = { ...base, message: title };
+      const payload = { ...base, message: localizedTitle(title) };
 
       if (
         title === "Rate Limit Exceeded" ||
@@ -326,11 +365,11 @@ const NotificationManager = {
         title === "Content Blocked" ||
         title === "Integration Error"
       ) {
-        getNotification().warning({ ...COMMON_NOTIFICATION_PROPS, ...payload, duration: extra?.duration ?? 7 });
+        getNotification().warning({ ...commonNotificationProps(), ...payload, duration: extra?.duration ?? 7 });
         return;
       }
       if (title === "Server Error") {
-        getNotification().error({ ...COMMON_NOTIFICATION_PROPS, ...payload, duration: extra?.duration ?? 8 });
+        getNotification().error({ ...commonNotificationProps(), ...payload, duration: extra?.duration ?? 8 });
         return;
       }
       if (
@@ -341,26 +380,26 @@ const NotificationManager = {
         title === "Error" ||
         title === "Already Exists"
       ) {
-        getNotification().error({ ...COMMON_NOTIFICATION_PROPS, ...payload, duration: extra?.duration ?? 6 });
+        getNotification().error({ ...commonNotificationProps(), ...payload, duration: extra?.duration ?? 6 });
         return;
       }
-      getNotification().info({ ...COMMON_NOTIFICATION_PROPS, ...payload, duration: extra?.duration ?? 4 });
+      getNotification().info({ ...commonNotificationProps(), ...payload, duration: extra?.duration ?? 4 });
       return;
     }
 
     // Non-error: success/info/warning classifier
     const cls = classifyGeneralMessage(description);
-    const payload = { ...base, message: cls?.title ?? "Info" };
+    const payload = { ...base, message: localizedTitle(cls?.title ?? "Info") };
 
     if (cls?.kind === "success") {
-      getNotification().success({ ...COMMON_NOTIFICATION_PROPS, ...payload, duration: extra?.duration ?? 3.5 });
+      getNotification().success({ ...commonNotificationProps(), ...payload, duration: extra?.duration ?? 3.5 });
       return;
     }
     if (cls?.kind === "warning") {
-      getNotification().warning({ ...COMMON_NOTIFICATION_PROPS, ...payload, duration: extra?.duration ?? 6 });
+      getNotification().warning({ ...commonNotificationProps(), ...payload, duration: extra?.duration ?? 6 });
       return;
     }
-    getNotification().info({ ...COMMON_NOTIFICATION_PROPS, ...payload, duration: extra?.duration ?? 4 });
+    getNotification().info({ ...commonNotificationProps(), ...payload, duration: extra?.duration ?? 4 });
   },
 
   clear() {

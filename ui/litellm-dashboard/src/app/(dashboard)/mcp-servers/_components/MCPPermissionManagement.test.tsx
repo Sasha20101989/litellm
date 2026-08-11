@@ -1,10 +1,28 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { Form } from "antd";
 
 import MCPPermissionManagement from "./MCPPermissionManagement";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
 
 const defaultProps = {
   availableAccessGroups: [],
@@ -15,6 +33,10 @@ const defaultProps = {
 };
 
 describe("MCPPermissionManagement", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
   const expandPanel = async () => {
     const user = userEvent.setup();
     const headerButton = screen.getByRole("button", {
@@ -72,6 +94,15 @@ describe("MCPPermissionManagement", () => {
       </Wrapper>,
     );
   };
+
+  it("renders the permissions section in Russian", async () => {
+    localization.language = "ru";
+    renderWithForm();
+
+    await userEvent.click(screen.getByRole("button", { name: /управление разрешениями/i }));
+    expect(screen.getByText("Разрешить все ключи LiteLLM")).toBeInTheDocument();
+    expect(screen.getByText("Только внутренняя сеть")).toBeInTheDocument();
+  });
 
   it("shows only the oauth2 PKCE-delegation toggle for oauth2 servers", async () => {
     renderWithInitialValues({ allow_all_keys: false, auth_type: "oauth2" });

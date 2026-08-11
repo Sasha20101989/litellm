@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeftOutlined, CopyOutlined, CheckOutlined, LinkOutlined } from "@ant-design/icons";
 import { buildMarketplaceSettingsSnippet, formatInstallCommand } from "./helpers";
 import { Plugin } from "./types";
+import { useTranslation } from "react-i18next";
 
 interface SkillDetailProps {
   skill: Plugin;
@@ -12,6 +13,7 @@ interface SkillDetailProps {
 }
 
 const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
+  const { t, i18n } = useTranslation("gateway");
   const [activeTab, setActiveTab] = useState("overview");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -36,17 +38,24 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
   );
 
   const detailRows = [
-    ...(skill.category ? [{ property: "Category", value: skill.category }] : []),
-    ...(skill.domain ? [{ property: "Domain", value: skill.domain }] : []),
-    ...(skill.namespace ? [{ property: "Namespace", value: skill.namespace }] : []),
-    ...(skill.version ? [{ property: "Version", value: skill.version }] : []),
-    ...(skill.author?.name ? [{ property: "Author", value: skill.author.name }] : []),
-    ...(skill.created_at ? [{ property: "Added", value: new Date(skill.created_at).toLocaleDateString() }] : []),
+    ...(skill.category ? [{ property: t("skills.details.category"), value: skill.category }] : []),
+    ...(skill.domain ? [{ property: t("skills.details.domain"), value: skill.domain }] : []),
+    ...(skill.namespace ? [{ property: t("skills.details.namespace"), value: skill.namespace }] : []),
+    ...(skill.version ? [{ property: t("skills.details.version"), value: skill.version }] : []),
+    ...(skill.author?.name ? [{ property: t("skills.details.author"), value: skill.author.name }] : []),
+    ...(skill.created_at
+      ? [
+          {
+            property: t("skills.details.added"),
+            value: new Date(skill.created_at).toLocaleDateString(i18n.language),
+          },
+        ]
+      : []),
   ];
 
   const tabs = [
-    { key: "overview", label: "Overview" },
-    { key: "usage", label: "How to Use" },
+    { key: "overview", label: t("skills.details.overview") },
+    { key: "usage", label: t("skills.details.usage") },
   ];
 
   return (
@@ -65,7 +74,7 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
         }}
       >
         <ArrowLeftOutlined style={{ fontSize: 11 }} />
-        <span>Skills</span>
+        <span>{t("skills.details.back")}</span>
       </div>
 
       {/* Header */}
@@ -104,13 +113,15 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
         <div style={{ display: "flex", gap: 64 }}>
           {/* Left column */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 400, color: "#202124", margin: "0 0 4px 0" }}>Skill Details</h2>
-            <p style={{ fontSize: 13, color: "#5f6368", margin: "0 0 16px 0" }}>Metadata registered with this skill</p>
+            <h2 style={{ fontSize: 18, fontWeight: 400, color: "#202124", margin: "0 0 4px 0" }}>
+              {t("skills.details.title")}
+            </h2>
+            <p style={{ fontSize: 13, color: "#5f6368", margin: "0 0 16px 0" }}>{t("skills.details.subtitle")}</p>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #dadce0" }}>
                   <th style={{ textAlign: "left", padding: "12px 0", color: "#5f6368", fontWeight: 500, width: 160 }}>
-                    Property
+                    {t("skills.details.property")}
                   </th>
                   <th style={{ textAlign: "left", padding: "12px 0", color: "#5f6368", fontWeight: 500 }}>
                     {skill.name}
@@ -131,7 +142,7 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
           {/* Right sidebar */}
           <div style={{ width: 240, flexShrink: 0 }}>
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 4 }}>Status</div>
+              <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 4 }}>{t("skills.details.status")}</div>
               <span
                 style={{
                   fontSize: 12,
@@ -142,13 +153,13 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
                   fontWeight: 500,
                 }}
               >
-                {skill.enabled ? "Public" : "Draft"}
+                {skill.enabled ? t("skills.details.public") : t("skills.details.draft")}
               </span>
             </div>
 
             {sourceUrl && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 4 }}>Source</div>
+                <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 4 }}>{t("skills.details.source")}</div>
                 <a
                   href={sourceUrl}
                   target="_blank"
@@ -170,7 +181,7 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
 
             {skill.keywords && skill.keywords.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 8 }}>Tags</div>
+                <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 8 }}>{t("skills.details.tags")}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {skill.keywords.map((kw) => (
                     <span
@@ -192,7 +203,7 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
             )}
 
             <div>
-              <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 4 }}>Skill ID</div>
+              <div style={{ fontSize: 12, color: "#5f6368", marginBottom: 4 }}>{t("skills.details.id")}</div>
               <div style={{ fontSize: 12, fontFamily: "monospace", color: "#3c4043", wordBreak: "break-all" }}>
                 {skill.id}
               </div>
@@ -204,9 +215,11 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
       {/* How to Use tab */}
       {activeTab === "usage" && (
         <div style={{ maxWidth: 640 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 400, color: "#202124", margin: "0 0 8px 0" }}>Using this skill</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 400, color: "#202124", margin: "0 0 8px 0" }}>
+            {t("skills.details.using")}
+          </h2>
           <p style={{ fontSize: 14, color: "#5f6368", margin: "0 0 24px 0", lineHeight: 1.6 }}>
-            Once your proxy is set as a marketplace, enable this skill in Claude Code with one command:
+            {t("skills.details.usingHint")}
           </p>
 
           {/* Install command */}
@@ -228,7 +241,7 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
                 borderBottom: "1px solid #dadce0",
               }}
             >
-              <span style={{ fontSize: 13, color: "#3c4043", fontWeight: 500 }}>Run in Claude Code</span>
+              <span style={{ fontSize: 13, color: "#3c4043", fontWeight: 500 }}>{t("skills.details.run")}</span>
               <button
                 onClick={() => copyToClipboard(installCommand, "install")}
                 style={{
@@ -244,7 +257,7 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
                 }}
               >
                 {copiedKey === "install" ? <CheckOutlined /> : <CopyOutlined />}
-                {copiedKey === "install" ? "Copied" : "Copy"}
+                {copiedKey === "install" ? t("skills.details.copied") : t("skills.details.copy")}
               </button>
             </div>
             <pre
@@ -262,9 +275,9 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
           </div>
 
           <p style={{ fontSize: 13, color: "#5f6368", lineHeight: 1.6, margin: 0 }}>
-            Don&apos;t have the marketplace configured yet?{" "}
+            {t("skills.details.noMarketplace")}{" "}
             <span onClick={() => setActiveTab("setup")} style={{ color: "#1a73e8", cursor: "pointer" }}>
-              See one-time setup →
+              {t("skills.details.setupLink")}
             </span>
           </p>
         </div>
@@ -274,14 +287,10 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
       {activeTab === "setup" && (
         <div style={{ maxWidth: 640 }}>
           <h2 style={{ fontSize: 18, fontWeight: 400, color: "#202124", margin: "0 0 8px 0" }}>
-            One-time marketplace setup
+            {t("skills.details.setup")}
           </h2>
           <p style={{ fontSize: 14, color: "#5f6368", margin: "0 0 24px 0", lineHeight: 1.6 }}>
-            Add this to{" "}
-            <code style={{ fontSize: 13, backgroundColor: "#f1f3f4", padding: "1px 6px", borderRadius: 4 }}>
-              ~/.claude/settings.json
-            </code>{" "}
-            to point Claude Code at your proxy:
+            {t("skills.details.setupHint", { file: "~/.claude/settings.json" })}
           </p>
           <div
             style={{
@@ -316,7 +325,7 @@ const SkillDetail: React.FC<SkillDetailProps> = ({ skill, onBack }) => {
                 }}
               >
                 {copiedKey === "settings" ? <CheckOutlined /> : <CopyOutlined />}
-                {copiedKey === "settings" ? "Copied" : "Copy"}
+                {copiedKey === "settings" ? t("skills.details.copied") : t("skills.details.copy")}
               </button>
             </div>
             <pre

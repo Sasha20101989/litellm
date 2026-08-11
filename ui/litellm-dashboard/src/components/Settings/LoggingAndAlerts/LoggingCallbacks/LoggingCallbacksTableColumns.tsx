@@ -1,7 +1,9 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import type { TFunction } from "i18next";
 import { MoreHorizontal, Pencil, Play, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { StatusBadge, type StatusTone } from "@/components/shared/table_cells";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,12 +32,6 @@ export type AvailableCallbacks = Record<string, AvailableCallbackMeta>;
 
 export const callbackRowMode = (record: CallbackRow): string => record.type || record.mode || "success";
 
-const CALLBACK_MODE_LABELS: Record<string, string> = {
-  success: "Success",
-  failure: "Failure",
-  success_and_failure: "Success & Failure",
-};
-
 function callbackModeTone(mode: string): StatusTone {
   if (mode === "success") return "success";
   if (mode === "failure") return "error";
@@ -50,10 +46,12 @@ interface CallbackRowActionsProps {
 }
 
 function CallbackRowActions({ callback, onTest, onEdit, onDelete }: CallbackRowActionsProps) {
+  const { t } = useTranslation("settings");
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Open callback actions"
+        aria-label={t("logging.callbacks.openActions")}
         data-testid={`callback-actions-${callback.name}-${callbackRowMode(callback)}`}
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "text-muted-foreground")}
       >
@@ -62,16 +60,16 @@ function CallbackRowActions({ callback, onTest, onEdit, onDelete }: CallbackRowA
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuItem data-testid="callback-action-test" onClick={() => void onTest(callback)}>
           <Play />
-          Test
+          {t("logging.callbacks.test")}
         </DropdownMenuItem>
         <DropdownMenuItem data-testid="callback-action-edit" onClick={() => onEdit(callback)}>
           <Pencil />
-          Edit
+          {t("logging.callbacks.edit")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" data-testid="callback-action-delete" onClick={() => onDelete(callback)}>
           <Trash2 />
-          Delete
+          {t("logging.callbacks.delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -83,6 +81,7 @@ interface LoggingCallbacksTableColumnsDeps {
   onTest: (callback: AlertingObject) => void | Promise<void>;
   onEdit: (callback: AlertingObject) => void;
   onDelete: (callback: AlertingObject) => void;
+  t: TFunction;
 }
 
 export const getLoggingCallbacksTableColumns = ({
@@ -90,12 +89,13 @@ export const getLoggingCallbacksTableColumns = ({
   onTest,
   onEdit,
   onDelete,
+  t,
 }: LoggingCallbacksTableColumnsDeps): ColumnDef<CallbackRow>[] => [
   {
     id: "name",
     accessorKey: "name",
-    meta: { title: "Callback Name" },
-    header: "Callback Name",
+    meta: { title: t("logging.callbacks.name") },
+    header: t("logging.callbacks.name"),
     enableSorting: false,
     cell: ({ row }) => {
       const id = row.original.name;
@@ -109,19 +109,24 @@ export const getLoggingCallbacksTableColumns = ({
   },
   {
     id: "mode",
-    meta: { title: "Mode", skeleton: "badge" },
-    header: "Mode",
+    meta: { title: t("logging.callbacks.mode"), skeleton: "badge" },
+    header: t("logging.callbacks.mode"),
     size: 240,
     enableSorting: false,
     cell: ({ row }) => {
       const mode = callbackRowMode(row.original);
-      return <StatusBadge tone={callbackModeTone(mode)} label={CALLBACK_MODE_LABELS[mode] || mode} />;
+      const modeLabels: Record<string, string> = {
+        success: t("logging.callbacks.success"),
+        failure: t("logging.callbacks.failure"),
+        success_and_failure: t("logging.callbacks.successAndFailure"),
+      };
+      return <StatusBadge tone={callbackModeTone(mode)} label={modeLabels[mode] || mode} />;
     },
   },
   {
     id: "actions",
     meta: { className: "text-right", headerClassName: "text-right" },
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">{t("logging.callbacks.actions")}</span>,
     size: 64,
     enableSorting: false,
     enableHiding: false,

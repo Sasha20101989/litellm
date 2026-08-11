@@ -6,6 +6,7 @@ import { Guardrail } from "@/components/guardrails/types";
 import { getResolvedGuardrails, modelAvailableCall } from "@/components/networking";
 import NotificationsManager from "@/components/molecules/notifications_manager";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -31,116 +32,119 @@ interface ModePicker {
   onSelect: (mode: "simple" | "flow_builder") => void;
 }
 
-const ModePicker: React.FC<ModePicker> = ({ selected, onSelect }) => (
-  <div className="flex gap-4" style={{ padding: "8px 0" }}>
-    {/* Simple Mode Card */}
-    <div
-      onClick={() => onSelect("simple")}
-      style={{
-        flex: 1,
-        padding: "24px 20px",
-        border: `2px solid ${selected === "simple" ? "#4f46e5" : "#e5e7eb"}`,
-        borderRadius: 12,
-        cursor: "pointer",
-        backgroundColor: selected === "simple" ? "#eef2ff" : "#fff",
-        transition: "all 0.15s ease",
-      }}
-    >
+const ModePicker: React.FC<ModePicker> = ({ selected, onSelect }) => {
+  const { t } = useTranslation("gateway");
+  return (
+    <div className="flex gap-4" style={{ padding: "8px 0" }}>
+      {/* Simple Mode Card */}
       <div
+        onClick={() => onSelect("simple")}
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          backgroundColor: selected === "simple" ? "#e0e7ff" : "#f3f4f6",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 16,
+          flex: 1,
+          padding: "24px 20px",
+          border: `2px solid ${selected === "simple" ? "#4f46e5" : "#e5e7eb"}`,
+          borderRadius: 12,
+          cursor: "pointer",
+          backgroundColor: selected === "simple" ? "#eef2ff" : "#fff",
+          transition: "all 0.15s ease",
         }}
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={selected === "simple" ? "#4f46e5" : "#6b7280"}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            backgroundColor: selected === "simple" ? "#e0e7ff" : "#f3f4f6",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 16,
+          }}
         >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <path d="M8 7h8M8 12h8M8 17h5" />
-        </svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={selected === "simple" ? "#4f46e5" : "#6b7280"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M8 7h8M8 12h8M8 17h5" />
+          </svg>
+        </div>
+        <Text strong style={{ fontSize: 15, display: "block", marginBottom: 4 }}>
+          {t("policies.policyForm.simpleMode")}
+        </Text>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          {t("policies.policyForm.simpleDescription")}
+        </Text>
       </div>
-      <Text strong style={{ fontSize: 15, display: "block", marginBottom: 4 }}>
-        Simple Mode
-      </Text>
-      <Text type="secondary" style={{ fontSize: 13 }}>
-        Pick guardrails from a list. All run in parallel.
-      </Text>
-    </div>
 
-    {/* Flow Builder Card */}
-    <div
-      onClick={() => onSelect("flow_builder")}
-      style={{
-        flex: 1,
-        padding: "24px 20px",
-        border: `2px solid ${selected === "flow_builder" ? "#4f46e5" : "#e5e7eb"}`,
-        borderRadius: 12,
-        cursor: "pointer",
-        backgroundColor: selected === "flow_builder" ? "#eef2ff" : "#fff",
-        transition: "all 0.15s ease",
-        position: "relative",
-      }}
-    >
-      <Tag
-        color="purple"
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          fontSize: 10,
-          fontWeight: 600,
-          margin: 0,
-        }}
-      >
-        NEW
-      </Tag>
+      {/* Flow Builder Card */}
       <div
+        onClick={() => onSelect("flow_builder")}
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          backgroundColor: selected === "flow_builder" ? "#e0e7ff" : "#f3f4f6",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 16,
+          flex: 1,
+          padding: "24px 20px",
+          border: `2px solid ${selected === "flow_builder" ? "#4f46e5" : "#e5e7eb"}`,
+          borderRadius: 12,
+          cursor: "pointer",
+          backgroundColor: selected === "flow_builder" ? "#eef2ff" : "#fff",
+          transition: "all 0.15s ease",
+          position: "relative",
         }}
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={selected === "flow_builder" ? "#4f46e5" : "#6b7280"}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <Tag
+          color="purple"
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            fontSize: 10,
+            fontWeight: 600,
+            margin: 0,
+          }}
         >
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-        </svg>
+          {t("policies.policyForm.new")}
+        </Tag>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            backgroundColor: selected === "flow_builder" ? "#e0e7ff" : "#f3f4f6",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 16,
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={selected === "flow_builder" ? "#4f46e5" : "#6b7280"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+        <Text strong style={{ fontSize: 15, display: "block", marginBottom: 4 }}>
+          {t("policies.policyForm.flowBuilder")}
+        </Text>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          {t("policies.policyForm.flowDescription")}
+        </Text>
       </div>
-      <Text strong style={{ fontSize: 15, display: "block", marginBottom: 4 }}>
-        Flow Builder
-      </Text>
-      <Text type="secondary" style={{ fontSize: 13 }}>
-        Define steps, conditions, and error responses.
-      </Text>
     </div>
-  </div>
-);
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Component
@@ -158,6 +162,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
   createPolicy,
   updatePolicy,
 }) => {
+  const { t } = useTranslation("gateway");
   const [form] = Form.useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedGuardrails, setResolvedGuardrails] = useState<string[]>([]);
@@ -308,7 +313,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
       const values = form.getFieldsValue(true);
 
       if (!accessToken) {
-        throw new Error("No access token available");
+        throw new Error(t("policies.policyForm.noToken"));
       }
 
       const data: PolicyCreateRequest | PolicyUpdateRequest = {
@@ -322,10 +327,10 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
 
       if (isEditing && editingPolicy) {
         await updatePolicy(accessToken, editingPolicy.policy_id, data as PolicyUpdateRequest);
-        NotificationsManager.success("Policy updated successfully");
+        NotificationsManager.success(t("policies.policyForm.updated"));
       } else {
         await createPolicy(accessToken, data as PolicyCreateRequest);
-        NotificationsManager.success("Policy created successfully");
+        NotificationsManager.success(t("policies.policyForm.created"));
       }
 
       resetForm();
@@ -334,7 +339,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
     } catch (error) {
       console.error("Failed to save policy:", error);
       NotificationsManager.fromBackend(
-        "Failed to save policy: " + (error instanceof Error ? error.message : String(error)),
+        t("policies.policyForm.saveFailed", { error: error instanceof Error ? error.message : String(error) }),
       );
     } finally {
       setIsSubmitting(false);
@@ -356,12 +361,18 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
   // ── Mode Picker Step ──────────────────────────────────────────────────────
   if (step === "pick_mode") {
     return (
-      <Modal title="Create New Policy" open={visible} onCancel={handleClose} footer={null} width={620}>
+      <Modal
+        title={t("policies.policyForm.createTitle")}
+        open={visible}
+        onCancel={handleClose}
+        footer={null}
+        width={620}
+      >
         <ModePicker selected={selectedMode} onSelect={setSelectedMode} />
 
         {selectedMode === "flow_builder" && (
           <Alert
-            message="You'll be redirected to the full-screen Flow Builder to design your policy logic visually."
+            message={t("policies.policyForm.flowRedirect")}
             type="info"
             style={{
               marginTop: 16,
@@ -373,7 +384,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
 
         <div className="flex justify-end gap-2" style={{ marginTop: 24 }}>
           <Button variant="secondary" onClick={handleClose}>
-            Cancel
+            {t("policies.policyForm.cancel")}
           </Button>
           <Button
             onClick={handleModeConfirm}
@@ -383,7 +394,9 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
               border: "none",
             }}
           >
-            {selectedMode === "flow_builder" ? "Continue to Builder" : "Create Policy"}
+            {selectedMode === "flow_builder"
+              ? t("policies.policyForm.continueBuilder")
+              : t("policies.policyForm.create")}
           </Button>
         </div>
       </Modal>
@@ -393,7 +406,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
   // ── Simple Form Step ──────────────────────────────────────────────────────
   return (
     <Modal
-      title={isEditing ? "Edit Policy" : "Create New Policy"}
+      title={isEditing ? t("policies.policyForm.editTitle") : t("policies.policyForm.createTitle")}
       open={visible}
       onCancel={handleClose}
       footer={null}
@@ -410,52 +423,52 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
       >
         <Form.Item
           name="policy_name"
-          label="Policy Name"
+          label={t("policies.policyForm.name")}
           rules={[
-            { required: true, message: "Please enter a policy name" },
+            { required: true, message: t("policies.policyForm.nameRequired") },
             {
               pattern: /^[a-zA-Z0-9_-]+$/,
-              message: "Policy name can only contain letters, numbers, hyphens, and underscores",
+              message: t("policies.policyForm.namePattern"),
             },
           ]}
         >
-          <TextInput placeholder="e.g., global-baseline, healthcare-compliance" disabled={isEditing} />
+          <TextInput placeholder={t("policies.policyForm.namePlaceholder")} disabled={isEditing} />
         </Form.Item>
 
-        <Form.Item name="description" label="Description">
-          <Textarea rows={2} placeholder="Describe what this policy does..." />
+        <Form.Item name="description" label={t("policies.policyForm.description")}>
+          <Textarea rows={2} placeholder={t("policies.policyForm.descriptionPlaceholder")} />
         </Form.Item>
 
         <Divider orientation="left">
-          <Text strong>Inheritance</Text>
+          <Text strong>{t("policies.policyForm.inheritance")}</Text>
         </Divider>
 
         <Form.Item
           name="inherit"
-          label="Inherit From"
-          tooltip="Inherit guardrails from another policy. The child policy will include all guardrails from the parent."
+          label={t("policies.policyForm.inheritFrom")}
+          tooltip={t("policies.policyForm.inheritTooltip")}
         >
           <Select
             allowClear
-            placeholder="Select a parent policy (optional)"
+            placeholder={t("policies.policyForm.inheritPlaceholder")}
             options={policyOptions}
             style={{ width: "100%" }}
           />
         </Form.Item>
 
         <Divider orientation="left">
-          <Text strong>Guardrails</Text>
+          <Text strong>{t("policies.policyForm.guardrails")}</Text>
         </Divider>
 
         <Form.Item
           name="guardrails_add"
-          label="Guardrails to Add"
-          tooltip="These guardrails will be added to requests matching this policy"
+          label={t("policies.policyForm.guardrailsAdd")}
+          tooltip={t("policies.policyForm.guardrailsAddTooltip")}
         >
           <Select
             mode="multiple"
             allowClear
-            placeholder="Select guardrails to add"
+            placeholder={t("policies.policyForm.guardrailsAddPlaceholder")}
             options={guardrailOptions}
             style={{ width: "100%" }}
           />
@@ -463,13 +476,13 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
 
         <Form.Item
           name="guardrails_remove"
-          label="Guardrails to Remove"
-          tooltip="These guardrails will be removed from inherited guardrails"
+          label={t("policies.policyForm.guardrailsRemove")}
+          tooltip={t("policies.policyForm.guardrailsRemoveTooltip")}
         >
           <Select
             mode="multiple"
             allowClear
-            placeholder="Select guardrails to remove (from inherited)"
+            placeholder={t("policies.policyForm.guardrailsRemovePlaceholder")}
             options={guardrailOptions}
             style={{ width: "100%" }}
           />
@@ -477,11 +490,11 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
 
         {resolvedGuardrails.length > 0 && (
           <Alert
-            message="Resolved Guardrails"
+            message={t("policies.policyForm.resolvedGuardrails")}
             description={
               <div>
                 <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
-                  These are the final guardrails that will be applied (including inheritance):
+                  {t("policies.policyForm.resolvedDescription")}
                 </Text>
                 <div className="flex flex-wrap gap-1">
                   {resolvedGuardrails.map((g) => (
@@ -499,18 +512,18 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
         )}
 
         <Divider orientation="left">
-          <Text strong>Conditions (Optional)</Text>
+          <Text strong>{t("policies.policyForm.conditions")}</Text>
         </Divider>
 
         <Alert
-          message="Model Scope"
-          description="By default, this policy will run on all models. You can optionally restrict it to specific models below."
+          message={t("policies.policyForm.modelScope")}
+          description={t("policies.policyForm.modelScopeDescription")}
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
         />
 
-        <Form.Item label="Model Condition Type">
+        <Form.Item label={t("policies.policyForm.modelConditionType")}>
           <Radio.Group
             value={modelConditionType}
             onChange={(e) => {
@@ -518,25 +531,29 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
               form.setFieldValue("model_condition", undefined);
             }}
           >
-            <Radio value="model">Select Model</Radio>
-            <Radio value="regex">Custom Regex Pattern</Radio>
+            <Radio value="model">{t("policies.policyForm.selectModel")}</Radio>
+            <Radio value="regex">{t("policies.policyForm.regex")}</Radio>
           </Radio.Group>
         </Form.Item>
 
         <Form.Item
           name="model_condition"
-          label={modelConditionType === "model" ? "Model (Optional)" : "Regex Pattern (Optional)"}
+          label={
+            modelConditionType === "model"
+              ? t("policies.policyForm.modelOptional")
+              : t("policies.policyForm.regexOptional")
+          }
           tooltip={
             modelConditionType === "model"
-              ? "Select a specific model to apply this policy to. Leave empty to apply to all models."
-              : "Enter a regex pattern to match models (e.g., gpt-4.* or bedrock/.*). Leave empty to apply to all models."
+              ? t("policies.policyForm.modelTooltip")
+              : t("policies.policyForm.regexTooltip")
           }
         >
           {modelConditionType === "model" ? (
             <Select
               showSearch
               allowClear
-              placeholder="Leave empty to apply to all models"
+              placeholder={t("policies.policyForm.modelPlaceholder")}
               options={availableModels.map((model) => ({
                 label: model,
                 value: model,
@@ -545,16 +562,16 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({
               style={{ width: "100%" }}
             />
           ) : (
-            <TextInput placeholder="Leave empty to apply to all models (e.g., gpt-4.* or bedrock/claude-.*)" />
+            <TextInput placeholder={t("policies.policyForm.regexPlaceholder")} />
           )}
         </Form.Item>
 
         <div className="flex justify-end space-x-2 mt-4">
           <Button variant="secondary" onClick={handleClose}>
-            Cancel
+            {t("policies.policyForm.cancel")}
           </Button>
           <Button onClick={handleSubmit} loading={isSubmitting}>
-            {isEditing ? "Update Policy" : "Create Policy"}
+            {isEditing ? t("policies.policyForm.update") : t("policies.policyForm.create")}
           </Button>
         </div>
       </Form>

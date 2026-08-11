@@ -1,7 +1,25 @@
 import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import MCPToolConfiguration from "./mcp_tool_configuration";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
 
 const tools = [
   { name: "read_user", description: "Read user" },
@@ -30,6 +48,19 @@ const renderToolConfiguration = (onAllowedToolsChange = vi.fn()) => {
 };
 
 describe("MCPToolConfiguration", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders the tool controls in Russian", () => {
+    localization.language = "ru";
+    renderToolConfiguration();
+
+    expect(screen.getByText("Настройка инструментов")).toBeInTheDocument();
+    expect(screen.getByText("Группы риска")).toBeInTheDocument();
+    expect(screen.getByText("Общий список")).toBeInTheDocument();
+  });
+
   it("shows legacy unrestricted edit tools enabled in flat view", async () => {
     const onAllowedToolsChange = renderToolConfiguration();
 

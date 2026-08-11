@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, XCircle, ClipboardCopy } from "lucide-react";
 import { ResponseTimeIndicator } from "./response_time_indicator";
+import { useTranslation } from "react-i18next";
 
 // Helper function to deep-parse a JSON string if possible
 const deepParse = (input: any) => {
@@ -19,8 +20,9 @@ const deepParse = (input: any) => {
 
 // TableClickableErrorField component with copy-to-clipboard functionality
 const TableClickableErrorField: React.FC<{ label: string; value: string | null | undefined }> = ({ label, value }) => {
+  const { t } = useTranslation("settings");
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const safeValue = value?.toString() || "N/A";
+  const safeValue = value?.toString() || t("caching.health.noData", { defaultValue: "N/A" });
   const truncated = safeValue.length > 50 ? safeValue.substring(0, 50) + "..." : safeValue;
 
   const handleCopy = () => {
@@ -74,6 +76,7 @@ interface ErrorDetails {
 
 // Update HealthCheckDetails component to handle errors
 const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
+  const { t } = useTranslation("settings");
   // Initialize with safe default values
   let errorDetails: ErrorDetails | null = null;
   let parsedLitellmParams: any = {};
@@ -86,8 +89,8 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
           typeof response.error.message === "string" ? JSON.parse(response.error.message) : response.error.message;
 
         errorDetails = {
-          message: errorMessage?.message || "Unknown error",
-          traceback: errorMessage?.traceback || "No traceback available",
+          message: errorMessage?.message || t("caching.health.unknown"),
+          traceback: errorMessage?.traceback || t("caching.health.noTraceback"),
           litellm_params: errorMessage?.litellm_cache_params || {},
           health_check_cache_params: errorMessage?.health_check_cache_params || {},
         };
@@ -97,8 +100,8 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
       } catch (e) {
         console.warn("Error parsing error details:", e);
         errorDetails = {
-          message: String(response.error.message || "Unknown error"),
-          traceback: "Error parsing details",
+          message: String(response.error.message || t("caching.health.unknown")),
+          traceback: t("caching.health.parseError"),
           litellm_params: {},
           health_check_cache_params: {},
         };
@@ -157,10 +160,10 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
       <Tabs defaultValue="summary">
         <TabsList className="border-b border-border px-4">
           <TabsTrigger value="summary" className="flex-none">
-            Summary
+            {t("caching.health.summary")}
           </TabsTrigger>
           <TabsTrigger value="raw" className="flex-none">
-            Raw Response
+            {t("caching.health.raw")}
           </TabsTrigger>
         </TabsList>
 
@@ -175,7 +178,7 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
               <p
                 className={`text-sm font-medium ${response?.status === "healthy" ? "text-green-600" : "text-destructive"}`}
               >
-                Cache Status: {response?.status || "unhealthy"}
+                {t("caching.health.status")}: {response?.status || t("caching.health.unhealthy")}
               </p>
             </div>
 
@@ -186,23 +189,29 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
                   <>
                     <tr>
                       <td colSpan={2} className="pt-4 pb-2 font-semibold text-destructive">
-                        Error Details
+                        {t("caching.health.errorDetails")}
                       </td>
                     </tr>
-                    <TableClickableErrorField label="Error Message" value={errorDetails.message} />
-                    <TableClickableErrorField label="Traceback" value={errorDetails.traceback} />
+                    <TableClickableErrorField label={t("caching.health.errorMessage")} value={errorDetails.message} />
+                    <TableClickableErrorField label={t("caching.health.traceback")} value={errorDetails.traceback} />
                   </>
                 )}
 
                 {/* Always show cache details, regardless of error state */}
                 <tr>
                   <td colSpan={2} className="pt-4 pb-2 font-semibold">
-                    Cache Details
+                    {t("caching.health.cacheDetails")}
                   </td>
                 </tr>
-                <TableClickableErrorField label="Cache Configuration" value={String(parsedLitellmParams?.type)} />
-                <TableClickableErrorField label="Ping Response" value={String(response.ping_response)} />
-                <TableClickableErrorField label="Set Cache Response" value={response.set_cache_response || "N/A"} />
+                <TableClickableErrorField
+                  label={t("caching.health.configuration")}
+                  value={String(parsedLitellmParams?.type)}
+                />
+                <TableClickableErrorField
+                  label={t("caching.health.pingResponse")}
+                  value={String(response.ping_response)}
+                />
+                <TableClickableErrorField label={t("caching.health.setResponse")} value={response.set_cache_response} />
                 <TableClickableErrorField
                   label="litellm_settings.cache_params"
                   value={JSON.stringify(parsedLitellmParams, null, 2)}
@@ -213,14 +222,20 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
                   <>
                     <tr>
                       <td colSpan={2} className="pt-4 pb-2 font-semibold">
-                        Redis Details
+                        {t("caching.health.redisDetails")}
                       </td>
                     </tr>
-                    <TableClickableErrorField label="Redis Host" value={redisDetails.redis_host || "N/A"} />
-                    <TableClickableErrorField label="Redis Port" value={redisDetails.redis_port || "N/A"} />
-                    <TableClickableErrorField label="Redis Version" value={redisDetails.redis_version || "N/A"} />
-                    <TableClickableErrorField label="Startup Nodes" value={redisDetails.startup_nodes || "N/A"} />
-                    <TableClickableErrorField label="Namespace" value={redisDetails.namespace || "N/A"} />
+                    <TableClickableErrorField label={t("caching.health.redisHost")} value={redisDetails.redis_host} />
+                    <TableClickableErrorField label={t("caching.health.redisPort")} value={redisDetails.redis_port} />
+                    <TableClickableErrorField
+                      label={t("caching.health.redisVersion")}
+                      value={redisDetails.redis_version}
+                    />
+                    <TableClickableErrorField
+                      label={t("caching.health.startupNodes")}
+                      value={redisDetails.startup_nodes}
+                    />
+                    <TableClickableErrorField label={t("caching.health.namespace")} value={redisDetails.namespace} />
                   </>
                 )}
               </tbody>
@@ -254,7 +269,7 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
                   // Then stringify with proper formatting
                   return JSON.stringify(prettyData, null, 2);
                 } catch (e) {
-                  return "Error formatting JSON: " + (e as Error).message;
+                  return `${t("caching.health.formatError")}: ${(e as Error).message}`;
                 }
               })()}
             </pre>
@@ -271,6 +286,7 @@ export const CacheHealthTab: React.FC<{
   runCachingHealthCheck: () => void;
   responseTimeMs?: number | null;
 }> = ({ accessToken, healthCheckResponse, runCachingHealthCheck, responseTimeMs }) => {
+  const { t } = useTranslation("settings");
   const [localResponseTimeMs, setLocalResponseTimeMs] = React.useState<number | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
@@ -287,7 +303,7 @@ export const CacheHealthTab: React.FC<{
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Button onClick={handleHealthCheck} disabled={isLoading}>
-          {isLoading ? "Running Health Check..." : "Run Health Check"}
+          {isLoading ? t("caching.health.running") : t("caching.health.run")}
         </Button>
         <ResponseTimeIndicator responseTimeMs={localResponseTimeMs} />
       </div>

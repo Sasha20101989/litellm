@@ -3,6 +3,29 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import S3VectorsConfig from "./S3VectorsConfig";
 import * as fetchModels from "@/components/llm_calls/fetch_models";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 // Mock fetchAvailableModels
 vi.mock("@/components/llm_calls/fetch_models", () => ({
   fetchAvailableModels: vi.fn(),
@@ -17,7 +40,19 @@ describe("S3VectorsConfig", () => {
   };
 
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the S3 setup in Russian", () => {
+    localization.language = "ru";
+    vi.spyOn(fetchModels, "fetchAvailableModels").mockResolvedValue([]);
+
+    render(<S3VectorsConfig {...defaultProps} />);
+
+    expect(screen.getByText("Настройка AWS S3 Vectors")).toBeInTheDocument();
+    expect(screen.getByText("Название векторного бакета")).toBeInTheDocument();
+    expect(screen.getByText("Модель эмбеддингов")).toBeInTheDocument();
   });
 
   it("should render the component successfully", () => {

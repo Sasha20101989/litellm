@@ -1,11 +1,29 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MemoryRow } from "@/components/networking";
 
 import { MemoryDetailDrawer } from "./MemoryDetailDrawer";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
 
 const makeMemory = (overrides: Partial<MemoryRow> = {}): MemoryRow => ({
   memory_id: "mem-1",
@@ -22,6 +40,18 @@ const makeMemory = (overrides: Partial<MemoryRow> = {}): MemoryRow => ({
 });
 
 describe("MemoryDetailDrawer", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders memory details in Russian", () => {
+    localization.language = "ru";
+    render(<MemoryDetailDrawer row={makeMemory()} onClose={vi.fn()} />);
+
+    expect(screen.getByText("ID записи")).toBeInTheDocument();
+    expect(screen.getByText("Значение")).toBeInTheDocument();
+  });
+
   it("renders nothing until a row is selected", () => {
     render(<MemoryDetailDrawer row={null} onClose={vi.fn()} />);
 

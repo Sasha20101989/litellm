@@ -28,39 +28,52 @@ export const FLAT_COST_TOOLTIP =
 
 export const hasFlatCost = (metadata: SpendSummaryMetadata): boolean => (metadata.total_flat_cost ?? 0) > 0;
 
-export const buildSummaryTiles = (metadata: SpendSummaryMetadata, showFlatCost: boolean): SummaryTile[] => {
+type Translate = (key: string) => string;
+
+export const buildSummaryTiles = (
+  metadata: SpendSummaryMetadata,
+  showFlatCost: boolean,
+  t?: Translate,
+): SummaryTile[] => {
   const flatCost = metadata.total_flat_cost ?? 0;
   return [
     showFlatCost
       ? {
-          title: "Total Cost",
+          title: t?.("common.totalCost") ?? "Total Cost",
           value: `$${formatNumberWithCommas(metadata.total_spend + flatCost, 2)}`,
-          tooltip: TOTAL_COST_TOOLTIP,
+          tooltip: t?.("entity.summary.totalCostTooltip") ?? TOTAL_COST_TOOLTIP,
           expandable: true,
         }
-      : { title: "Total Spend", value: `$${formatNumberWithCommas(metadata.total_spend, 2)}` },
-    { title: "Total Requests", value: metadata.total_api_requests.toLocaleString() },
+      : {
+          title: t?.("common.totalSpend") ?? "Total Spend",
+          value: `$${formatNumberWithCommas(metadata.total_spend, 2)}`,
+        },
+    { title: t?.("common.totalRequests") ?? "Total Requests", value: metadata.total_api_requests.toLocaleString() },
     {
-      title: "Successful Requests",
+      title: t?.("common.successfulRequests") ?? "Successful Requests",
       value: metadata.total_successful_requests.toLocaleString(),
       className: "text-green-600",
     },
-    { title: "Failed Requests", value: metadata.total_failed_requests.toLocaleString(), className: "text-red-600" },
-    { title: "Total Tokens", value: metadata.total_tokens.toLocaleString() },
+    {
+      title: t?.("common.failedRequests") ?? "Failed Requests",
+      value: metadata.total_failed_requests.toLocaleString(),
+      className: "text-red-600",
+    },
+    { title: t?.("common.totalTokens") ?? "Total Tokens", value: metadata.total_tokens.toLocaleString() },
   ];
 };
 
-export const buildCostBreakdownTiles = (metadata: SpendSummaryMetadata): SummaryTile[] => [
+export const buildCostBreakdownTiles = (metadata: SpendSummaryMetadata, t?: Translate): SummaryTile[] => [
   {
-    title: "Request Cost",
+    title: t?.("entity.summary.requestCost") ?? "Request Cost",
     value: `$${formatNumberWithCommas(metadata.total_spend, 2)}`,
     className: "text-cyan-600",
-    tooltip: REQUEST_COST_TOOLTIP,
+    tooltip: t?.("entity.summary.requestCostTooltip") ?? REQUEST_COST_TOOLTIP,
   },
   {
-    title: "Flat Cost",
+    title: t?.("entity.summary.flatCost") ?? "Flat Cost",
     value: `$${formatNumberWithCommas(metadata.total_flat_cost ?? 0, 2)}`,
     className: "text-violet-600",
-    tooltip: FLAT_COST_TOOLTIP,
+    tooltip: t?.("entity.summary.flatCostTooltip") ?? FLAT_COST_TOOLTIP,
   },
 ];

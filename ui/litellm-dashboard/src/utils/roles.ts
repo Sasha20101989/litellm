@@ -86,6 +86,49 @@ export const formatUserRole = (userRole: string): string => {
   }
 };
 
+export type AccountRoleTranslationKey =
+  | "appOwner"
+  | "admin"
+  | "adminViewer"
+  | "orgAdmin"
+  | "internalUser"
+  | "internalViewer"
+  | "appUser"
+  | "unknown";
+
+export const accountRoleTranslationKey = (role?: string | null): AccountRoleTranslationKey | null => {
+  if (!role) return null;
+  switch (
+    role
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_")
+  ) {
+    case "app_owner":
+    case "demo_app_owner":
+      return "appOwner";
+    case "admin":
+    case "proxy_admin":
+      return "admin";
+    case "admin_viewer":
+    case "proxy_admin_viewer":
+      return "adminViewer";
+    case "org_admin":
+      return "orgAdmin";
+    case "internal_user":
+      return "internalUser";
+    case "internal_viewer":
+    case "internal_user_viewer":
+      return "internalViewer";
+    case "app_user":
+      return "appUser";
+    case "unknown_role":
+      return "unknown";
+    default:
+      return null;
+  }
+};
+
 export const isOrgAdminSessionRole = (userRole?: string | null): boolean =>
   userRole === ORG_ADMIN_MEMBERSHIP_ROLE || userRole === formatUserRole(ORG_ADMIN_MEMBERSHIP_ROLE);
 

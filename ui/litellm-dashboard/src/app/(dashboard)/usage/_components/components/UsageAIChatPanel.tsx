@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button, Select, Input, Spin } from "antd";
 import ReactMarkdown from "react-markdown";
 import { modelHubCall, usageAiChatStream, UsageAiToolCallEvent } from "@/components/networking";
+import { useTranslation } from "react-i18next";
 
 const { TextArea } = Input;
 
@@ -32,6 +33,7 @@ const TOOL_ICONS: Record<string, string> = {
 };
 
 const ToolCallDisplay: React.FC<{ step: ToolCallStep }> = ({ step }) => {
+  const { t } = useTranslation("usage");
   const icon = TOOL_ICONS[step.tool_name] || "🔧";
   const args = step.arguments;
   const dateRange = args.start_date && args.end_date ? `${args.start_date} → ${args.end_date}` : "";
@@ -53,7 +55,7 @@ const ToolCallDisplay: React.FC<{ step: ToolCallStep }> = ({ step }) => {
           {icon} {step.tool_label}
         </div>
         {dateRange && <div className="text-gray-500 mt-0.5">{dateRange}</div>}
-        {filter && <div className="text-gray-500 mt-0.5">Filter: {filter}</div>}
+        {filter && <div className="text-gray-500 mt-0.5">{t("aiChat.filter", { value: filter })}</div>}
         {step.status === "error" && step.error && <div className="text-red-600 mt-0.5">{step.error}</div>}
       </div>
     </div>
@@ -97,6 +99,7 @@ const MarkdownContent: React.FC<{ content: string }> = ({ content }) => (
 );
 
 const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, accessToken }) => {
+  const { t } = useTranslation("usage");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -177,7 +180,7 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
         (errorMsg: string) => {
           setStatusMessage(null);
           setActiveToolCalls([]);
-          setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${errorMsg}` }]);
+          setMessages((prev) => [...prev, { role: "assistant", content: t("aiChat.error", { message: errorMsg }) }]);
           setStreamingContent("");
         },
         (status: string) => {
@@ -198,8 +201,8 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
       if (error?.name === "AbortError" || abortController.signal.aborted) {
         return;
       }
-      const errorMsg = error?.message || "Failed to get response. Please try again.";
-      setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${errorMsg}` }]);
+      const errorMsg = error?.message || t("aiChat.genericError");
+      setMessages((prev) => [...prev, { role: "assistant", content: t("aiChat.error", { message: errorMsg }) }]);
       setStreamingContent("");
     } finally {
       setIsLoading(false);
@@ -243,10 +246,11 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
             <svg className="w-5 h-5 text-blue-600" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 1l1.5 3.5L13 6l-3.5 1.5L8 11 6.5 7.5 3 6l3.5-1.5L8 1zm4 7l.75 1.75L14.5 10.5l-1.75.75L12 13l-.75-1.75L9.5 10.5l1.75-.75L12 8zM4 9l.75 1.75L6.5 11.5l-1.75.75L4 14l-.75-1.75L1.5 11.5l1.75-.75L4 9z" />
             </svg>
-            <h3 className="text-base font-semibold text-gray-900">Ask AI</h3>
+            <h3 className="text-base font-semibold text-gray-900">{t("aiChat.title")}</h3>
           </div>
           <button
             onClick={handleClose}
+            aria-label={t("common.close")}
             className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,13 +258,13 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
             </svg>
           </button>
         </div>
-        <p className="text-xs text-gray-500">Ask about your spend, models, keys, and trends</p>
+        <p className="text-xs text-gray-500">{t("aiChat.subtitle")}</p>
       </div>
 
       {/* Model selector */}
       <div className="px-5 py-3 border-b border-gray-100 shrink-0">
         <Select
-          placeholder="Select a model (optional, defaults to gpt-4o-mini)"
+          placeholder={t("aiChat.selectModel")}
           value={selectedModel}
           onChange={(value) => setSelectedModel(value)}
           loading={isLoadingModels}
@@ -285,8 +289,8 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
                 d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
               />
             </svg>
-            <p className="text-sm font-medium">Ask a question about your usage</p>
-            <p className="text-xs mt-1">e.g. &quot;Which model costs me the most?&quot;</p>
+            <p className="text-sm font-medium">{t("aiChat.emptyTitle")}</p>
+            <p className="text-xs mt-1">{t("aiChat.example")}</p>
           </div>
         )}
 
@@ -330,7 +334,7 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
         {isLoading && !streamingContent && (
           <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-500">
             <Spin size="small" />
-            <span className="italic">{statusMessage || "Thinking..."}</span>
+            <span className="italic">{statusMessage || t("aiChat.thinking")}</span>
           </div>
         )}
 
@@ -351,13 +355,13 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your usage..."
+            placeholder={t("aiChat.placeholder")}
             autoSize={{ minRows: 1, maxRows: 3 }}
             className="flex-1"
             disabled={isLoading}
           />
           <Button type="primary" onClick={handleSend} disabled={!inputText.trim() || isLoading} loading={isLoading}>
-            Send
+            {t("aiChat.send")}
           </Button>
         </div>
         <div className="flex justify-between items-center mt-2">
@@ -366,9 +370,9 @@ const UsageAIChatPanel: React.FC<UsageAIChatPanelProps> = ({ open, onClose, acce
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
             disabled={messages.length === 0}
           >
-            Clear chat
+            {t("aiChat.clear")}
           </button>
-          <span className="text-xs text-gray-400">Enter to send</span>
+          <span className="text-xs text-gray-400">{t("aiChat.enterToSend")}</span>
         </div>
       </div>
     </div>

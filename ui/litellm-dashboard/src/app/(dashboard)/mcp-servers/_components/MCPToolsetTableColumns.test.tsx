@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DataTable } from "@/components/shared/DataTable";
 import { MCPToolset } from "@/components/mcp_tools/types";
 import { getMCPToolsetTableColumns } from "./MCPToolsetTableColumns";
+import { resources } from "@/i18n/catalog";
 
 vi.mock("@/components/networking", () => ({
   getProxyBaseUrl: () => "http://localhost:4000",
@@ -28,8 +29,20 @@ const serverPrefixById = new Map([
   ["srv-2", "exa"],
 ]);
 
+const t = (key: string, values?: Record<string, unknown>) => {
+  const copy = key.split(".").reduce<unknown>((value, segment) => {
+    if (typeof value !== "object" || value === null) return undefined;
+    return (value as Record<string, unknown>)[segment];
+  }, resources.en.gateway);
+  if (typeof copy !== "string") return key;
+  return Object.entries(values ?? {}).reduce(
+    (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+    copy,
+  );
+};
+
 function renderTable({ isAdmin = true, onEditClick = vi.fn(), onDeleteClick = vi.fn() } = {}) {
-  const deps = { isAdmin, serverPrefixById, onEditClick, onDeleteClick };
+  const deps = { isAdmin, serverPrefixById, onEditClick, onDeleteClick, t };
   render(
     <DataTable
       data={[mockToolset]}

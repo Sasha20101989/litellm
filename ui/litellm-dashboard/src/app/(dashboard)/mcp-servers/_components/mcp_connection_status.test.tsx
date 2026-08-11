@@ -4,6 +4,24 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import MCPConnectionStatus from "./mcp_connection_status";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 describe("MCPConnectionStatus", () => {
   const defaultProps = {
     formValues: { url: "https://example.com/mcp" },
@@ -17,6 +35,15 @@ describe("MCPConnectionStatus", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
+  });
+
+  it("renders the connection status in Russian", () => {
+    localization.language = "ru";
+    render(<MCPConnectionStatus {...defaultProps} />);
+
+    expect(screen.getByText("Состояние подключения")).toBeInTheDocument();
+    expect(screen.getByText("Заполните обязательные поля для проверки подключения")).toBeInTheDocument();
   });
 
   it("should render nothing when canFetchTools is false and no URL is set", () => {

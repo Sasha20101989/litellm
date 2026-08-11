@@ -2,11 +2,29 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MemoryRow } from "@/components/networking";
 
 import { MemoryView } from "./MemoryView";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
 
 interface CapturedTableProps {
   isLoading: boolean;
@@ -35,6 +53,18 @@ const renderView = (accessToken: string | null) => {
 };
 
 describe("MemoryView", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders the memory page in Russian", () => {
+    localization.language = "ru";
+    renderView(null);
+
+    expect(screen.getByRole("heading", { name: "Память" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Новая запись" })).toBeInTheDocument();
+  });
+
   it("keeps the table out of the skeleton state when the token is null (disabled query)", () => {
     renderView(null);
 

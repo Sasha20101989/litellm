@@ -7,6 +7,29 @@ import * as networking from "@/components/networking";
 import AddAttachmentForm from "./add_attachment_form";
 import { Policy } from "@/components/policies/types";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/components/networking");
 
 vi.mock("@/components/molecules/notifications_manager", () => ({
@@ -50,10 +73,21 @@ const teamListResult = (aliases: string[]) =>
 
 describe("AddAttachmentForm", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     vi.mocked(networking.teamListCall).mockResolvedValue([]);
     vi.mocked(networking.keyListCall).mockResolvedValue({ keys: [] });
     vi.mocked(networking.modelAvailableCall).mockResolvedValue({ data: [] });
+  });
+
+  it("renders the attachment form in Russian", async () => {
+    localization.language = "ru";
+    renderWithProviders(<AddAttachmentForm {...defaultProps} />);
+
+    expect(await screen.findByText("Создание привязки политики")).toBeInTheDocument();
+    expect(screen.getByText("Политики")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Глобально/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Создать привязку" })).toBeInTheDocument();
   });
 
   it("should render the modal title when visible", async () => {

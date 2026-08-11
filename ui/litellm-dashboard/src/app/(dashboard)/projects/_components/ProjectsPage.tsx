@@ -8,11 +8,13 @@ import { useMemo, useState } from "react";
 import { CreateProjectModal } from "./ProjectModals/CreateProjectModal";
 import { ProjectDetail } from "./ProjectDetailsPage";
 import { ProjectsTable } from "./ProjectsTable";
+import { useTranslation } from "react-i18next";
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
 
 export function ProjectsPage() {
+  const { t } = useTranslation("management");
   const { token } = theme.useToken();
   const { data: projects, isLoading } = useProjects();
   const { data: teams, isLoading: isTeamsLoading } = useTeams();
@@ -61,19 +63,19 @@ export function ProjectsPage() {
       <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
         <Space direction="vertical" size={0}>
           <Title level={2} style={{ margin: 0 }}>
-            Projects
+            {t("projects.title")}
           </Title>
-          <Text type="secondary">Manage projects within your teams</Text>
+          <Text type="secondary">{t("projects.subtitle")}</Text>
         </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsCreateModalVisible(true)}>
-          Create Project
+          {t("projects.create")}
         </Button>
       </Flex>
 
       <Flex align="center" style={{ marginBottom: 12 }}>
         <Input
           prefix={<SearchIcon size={16} />}
-          placeholder="Search projects by name, ID, description, or team..."
+          placeholder={t("projects.search")}
           style={{ maxWidth: 400 }}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}

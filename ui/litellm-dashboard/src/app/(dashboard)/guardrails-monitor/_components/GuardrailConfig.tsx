@@ -7,6 +7,7 @@ import {
 } from "@ant-design/icons";
 import { Button, Input, Select, Switch } from "antd";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface GuardrailConfigProps {
   guardrailName: string;
@@ -15,18 +16,13 @@ interface GuardrailConfigProps {
 }
 
 const versions = [
-  {
-    id: "v3",
-    label: "v3 (current)",
-    date: "2026-02-18",
-    author: "admin@company.com",
-    changes: "Adjusted sensitivity for medical terms",
-  },
-  { id: "v2", label: "v2", date: "2026-02-10", author: "admin@company.com", changes: "Added custom categories list" },
-  { id: "v1", label: "v1", date: "2026-01-28", author: "admin@company.com", changes: "Initial configuration" },
+  { id: "v3", date: "2026-02-18", author: "admin@company.com" },
+  { id: "v2", date: "2026-02-10", author: "admin@company.com" },
+  { id: "v1", date: "2026-01-28", author: "admin@company.com" },
 ];
 
 export function GuardrailConfig({ guardrailName, guardrailType, provider }: GuardrailConfigProps) {
+  const { t } = useTranslation("guardrails");
   const [action, setAction] = useState("block");
   const [enabled, setEnabled] = useState(true);
   const [customCode, setCustomCode] = useState("");
@@ -49,21 +45,24 @@ export function GuardrailConfig({ guardrailName, guardrailType, provider }: Guar
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Version:</span>
+            <span className="text-sm font-medium text-gray-700">{t("monitor.config.version")}</span>
             <Select
               value={version}
               onChange={setVersion}
-              options={versions.map((v) => ({ value: v.id, label: v.label }))}
+              options={versions.map((v) => ({
+                value: v.id,
+                label: v.id === "v3" ? `${v.id} (${t("monitor.config.current")})` : v.id,
+              }))}
               style={{ width: 140 }}
             />
             <Button type="link" size="small" onClick={() => setShowVersionHistory(!showVersionHistory)}>
-              {showVersionHistory ? "Hide history" : "View history"}
+              {showVersionHistory ? t("monitor.config.hideHistory") : t("monitor.config.viewHistory")}
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            <Button icon={<RollbackOutlined />}>Revert</Button>
+            <Button icon={<RollbackOutlined />}>{t("monitor.config.revert")}</Button>
             <Button type="primary" icon={<SaveOutlined />}>
-              Save as v{parseInt(version.replace("v", ""), 10) + 1}
+              {t("monitor.config.saveAs", { version: parseInt(version.replace("v", ""), 10) + 1 })}
             </Button>
           </div>
         </div>
@@ -83,7 +82,7 @@ export function GuardrailConfig({ guardrailName, guardrailType, provider }: Guar
                   >
                     {v.id}
                   </span>
-                  <span className="text-gray-700">{v.changes}</span>
+                  <span className="text-gray-700">{t(`monitor.config.changes.${v.id}`)}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-500">
                   <span>{v.author}</span>
@@ -97,62 +96,64 @@ export function GuardrailConfig({ guardrailName, guardrailType, provider }: Guar
 
       {/* Parameters */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">Parameters</h3>
-        <p className="text-xs text-gray-500 mb-5">Configure {guardrailName} behavior</p>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">{t("monitor.config.parameters")}</h3>
+        <p className="text-xs text-gray-500 mb-5">{t("monitor.config.configure", { name: guardrailName })}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Action on Failure</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              {t("monitor.config.actionFailure")}
+            </label>
             <Select
               value={action}
               onChange={setAction}
               style={{ width: "100%" }}
               options={[
-                { value: "block", label: "Block Request" },
-                { value: "flag", label: "Flag for Review" },
-                { value: "log", label: "Log Only" },
-                { value: "fallback", label: "Use Fallback Response" },
+                { value: "block", label: t("monitor.config.actions.block") },
+                { value: "flag", label: t("monitor.config.actions.flag") },
+                { value: "log", label: t("monitor.config.actions.log") },
+                { value: "fallback", label: t("monitor.config.actions.fallback") },
               ]}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Provider</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("monitor.config.provider")}</label>
             <Select
               style={{ width: "100%" }}
               defaultValue={provider}
               options={[
-                { value: "bedrock", label: "AWS Bedrock Guardrails" },
-                { value: "google", label: "Google Cloud AI Safety" },
-                { value: "litellm", label: "LiteLLM Built-in" },
-                { value: "custom", label: "Custom Code" },
+                { value: "bedrock", label: t("monitor.config.providers.bedrock") },
+                { value: "google", label: t("monitor.config.providers.google") },
+                { value: "litellm", label: t("monitor.config.providers.litellm") },
+                { value: "custom", label: t("monitor.config.providers.custom") },
               ]}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Guardrail Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("monitor.config.type")}</label>
             <Select
               style={{ width: "100%" }}
               defaultValue={guardrailType}
               options={[
-                { value: "Content Safety", label: "Content Safety" },
-                { value: "PII", label: "PII Detection" },
-                { value: "Topic", label: "Topic Restriction" },
-                { value: "prompt_injection", label: "Prompt Injection" },
-                { value: "custom", label: "Custom" },
+                { value: "Content Safety", label: t("monitor.config.types.content") },
+                { value: "PII", label: t("monitor.config.types.pii") },
+                { value: "Topic", label: t("monitor.config.types.topic") },
+                { value: "prompt_injection", label: t("monitor.config.types.injection") },
+                { value: "custom", label: t("monitor.config.types.custom") },
               ]}
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Categories (comma-separated)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("monitor.config.categories")}</label>
             <Input defaultValue="violence, hate_speech, sexual_content, self_harm, illegal_activity" />
           </div>
 
           <div className="md:col-span-2 flex items-center gap-3">
             <Switch checked={enabled} onChange={setEnabled} />
-            <span className="text-sm text-gray-700">Guardrail enabled in production</span>
+            <span className="text-sm text-gray-700">{t("monitor.config.enabled")}</span>
           </div>
         </div>
       </div>
@@ -163,9 +164,9 @@ export function GuardrailConfig({ guardrailName, guardrailType, provider }: Guar
           <div>
             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
               <CodeOutlined className="text-gray-500" />
-              Custom Code Override
+              {t("monitor.config.customCode")}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">Replace the built-in guardrail with custom evaluation code</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t("monitor.config.customHelp")}</p>
           </div>
           <Switch checked={useCustomCode} onChange={setUseCustomCode} />
         </div>
@@ -188,10 +189,8 @@ export function GuardrailConfig({ guardrailName, guardrailType, provider }: Guar
 
       {/* Re-run on Failing Logs */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">Test Configuration</h3>
-        <p className="text-xs text-gray-500 mb-4">
-          Re-run this guardrail on recent failing logs to validate your changes
-        </p>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">{t("monitor.config.test")}</h3>
+        <p className="text-xs text-gray-500 mb-4">{t("monitor.config.testHelp")}</p>
 
         <div className="flex items-center gap-3">
           <Button
@@ -200,16 +199,16 @@ export function GuardrailConfig({ guardrailName, guardrailType, provider }: Guar
             loading={rerunStatus === "running"}
             onClick={handleRerun}
           >
-            {rerunStatus === "running" ? "Running on 10 samples..." : "Re-run on failing logs"}
+            {rerunStatus === "running" ? t("monitor.config.running") : t("monitor.config.rerun")}
           </Button>
 
           {rerunStatus === "success" && (
             <span className="text-sm text-green-600 flex items-center gap-2">
-              <CheckCircleOutlined /> 7/10 would now pass with new config
+              <CheckCircleOutlined /> {t("monitor.config.success")}
             </span>
           )}
 
-          {rerunStatus === "error" && <span className="text-sm text-red-600">Error running tests</span>}
+          {rerunStatus === "error" && <span className="text-sm text-red-600">{t("monitor.config.error")}</span>}
         </div>
       </div>
     </div>

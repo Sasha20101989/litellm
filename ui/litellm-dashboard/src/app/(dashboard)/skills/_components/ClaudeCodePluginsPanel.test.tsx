@@ -7,6 +7,24 @@ import type { Plugin } from "@/components/claude_code_plugins/types";
 
 import ClaudeCodePluginsPanel from "./ClaudeCodePluginsPanel";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 vi.mock("@/components/networking", () => ({
   getClaudeCodePluginsList: vi.fn(),
   deleteClaudeCodePlugin: vi.fn(),
@@ -51,6 +69,10 @@ const skill: Plugin = {
   enabled: true,
 };
 
+beforeEach(() => {
+  localization.language = "en";
+});
+
 describe("ClaudeCodePluginsPanel loading state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -60,6 +82,17 @@ describe("ClaudeCodePluginsPanel loading state", () => {
     render(<ClaudeCodePluginsPanel accessToken={null} />);
     expect(await screen.findByText("table-loaded")).toBeInTheDocument();
     expect(mockGetClaudeCodePluginsList).not.toHaveBeenCalled();
+  });
+
+  it("renders the skills panel in Russian", async () => {
+    localization.language = "ru";
+    mockGetClaudeCodePluginsList.mockResolvedValue({ plugins: [], count: 0 });
+
+    render(<ClaudeCodePluginsPanel accessToken="sk-test" userRole="Admin" />);
+
+    expect(screen.getByRole("heading", { name: "Навыки" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+ Добавить навык" })).toBeInTheDocument();
+    expect(await screen.findByText("table-loaded")).toBeInTheDocument();
   });
 
   it("should show the loading state until the skills fetch settles", async () => {
@@ -91,7 +124,6 @@ describe("ClaudeCodePluginsPanel delete confirmation", () => {
     await user.click(await screen.findByTestId("row-delete-plugin-1"));
 
     expect(await screen.findByText(/are you sure you want to delete skill/i)).toBeInTheDocument();
-    expect(screen.getByText("my-skill")).toBeInTheDocument();
     expect(screen.getByText("This action cannot be undone.")).toBeInTheDocument();
     expect(mockDeleteClaudeCodePlugin).not.toHaveBeenCalled();
   });

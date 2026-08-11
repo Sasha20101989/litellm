@@ -4,6 +4,7 @@
 
 import { Typography, Button, Tooltip } from "antd";
 import { MessageOutlined, CopyOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -26,6 +27,7 @@ export function SectionHeader({
   onToggleCollapse,
   turnCount,
 }: SectionHeaderProps) {
+  const { t } = useTranslation("logs");
   return (
     <div
       onClick={onToggleCollapse}
@@ -67,33 +69,35 @@ export function SectionHeader({
           ) : (
             <span style={{ fontSize: 14, filter: "grayscale(1)", opacity: 0.6 }}>✨</span>
           )}
-          <Text style={{ fontWeight: 500, fontSize: 14 }}>{type === "input" ? "Input" : "Output"}</Text>
+          <Text style={{ fontWeight: 500, fontSize: 14 }}>
+            {type === "input" ? t("details.input") : t("details.output")}
+          </Text>
         </div>
 
         {/* Tokens */}
         {tokens !== undefined && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Tokens: {tokens.toLocaleString()}
+            {t("details.tokens")}: {tokens.toLocaleString()}
           </Text>
         )}
 
         {/* Cost */}
         {cost !== undefined && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Cost: ${cost.toFixed(6)}
+            {t("details.cost")}: ${cost.toFixed(6)}
           </Text>
         )}
 
         {/* Turn count */}
         {turnCount !== undefined && turnCount > 0 && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Turns: {turnCount}
+            {t("details.turns")}: {turnCount}
           </Text>
         )}
       </div>
 
       {/* Copy Button */}
-      <Tooltip title="Copy">
+      <Tooltip title={t("details.copy")}>
         <Button
           type="text"
           size="small"

@@ -78,6 +78,8 @@ import NewBadge from "./common_components/NewBadge";
 import SidebarAccountMenu from "./SidebarAccountMenu/SidebarAccountMenu";
 import SidebarUsageCard from "./SidebarUsageCard";
 import { MIGRATED_PAGES, migratedHref, legacyPageHref } from "@/utils/migratedPages";
+import { useDashboardLanguage } from "@/i18n/I18nProvider";
+import { getSidebarTranslations } from "@/i18n/sidebar";
 
 const ICON = { strokeWidth: 1.75 } as const;
 
@@ -97,7 +99,8 @@ interface SidebarProps {
 interface MenuItem {
   key: string;
   page: string;
-  label: string | React.ReactNode;
+  label: string;
+  badge?: "beta" | "new" | "new-dot";
   roles?: string[];
   children?: MenuItem[];
   icon?: React.ReactNode;
@@ -205,11 +208,8 @@ const menuGroups: MenuGroup[] = [
         page: "cost-optimization",
         icon: <PiggyBank {...ICON} />,
         roles: [...all_admin_roles, ...internalUserRoles],
-        label: (
-          <span className="flex items-center gap-2">
-            Cost Optimization <BetaBadge />
-          </span>
-        ),
+        label: "Cost Optimization",
+        badge: "beta",
       },
       { key: "logs", page: "logs", label: "Logs", icon: <Activity {...ICON} /> },
       {
@@ -228,11 +228,8 @@ const menuGroups: MenuGroup[] = [
       {
         key: "projects",
         page: "projects",
-        label: (
-          <span className="flex items-center gap-2">
-            Projects <BetaBadge />
-          </span>
-        ),
+        label: "Projects",
+        badge: "beta",
         icon: <Folder {...ICON} />,
         roles: all_admin_roles,
       },
@@ -318,11 +315,8 @@ const menuGroups: MenuGroup[] = [
       {
         key: "settings",
         page: "settings",
-        label: (
-          <span className="flex items-center gap-2">
-            Settings <NewBadge />
-          </span>
-        ),
+        label: "Settings",
+        badge: "new",
         icon: <SettingsIcon {...ICON} />,
         roles: all_admin_roles,
         children: [
@@ -343,14 +337,8 @@ const menuGroups: MenuGroup[] = [
           {
             key: "admin-panel",
             page: "admin-panel",
-            label: (
-              <span className="flex items-center gap-2">
-                Admin Settings{" "}
-                <NewBadge dot>
-                  <span />
-                </NewBadge>
-              </span>
-            ),
+            label: "Admin Settings",
+            badge: "new-dot",
             icon: <SettingsIcon {...ICON} />,
             roles: all_admin_roles,
           },
@@ -402,8 +390,6 @@ const prettify = (key: string): string =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
-const labelText = (item: MenuItem): string => (typeof item.label === "string" ? item.label : prettify(item.key));
-
 // Breadcrumb ("Section" / "Page") for the top bar, derived from the same nav config.
 export const getBreadcrumb = (page: string): { section: string | null; title: string } => {
   for (const group of menuGroups) {
@@ -436,6 +422,8 @@ const Sidebar_: React.FC<SidebarProps> = ({
   const { logoUrl } = useTheme();
   const { data: healthData } = useHealthReadinessDetails(accessToken);
   const logout = useLogout(accessToken);
+  const { language } = useDashboardLanguage();
+  const sidebarText = getSidebarTranslations(language);
 
   const baseUrl = getProxyBaseUrl();
   const version = healthData?.litellm_version;
@@ -528,10 +516,28 @@ const Sidebar_: React.FC<SidebarProps> = ({
     setPage(item.page);
   };
 
+  const localizedItemLabel = (item: MenuItem): string =>
+    sidebarText.items[item.key as keyof typeof sidebarText.items] ?? item.label;
+
+  const renderItemLabel = (item: MenuItem) => (
+    <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+      <span className="truncate group-data-[collapsed=true]/sidebar:hidden">{localizedItemLabel(item)}</span>
+      {item.badge === "beta" && <BetaBadge label={sidebarText.badges.beta} />}
+      {item.badge === "new" && <NewBadge label={sidebarText.badges.new} />}
+      {item.badge === "new-dot" && (
+        <NewBadge dot label={sidebarText.badges.new}>
+          <span />
+        </NewBadge>
+      )}
+    </span>
+  );
+
   const renderLeaf = (item: MenuItem, isChild: boolean) => {
     const active = selectedKey === item.key;
     const size = isChild ? "sub" : "default";
-    const label = <span className="flex-1 truncate group-data-[collapsed=true]/sidebar:hidden">{item.label}</span>;
+    const label = (
+      <span className="flex min-w-0 flex-1 group-data-[collapsed=true]/sidebar:hidden">{renderItemLabel(item)}</span>
+    );
 
     if (item.external_url) {
       return (
@@ -540,7 +546,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
           href={item.external_url}
           target="_blank"
           rel="noopener noreferrer"
-          title={collapsed ? labelText(item) : undefined}
+          title={collapsed ? localizedItemLabel(item) : undefined}
           data-active={active || undefined}
           className={cn(sidebarMenuButtonVariants({ isActive: active, size }))}
         >
@@ -557,7 +563,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
         key={item.key}
         href={href}
         onClick={(e) => handleLeafClick(e, item)}
-        title={collapsed ? labelText(item) : undefined}
+        title={collapsed ? localizedItemLabel(item) : undefined}
         data-active={active || undefined}
         className={cn(sidebarMenuButtonVariants({ isActive: active, size }))}
       >
@@ -580,10 +586,12 @@ const Sidebar_: React.FC<SidebarProps> = ({
         <SidebarMenuButton
           isActive={active}
           onClick={() => toggleGroup(item.key)}
-          title={collapsed ? labelText(item) : undefined}
+          title={collapsed ? localizedItemLabel(item) : undefined}
         >
           {item.icon}
-          <span className="flex-1 truncate group-data-[collapsed=true]/sidebar:hidden">{item.label}</span>
+          <span className="flex min-w-0 flex-1 group-data-[collapsed=true]/sidebar:hidden">
+            {renderItemLabel(item)}
+          </span>
           <ChevronRight
             className={cn(
               "size-4 shrink-0 transition-transform group-data-[collapsed=true]/sidebar:hidden",
@@ -609,10 +617,10 @@ const Sidebar_: React.FC<SidebarProps> = ({
       <SidebarHeader className="h-14 border-b border-border group-data-[collapsed=true]/sidebar:h-auto">
         <div className="flex items-center justify-between gap-2 group-data-[collapsed=true]/sidebar:flex-col">
           <div className="flex min-w-0 items-center gap-2">
-            <Link href={migratedHref("")} className="flex min-w-0 items-center" aria-label="LiteLLM home">
+            <Link href={migratedHref("")} className="flex min-w-0 items-center" aria-label={sidebarText.controls.home}>
               <img
                 src={logoSrc}
-                alt="LiteLLM"
+                alt="Nexoplane"
                 className="h-7 w-auto max-w-[150px] object-contain group-data-[collapsed=true]/sidebar:w-7"
               />
             </Link>
@@ -631,7 +639,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
               variant="ghost"
               size="icon-sm"
               onClick={onToggleCollapsed}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={collapsed ? sidebarText.controls.expand : sidebarText.controls.collapse}
               className="flex-none text-muted-foreground"
             >
               {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
@@ -645,7 +653,9 @@ const Sidebar_: React.FC<SidebarProps> = ({
           {visibleGroups.map((group, gi) => (
             <SidebarGroup key={group.groupLabel}>
               {gi > 0 && <SidebarSeparator className="hidden group-data-[collapsed=true]/sidebar:block" />}
-              <SidebarGroupLabel>{group.groupLabel}</SidebarGroupLabel>
+              <SidebarGroupLabel>
+                {sidebarText.groups[group.groupLabel as keyof typeof sidebarText.groups] ?? group.groupLabel}
+              </SidebarGroupLabel>
               <SidebarMenu>{group.items.map((item) => renderItem(item))}</SidebarMenu>
             </SidebarGroup>
           ))}

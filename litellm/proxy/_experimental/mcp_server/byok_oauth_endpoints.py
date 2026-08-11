@@ -183,7 +183,7 @@ def _build_authorize_html(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Connect {server_name} &mdash; LiteLLM</title>
+<title>Connect {server_name} &mdash; Nexoplane</title>
 <style>
   *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
@@ -453,13 +453,13 @@ def _build_authorize_html(
     <button class="close-btn" type="button" onclick="doCancel()" title="Close">&times;</button>
 
     <div class="logos">
-      <img src="/ui/assets/logos/litellm_logo.jpg" class="logo-img" alt="LiteLLM">
+      <img src="/ui/assets/logos/nexoplane_logo.jpg" class="logo-img" alt="Nexoplane">
       <span class="logo-arrow">&#8594;</span>
       <div class="logo logo-s">{server_initial}</div>
     </div>
 
     <h2 class="step-title">Connect {server_name} MCP</h2>
-    <p class="step-subtitle">LiteLLM needs access to {server_name} to complete your request.</p>
+    <p class="step-subtitle">Nexoplane needs access to {server_name} to complete your request.</p>
 
     <div class="info-box">
       <span class="info-icon">
@@ -467,7 +467,7 @@ def _build_authorize_html(
       </span>
       <div>
         <h4>How it works</h4>
-        <p>LiteLLM acts as a secure bridge. Your requests are routed through our MCP client directly to {server_name}&rsquo;s API.</p>
+        <p>Nexoplane acts as a secure bridge. Your requests are routed through our MCP client directly to {server_name}&rsquo;s API.</p>
       </div>
     </div>
 

@@ -7,8 +7,10 @@ import VariableInput from "./VariableInput";
 import MessageList from "./MessageList";
 import VariableWarning from "./VariableWarning";
 import MessageInput from "./MessageInput";
+import { useTranslation } from "react-i18next";
 
 const ConversationPanel: React.FC<ConversationPanelProps> = ({ prompt, accessToken }) => {
+  const { t } = useTranslation("prompts");
   const {
     isLoading,
     messages,
@@ -43,7 +45,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({ prompt, accessTok
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
             icon={ClearOutlined}
           >
-            Clear Chat
+            {t("variables.clearChat")}
           </TremorButton>
         </div>
       )}

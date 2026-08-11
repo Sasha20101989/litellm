@@ -2,6 +2,13 @@ import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../tests/test-utils";
 import Sidebar, { menuGroups, getBreadcrumb } from "./leftnav";
+import { resources } from "@/i18n/resources";
+
+const { mockLanguageState } = vi.hoisted(() => ({ mockLanguageState: { current: "en" as "en" | "ru" } }));
+
+vi.mock("@/i18n/I18nProvider", () => ({
+  useDashboardLanguage: () => ({ language: mockLanguageState.current, setLanguage: vi.fn() }),
+}));
 
 vi.mock("../utils/roles", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../utils/roles")>();
@@ -77,6 +84,10 @@ vi.mock("@/app/(dashboard)/hooks/useLogout", () => ({
 const collectNavKeys = (): string[] =>
   menuGroups.flatMap((group) => group.items.flatMap((item) => [item.key, ...(item.children ?? []).map((c) => c.key)]));
 
+const flattenedMenuItems = menuGroups.flatMap((group) =>
+  group.items.flatMap((item) => [item, ...(item.children ?? [])]),
+);
+
 // Every place a page id appears in the nav, as "GROUP" for a top-level item or
 // "GROUP > parentKey" for a child.
 const placementsOf = (page: string): string[] =>
@@ -95,8 +106,71 @@ describe("Sidebar (leftnav)", () => {
   };
 
   afterEach(() => {
+    mockLanguageState.current = "en";
     mockUseAuthorized.mockReset();
     mockUseOrganizations.mockReset();
+  });
+
+  it("renders the complete visible sidebar in Russian without localizing breadcrumbs", async () => {
+    mockLanguageState.current = "ru";
+    renderWithProviders(<Sidebar {...defaultProps} />);
+
+    [
+      "AI-ШЛЮЗ",
+      "Виртуальные ключи",
+      "Песочница",
+      "Модели и эндпоинты",
+      "Агентные функции",
+      "MCP-серверы",
+      "Навыки",
+      "Ограничители",
+      "Политики",
+      "Инструменты",
+      "НАБЛЮДАЕМОСТЬ",
+      "Использование",
+      "Оптимизация затрат",
+      "Логи",
+      "Мониторинг ограничителей",
+      "УПРАВЛЕНИЕ ДОСТУПОМ",
+      "Команды",
+      "Внутренние пользователи",
+      "Организации",
+      "Группы доступа",
+      "Бюджеты",
+      "ИНСТРУМЕНТЫ РАЗРАБОТЧИКА",
+      "Справочник API",
+      "Каталог AI",
+      "Учебные материалы",
+      "Кэш ответов",
+      "Экспериментальные",
+      "НАСТРОЙКИ",
+    ].forEach((label) => expect(screen.getByText(label)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("Инструменты"));
+    await waitFor(() => expect(screen.getByText("Поиск инструментов")).toBeInTheDocument());
+    expect(screen.getByText("Векторные хранилища")).toBeInTheDocument();
+    expect(screen.getByText("Политики инструментов")).toBeInTheDocument();
+
+    expect(screen.getByText("Бета")).toBeInTheDocument();
+    expect(screen.getByText("Новое")).toBeInTheDocument();
+    expect(getBreadcrumb("api-keys")).toEqual({ section: "AI Gateway", title: "Virtual Keys" });
+  });
+
+  it("has English and Russian translations for every navigation key", () => {
+    const translations = resources as {
+      en: { translation: { sidebar: { groups: Record<string, string>; items: Record<string, string> } } };
+      ru: { translation: { sidebar: { groups: Record<string, string>; items: Record<string, string> } } };
+    };
+
+    menuGroups.forEach((group) => {
+      expect(translations.en.navigation.sidebar.groups[group.groupLabel]).toBeTruthy();
+      expect(translations.ru.navigation.sidebar.groups[group.groupLabel]).toBeTruthy();
+    });
+
+    flattenedMenuItems.forEach((item) => {
+      expect(translations.en.navigation.sidebar.items[item.key]).toBeTruthy();
+      expect(translations.ru.navigation.sidebar.items[item.key]).toBeTruthy();
+    });
   });
 
   it("should link the logo to the UI home route rather than the proxy origin", () => {

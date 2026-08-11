@@ -6,11 +6,33 @@
 import { Select, Tooltip } from "antd";
 import { AlertCircle, ArrowDown, X } from "lucide-react";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export interface FallbackGroup {
   id: string;
   primaryModel: string | null;
   fallbackModels: string[];
+}
+
+export interface FallbackLabels {
+  group: string;
+  atLeastOne: string;
+  empty: string;
+  createFirst: string;
+  primaryModel: string;
+  selectPrimary: string;
+  selectPrimaryHint: string;
+  ifFails: string;
+  fallbackChain: string;
+  maxFallbacks: string;
+  selectFallbacks: string;
+  maxReached: string;
+  more: string;
+  selectionHint: string;
+  maxReachedHint: string;
+  noFallbacks: string;
+  addFromDropdown: string;
+  removeFallback: string;
 }
 
 interface FallbackGroupConfigProps {
@@ -19,6 +41,7 @@ interface FallbackGroupConfigProps {
   availableModels: string[];
   maxFallbacks: number;
   disablePrimaryModel?: boolean;
+  labels?: FallbackLabels;
 }
 
 export function FallbackGroupConfig({
@@ -27,7 +50,9 @@ export function FallbackGroupConfig({
   availableModels,
   maxFallbacks,
   disablePrimaryModel = false,
+  labels,
 }: FallbackGroupConfigProps) {
+  const { t } = useTranslation("settings");
   // Filter available options for fallbacks (exclude primary only, allow already selected to be shown for deselection)
   const availableFallbackOptions = availableModels.filter((m) => m !== group.primaryModel);
 
@@ -69,12 +94,12 @@ export function FallbackGroupConfig({
       {/* Primary Model Section */}
       <div className="relative">
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Primary Model <span className="text-red-500">*</span>
+          {labels?.primaryModel ?? t("router.fallbacks.primaryModel")} <span className="text-red-500">*</span>
         </label>
         <Select
           className="w-full h-12"
           size="large"
-          placeholder="Select primary model"
+          placeholder={labels?.selectPrimary ?? t("router.fallbacks.selectPrimary")}
           value={group.primaryModel}
           onChange={handlePrimaryChange}
           disabled={disablePrimaryModel}
@@ -86,7 +111,7 @@ export function FallbackGroupConfig({
         {!disablePrimaryModel && !group.primaryModel && (
           <div className="mt-2 flex items-center gap-2 text-amber-600 text-xs bg-amber-50 p-2 rounded-sm">
             <AlertCircle className="w-4 h-4" />
-            <span>Select a model to begin configuring fallbacks</span>
+            <span>{labels?.selectPrimaryHint ?? t("router.fallbacks.selectPrimaryHint")}</span>
           </div>
         )}
       </div>
@@ -95,7 +120,7 @@ export function FallbackGroupConfig({
       <div className="flex items-center justify-center -my-4 z-10">
         <div className="bg-indigo-50 text-indigo-500 px-4 py-1 rounded-full text-xs font-bold border border-indigo-100 flex items-center gap-2 shadow-xs">
           <ArrowDown className="w-4 h-4" />
-          IF FAILS, TRY...
+          {labels?.ifFails ?? t("router.fallbacks.ifFails")}
         </div>
       </div>
 
@@ -104,8 +129,10 @@ export function FallbackGroupConfig({
         className={`transition-opacity duration-300 ${!group.primaryModel ? "opacity-50 pointer-events-none" : "opacity-100"}`}
       >
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Fallback Chain <span className="text-red-500">*</span>
-          <span className="text-xs text-gray-500 font-normal ml-2">(Max {maxFallbacks} fallbacks at a time)</span>
+          {labels?.fallbackChain ?? t("router.fallbacks.fallbackChain")} <span className="text-red-500">*</span>
+          <span className="text-xs text-gray-500 font-normal ml-2">
+            {(labels?.maxFallbacks ?? t("router.fallbacks.maxFallbacks")).replace("__VALUE__", String(maxFallbacks))}
+          </span>
         </label>
 
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
@@ -116,7 +143,9 @@ export function FallbackGroupConfig({
               className="w-full"
               size="large"
               placeholder={
-                canAddMoreFallbacks ? "Select fallback models to add..." : `Maximum ${maxFallbacks} fallbacks reached`
+                canAddMoreFallbacks
+                  ? labels?.selectFallbacks ?? t("router.fallbacks.selectFallbacks")
+                  : (labels?.maxReached ?? t("router.fallbacks.maxReached")).replace("__VALUE__", String(maxFallbacks))
               }
               value={group.fallbackModels}
               onChange={handleFallbackSelect}
@@ -146,7 +175,9 @@ export function FallbackGroupConfig({
                   styles={{ root: { pointerEvents: "none" } }}
                   title={omittedValues.map(({ value }) => value).join(", ")}
                 >
-                  <span>+{omittedValues.length} more</span>
+                  <span>
+                    +{omittedValues.length} {labels?.more ?? t("router.fallbacks.more")}
+                  </span>
                 </Tooltip>
               )}
               showSearch
@@ -154,8 +185,13 @@ export function FallbackGroupConfig({
             />
             <p className="text-xs text-gray-500 mt-1 ml-1">
               {canAddMoreFallbacks
-                ? `Search and select multiple models. Selected models will appear below in order. (${group.fallbackModels.length}/${maxFallbacks} used)`
-                : `Maximum ${maxFallbacks} fallbacks reached. Remove some to add more.`}
+                ? (labels?.selectionHint ?? t("router.fallbacks.selectionHint"))
+                    .replace("__USED__", String(group.fallbackModels.length))
+                    .replace("__MAX__", String(maxFallbacks))
+                : (labels?.maxReachedHint ?? t("router.fallbacks.maxReachedHint")).replace(
+                    "__MAX__",
+                    String(maxFallbacks),
+                  )}
             </p>
           </div>
 
@@ -163,8 +199,8 @@ export function FallbackGroupConfig({
           <div className="space-y-2 min-h-[100px]">
             {group.fallbackModels.length === 0 ? (
               <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
-                <span className="text-sm">No fallback models selected</span>
-                <span className="text-xs mt-1">Add models from the dropdown above</span>
+                <span className="text-sm">{labels?.noFallbacks ?? t("router.fallbacks.noFallbacks")}</span>
+                <span className="text-xs mt-1">{labels?.addFromDropdown ?? t("router.fallbacks.addFromDropdown")}</span>
               </div>
             ) : (
               group.fallbackModels.map((modelValue, index) => {
@@ -184,6 +220,7 @@ export function FallbackGroupConfig({
 
                     <button
                       type="button"
+                      aria-label={labels?.removeFallback ?? t("router.fallbacks.removeFallback")}
                       data-testid={`remove-fallback-${modelValue}`}
                       onClick={() => removeFallback(index)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1"

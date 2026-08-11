@@ -15,6 +15,7 @@ import googlePseLogo from "../../../../../public/assets/logos/google_pse.png";
 import parallelAiLogo from "../../../../../public/assets/logos/parallel_ai.png";
 import perplexityLogo from "../../../../../public/assets/logos/perplexity.png";
 import tavilyLogo from "../../../../../public/assets/logos/tavily.png";
+import { useTranslation } from "react-i18next";
 
 const { TextArea } = Input;
 
@@ -54,6 +55,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
   isModalVisible,
   setModalVisible,
 }) => {
+  const { t } = useTranslation("gateway");
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -65,7 +67,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
   const { data: providersResponse, isLoading: isLoadingProviders } = useQuery({
     queryKey: ["searchProviders"],
     queryFn: () => {
-      if (!accessToken) throw new Error("Access Token required");
+      if (!accessToken) throw new Error(t("searchTools.accessTokenRequired"));
       return fetchAvailableSearchProviders(accessToken);
     },
     enabled: !!accessToken && isModalVisible,
@@ -96,14 +98,14 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
       if (accessToken != null) {
         const response = await createSearchTool(accessToken, payload);
 
-        NotificationsManager.success("Search tool created successfully");
+        NotificationsManager.success(t("searchTools.create.created"));
         form.resetFields();
         setFormValues({});
         setModalVisible(false);
         onCreateSuccess(response);
       }
     } catch (error) {
-      NotificationsManager.error("Error creating search tool: " + error);
+      NotificationsManager.error(t("searchTools.create.createFailed", { error: String(error) }));
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +128,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
       // Show the modal with the fresh test
       setIsTestModalVisible(true);
     } catch (error) {
-      NotificationsManager.error("Please fill in Search Provider and API Key before testing");
+      NotificationsManager.error(t("searchTools.create.testRequired"));
     }
   };
 
@@ -146,7 +148,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
       title={
         <div className="flex items-center space-x-3 pb-4 border-b border-gray-100">
           <span className="text-2xl">🔍</span>
-          <h2 className="text-xl font-semibold text-gray-900">Add New Search Tool</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t("searchTools.create.title")}</h2>
         </div>
       }
       open={isModalVisible}
@@ -171,23 +173,23 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
             <Form.Item
               label={
                 <span className="text-sm font-medium text-gray-700 flex items-center">
-                  Search Tool Name
-                  <Tooltip title="A unique name to identify this search tool configuration (e.g., 'perplexity-search', 'tavily-news-search').">
+                  {t("searchTools.create.name")}
+                  <Tooltip title={t("searchTools.create.nameTooltip")}>
                     <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
                   </Tooltip>
                 </span>
               }
               name="search_tool_name"
               rules={[
-                { required: true, message: "Please enter a search tool name" },
+                { required: true, message: t("searchTools.create.nameRequired") },
                 {
                   pattern: /^[a-zA-Z0-9_-]+$/,
-                  message: "Name can only contain letters, numbers, hyphens, and underscores",
+                  message: t("searchTools.create.namePattern"),
                 },
               ]}
             >
               <TextInput
-                placeholder="e.g., perplexity-search, my-tavily-tool"
+                placeholder={t("searchTools.create.namePlaceholder")}
                 className="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </Form.Item>
@@ -195,17 +197,17 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
             <Form.Item
               label={
                 <span className="text-sm font-medium text-gray-700 flex items-center">
-                  Search Provider
-                  <Tooltip title="Select the search provider you want to use. Each provider has different capabilities and pricing.">
+                  {t("searchTools.create.provider")}
+                  <Tooltip title={t("searchTools.create.providerTooltip")}>
                     <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
                   </Tooltip>
                 </span>
               }
               name="search_provider"
-              rules={[{ required: true, message: "Please select a search provider" }]}
+              rules={[{ required: true, message: t("searchTools.create.providerRequired") }]}
             >
               <Select
-                placeholder="Select a search provider"
+                placeholder={t("searchTools.create.providerPlaceholder")}
                 className="rounded-lg"
                 size="large"
                 loading={isLoadingProviders}
@@ -236,46 +238,46 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
             <Form.Item
               label={
                 <span className="text-sm font-medium text-gray-700 flex items-center">
-                  API Key
-                  <Tooltip title="The API key for authenticating with the search provider. This will be securely stored.">
+                  {t("searchTools.create.apiKey")}
+                  <Tooltip title={t("searchTools.create.apiKeyTooltip")}>
                     <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
                   </Tooltip>
                 </span>
               }
               name="api_key"
-              rules={[{ required: false, message: "Please enter an API key" }]}
+              rules={[{ required: false, message: t("searchTools.create.apiKeyRequired") }]}
             >
               <TextInput
                 type="password"
-                placeholder="Enter your API key"
+                placeholder={t("searchTools.create.apiKeyPlaceholder")}
                 className="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </Form.Item>
 
             <Form.Item
-              label={<span className="text-sm font-medium text-gray-700">Description (Optional)</span>}
+              label={<span className="text-sm font-medium text-gray-700">{t("searchTools.create.description")}</span>}
               name="description"
             >
               <TextArea
                 rows={3}
-                placeholder="Brief description of this search tool's purpose"
+                placeholder={t("searchTools.create.descriptionPlaceholder")}
                 className="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </Form.Item>
           </div>
 
           <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-            <Tooltip title="Get help on our github">
+            <Tooltip title={t("searchTools.create.helpTooltip")}>
               <Typography.Link href="https://github.com/BerriAI/litellm/issues" target="_blank">
-                Need Help?
+                {t("searchTools.create.help")}
               </Typography.Link>
             </Tooltip>
             <div className="space-x-2">
               <Button onClick={handleTestConnection} loading={isTestingConnection}>
-                Test Connection
+                {t("searchTools.create.test")}
               </Button>
               <Button loading={isLoading} type="submit">
-                Add Search Tool
+                {t("searchTools.create.submit")}
               </Button>
             </div>
           </div>
@@ -284,7 +286,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
 
       {/* Test Connection Results Modal */}
       <Modal
-        title="Connection Test Results"
+        title={t("searchTools.create.testTitle")}
         open={isTestModalVisible}
         onCancel={() => {
           setIsTestModalVisible(false);
@@ -298,7 +300,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
               setIsTestingConnection(false);
             }}
           >
-            Close
+            {t("searchTools.create.close")}
           </Button>,
         ]}
         width={700}

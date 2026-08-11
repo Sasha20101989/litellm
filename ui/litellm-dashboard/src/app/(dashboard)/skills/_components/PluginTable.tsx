@@ -8,6 +8,7 @@ import { DataTable } from "@/components/shared/DataTable";
 import { Plugin } from "@/components/claude_code_plugins/types";
 
 import { getPluginTableColumns } from "./PluginTableColumns";
+import { useTranslation } from "react-i18next";
 
 interface PluginTableProps {
   pluginsList: Plugin[];
@@ -20,23 +21,25 @@ interface PluginTableProps {
 const DEFAULT_SORTING: SortingState = [{ id: "created_at", desc: true }];
 
 function EmptyState() {
+  const { t } = useTranslation("gateway");
   return (
     <div className="flex flex-col items-center gap-1 py-6">
       <div className="mb-1 flex size-10 items-center justify-center rounded-lg bg-muted">
         <Inbox className="size-5 text-muted-foreground" />
       </div>
-      <div className="text-sm font-medium text-foreground">No skills found</div>
-      <div className="text-sm text-muted-foreground">Add one to get started.</div>
+      <div className="text-sm font-medium text-foreground">{t("skills.empty")}</div>
+      <div className="text-sm text-muted-foreground">{t("skills.emptyHint")}</div>
     </div>
   );
 }
 
 const PluginTable: React.FC<PluginTableProps> = ({ pluginsList, isLoading, onDeleteClick, isAdmin, onPluginClick }) => {
+  const { t } = useTranslation("gateway");
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
 
   const columns = useMemo(
-    () => getPluginTableColumns({ isAdmin, onPluginClick, onDeleteClick }),
-    [isAdmin, onPluginClick, onDeleteClick],
+    () => getPluginTableColumns({ isAdmin, onPluginClick, onDeleteClick, t }),
+    [isAdmin, onPluginClick, onDeleteClick, t],
   );
 
   return (
@@ -48,7 +51,7 @@ const PluginTable: React.FC<PluginTableProps> = ({ pluginsList, isLoading, onDel
       sorting={sorting}
       onSortingChange={setSorting}
       isLoading={isLoading}
-      loadingMessage="Loading skills…"
+      loadingMessage={t("skills.loading")}
       noDataMessage={<EmptyState />}
       size="compact"
     />

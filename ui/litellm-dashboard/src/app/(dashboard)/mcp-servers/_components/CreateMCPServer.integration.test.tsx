@@ -6,6 +6,24 @@ import { setToken } from "@/utils/mcpTokenStore";
 import CreateMCPServer from "./CreateMCPServer";
 import { selectAntOption } from "./testUtils";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 vi.mock("@/components/networking", () => ({
   createMCPServer: vi.fn(),
   fetchOpenAPIRegistry: vi.fn().mockResolvedValue({ apis: [] }),
@@ -109,9 +127,20 @@ const getServerNameInput = () => document.getElementById("server_name") as HTMLI
 
 describe("CreateMCPServer", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     oauthHook.tokenResponse = null;
     oauthHook.onTokenReceived = null;
+  });
+
+  it("renders the creation form in Russian", () => {
+    localization.language = "ru";
+    render(<CreateMCPServer {...defaultProps} />);
+
+    expect(screen.getByText("Добавление MCP-сервера")).toBeInTheDocument();
+    expect(screen.getByText("Название MCP-сервера")).toBeInTheDocument();
+    expect(screen.getByText("Тип транспорта")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Добавить MCP-сервер" })).toBeInTheDocument();
   });
 
   it("should render the modal with title when visible", () => {

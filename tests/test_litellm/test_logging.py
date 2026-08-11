@@ -639,4 +639,3 @@ def test_set_session_id_bounds_length():
         assert len(session_id_var.get()) == 256
     finally:
         session_id_var.reset(token)
-

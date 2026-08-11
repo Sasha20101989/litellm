@@ -3,8 +3,10 @@ import { Alert } from "antd";
 import { useDeletedTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { DeletedTeamsTable } from "./DeletedTeamsTable/DeletedTeamsTable";
+import { useTranslation } from "react-i18next";
 
 export default function DeletedTeamsPage() {
+  const { t } = useTranslation("logs");
   const { premiumUser } = useAuthorized();
   const { data: teamsData, isLoading } = useDeletedTeams(1, 100);
 
@@ -15,8 +17,8 @@ export default function DeletedTeamsPage() {
           type="info"
           banner
           showIcon
-          message="Coming soon to Enterprise"
-          description="Deleted team auditing is graduating from beta into our Enterprise audit & compliance suite."
+          message={t("deleted.enterpriseSoon")}
+          description={t("deleted.teamsNotice")}
         />
       )}
       <DeletedTeamsTable teams={teamsData || []} isLoading={isLoading} />

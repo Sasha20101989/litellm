@@ -9,6 +9,24 @@ import {
   fetchMCPClientIp,
 } from "@/components/networking";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 vi.mock("@/components/networking", () => ({
   getGeneralSettingsCall: vi.fn(),
   updateConfigFieldSetting: vi.fn(),
@@ -20,11 +38,22 @@ const renderSettings = () => render(<MCPNetworkSettings accessToken="tok" />);
 
 describe("MCPNetworkSettings", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     vi.mocked(getGeneralSettingsCall).mockResolvedValue([]);
     vi.mocked(fetchMCPClientIp).mockResolvedValue(null);
     vi.mocked(updateConfigFieldSetting).mockResolvedValue(undefined);
     vi.mocked(deleteConfigFieldSetting).mockResolvedValue(undefined);
+  });
+
+  it("renders network settings in Russian", async () => {
+    localization.language = "ru";
+    renderSettings();
+
+    expect(await screen.findByText("Диапазоны частных IP-адресов")).toBeInTheDocument();
+    expect(screen.getByText("Диапазоны вашей частной сети")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Сохранить" })).toBeInTheDocument();
+    expect(screen.queryByText("Private IP Ranges")).not.toBeInTheDocument();
   });
 
   it("renders the stored private ranges once settings load", async () => {

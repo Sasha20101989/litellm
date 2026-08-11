@@ -7,6 +7,7 @@ import { indexesListCall } from "@/components/networking";
 import { VectorStore } from "@/components/vector_store_management/types";
 
 import IndexesTable from "./IndexesTable";
+import { useTranslation } from "react-i18next";
 
 export interface VectorStoreIndex {
   id: string;
@@ -29,6 +30,7 @@ interface IndexesTabProps {
 }
 
 const IndexesTab: React.FC<IndexesTabProps> = ({ accessToken, vectorStores, onViewVectorStore }) => {
+  const { t } = useTranslation("gateway");
   const [indexes, setIndexes] = useState<VectorStoreIndex[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -55,37 +57,36 @@ const IndexesTab: React.FC<IndexesTabProps> = ({ accessToken, vectorStores, onVi
         setIndexes(response.data || []);
       } catch (error) {
         console.error("Error fetching indexes:", error);
-        NotificationsManager.fromBackend("Error fetching indexes: " + error);
+        NotificationsManager.fromBackend(t("vectorStores.indexes.fetchFailed", { error: String(error) }));
       } finally {
         setIsLoading(false);
       }
     };
     fetchIndexes();
-  }, [accessToken]);
+  }, [accessToken, t]);
 
   return (
     <div className="w-full">
       <p className="mb-4 text-sm text-muted-foreground">
-        Vector store indexes registered on this proxy via the <code>/v1/indexes</code> API. See the{" "}
+        {t("vectorStores.indexes.descriptionStart")}{" "}
         <a
           href="https://docs.litellm.ai/docs/providers/azure_ai/azure_ai_vector_stores_passthrough"
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-500 hover:underline"
         >
-          vector store index docs
+          {t("vectorStores.indexes.documentation")}
         </a>{" "}
-        for how this works. Index passthrough is supported for Azure AI Search and Milvus today; support for more
-        providers can be added, so please{" "}
+        {t("vectorStores.indexes.descriptionSupport")}{" "}
         <a
           href="https://github.com/BerriAI/litellm/issues"
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-500 hover:underline"
         >
-          file a GitHub issue
+          {t("vectorStores.indexes.issue")}
         </a>{" "}
-        if you want your provider supported.
+        {t("vectorStores.indexes.descriptionEnd")}
       </p>
       <div className="grid grid-cols-1 gap-2 pt-2 pb-2 w-full">
         <IndexesTable

@@ -3,6 +3,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders, screen, waitFor } from "../../../../tests/test-utils";
 import UserDropdown from "./UserDropdown";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].common);
+    const defaultValue = typeof values?.defaultValue === "string" ? values.defaultValue : key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      typeof copy === "string" ? copy : defaultValue,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 let mockUseAuthorizedImpl = () => ({
   userId: "test-user-id",
   userEmail: "test@example.com",
@@ -41,6 +59,7 @@ describe("UserDropdown", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
     mockUseAuthorizedImpl = () => ({
       userId: "test-user-id",
       userEmail: "test@example.com",
@@ -53,6 +72,19 @@ describe("UserDropdown", () => {
       if (key === "disableShowPrompts") return null;
       return null;
     };
+  });
+
+  it("should translate the account role in Russian", async () => {
+    localization.language = "ru";
+    const user = userEvent.setup();
+    renderWithProviders(<UserDropdown onLogout={mockOnLogout} />);
+
+    await user.click(screen.getByRole("button", { name: /меню аккаунта/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Администратор")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
   });
 
   it("should render", () => {

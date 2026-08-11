@@ -38,13 +38,14 @@ interface ToolsetRowActionsProps {
   isAdmin: boolean;
   onEditClick: (toolset: MCPToolset) => void;
   onDeleteClick: (toolsetId: string) => void;
+  t: (key: string, values?: Record<string, unknown>) => string;
 }
 
-function ToolsetRowActions({ toolset, isAdmin, onEditClick, onDeleteClick }: ToolsetRowActionsProps) {
+function ToolsetRowActions({ toolset, isAdmin, onEditClick, onDeleteClick, t }: ToolsetRowActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Open toolset actions"
+        aria-label={t("mcpServers.toolsets.table.openActions")}
         data-testid={`toolset-actions-${toolset.toolset_id}`}
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "text-muted-foreground")}
       >
@@ -53,24 +54,29 @@ function ToolsetRowActions({ toolset, isAdmin, onEditClick, onDeleteClick }: Too
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuItem
           data-testid="toolset-action-copy-url"
-          onClick={() => void copyToClipboard(toolsetEndpointUrl(toolset.toolset_name), "Endpoint URL copied")}
+          onClick={() =>
+            void copyToClipboard(
+              toolsetEndpointUrl(toolset.toolset_name),
+              t("mcpServers.toolsets.table.endpointCopied"),
+            )
+          }
         >
           <Link2 />
-          Copy endpoint URL
+          {t("mcpServers.toolsets.table.copyEndpoint")}
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="toolset-action-copy-id"
-          onClick={() => void copyToClipboard(toolset.toolset_id, "Toolset ID copied")}
+          onClick={() => void copyToClipboard(toolset.toolset_id, t("mcpServers.toolsets.table.idCopied"))}
         >
           <Copy />
-          Copy toolset ID
+          {t("mcpServers.toolsets.table.copyId")}
         </DropdownMenuItem>
         {isAdmin && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem data-testid="toolset-action-edit" onClick={() => onEditClick(toolset)}>
               <Pencil />
-              Edit
+              {t("mcpServers.toolsets.table.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
@@ -78,7 +84,7 @@ function ToolsetRowActions({ toolset, isAdmin, onEditClick, onDeleteClick }: Too
               onClick={() => onDeleteClick(toolset.toolset_id)}
             >
               <Trash2 />
-              Delete
+              {t("mcpServers.toolsets.table.delete")}
             </DropdownMenuItem>
           </>
         )}
@@ -92,6 +98,7 @@ interface MCPToolsetTableColumnsDeps {
   serverPrefixById: Map<string, string>;
   onEditClick: (toolset: MCPToolset) => void;
   onDeleteClick: (toolsetId: string) => void;
+  t: (key: string, values?: Record<string, unknown>) => string;
 }
 
 export const getMCPToolsetTableColumns = ({
@@ -99,12 +106,13 @@ export const getMCPToolsetTableColumns = ({
   serverPrefixById,
   onEditClick,
   onDeleteClick,
+  t,
 }: MCPToolsetTableColumnsDeps): ColumnDef<MCPToolset>[] => [
   {
     id: "toolset_id",
     accessorKey: "toolset_id",
-    meta: { title: "Toolset ID" },
-    header: "Toolset ID",
+    meta: { title: t("mcpServers.toolsets.table.id") },
+    header: t("mcpServers.toolsets.table.id"),
     size: 140,
     enableSorting: false,
     cell: ({ row }) => <IdCell value={row.original.toolset_id} />,
@@ -112,8 +120,8 @@ export const getMCPToolsetTableColumns = ({
   {
     id: "toolset_name",
     accessorKey: "toolset_name",
-    meta: { title: "Name" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Name" />,
+    meta: { title: t("mcpServers.toolsets.table.name") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("mcpServers.toolsets.table.name")} />,
     size: 260,
     enableSorting: true,
     sortingFn: "alphanumeric",
@@ -129,8 +137,8 @@ export const getMCPToolsetTableColumns = ({
   {
     id: "description",
     accessorKey: "description",
-    meta: { title: "Description" },
-    header: "Description",
+    meta: { title: t("mcpServers.toolsets.table.description") },
+    header: t("mcpServers.toolsets.table.description"),
     size: 200,
     enableSorting: false,
     cell: ({ row }) => (
@@ -141,8 +149,8 @@ export const getMCPToolsetTableColumns = ({
   },
   {
     id: "tools",
-    meta: { title: "Tools", skeleton: "chips" },
-    header: "Tools",
+    meta: { title: t("mcpServers.toolsets.table.tools"), skeleton: "chips" },
+    header: t("mcpServers.toolsets.table.tools"),
     size: 260,
     enableSorting: false,
     cell: ({ row }) => {
@@ -158,7 +166,9 @@ export const getMCPToolsetTableColumns = ({
             </span>
           ))}
           {tools.length > 4 && (
-            <span className="self-center text-xs text-muted-foreground">+{tools.length - 4} more</span>
+            <span className="self-center text-xs text-muted-foreground">
+              {t("mcpServers.toolsets.table.more", { count: tools.length - 4 })}
+            </span>
           )}
         </div>
       );
@@ -167,8 +177,8 @@ export const getMCPToolsetTableColumns = ({
   {
     id: "created_at",
     accessorKey: "created_at",
-    meta: { title: "Created" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Created" />,
+    meta: { title: t("mcpServers.toolsets.table.created") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("mcpServers.toolsets.table.created")} />,
     size: 120,
     enableSorting: true,
     cell: ({ row }) => <DateCell value={row.original.created_at} precision="date" />,
@@ -176,7 +186,7 @@ export const getMCPToolsetTableColumns = ({
   {
     id: "actions",
     meta: { className: "text-right", headerClassName: "text-right" },
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">{t("mcpServers.toolsets.table.actions")}</span>,
     size: 64,
     enableSorting: false,
     enableHiding: false,
@@ -187,6 +197,7 @@ export const getMCPToolsetTableColumns = ({
           isAdmin={isAdmin}
           onEditClick={onEditClick}
           onDeleteClick={onDeleteClick}
+          t={t}
         />
       </div>
     ),

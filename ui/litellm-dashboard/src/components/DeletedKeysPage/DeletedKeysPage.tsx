@@ -5,8 +5,10 @@ import { Alert } from "antd";
 import { useDeletedKeys } from "@/app/(dashboard)/hooks/keys/useKeys";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { DeletedKeysTable } from "./DeletedKeysTable/DeletedKeysTable";
+import { useTranslation } from "react-i18next";
 
 export default function DeletedKeysPage() {
+  const { t } = useTranslation("logs");
   const { premiumUser } = useAuthorized();
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
 
@@ -19,8 +21,8 @@ export default function DeletedKeysPage() {
           type="info"
           banner
           showIcon
-          message="Coming soon to Enterprise"
-          description="Deleted key auditing is graduating from beta into our Enterprise audit & compliance suite."
+          message={t("deleted.enterpriseSoon")}
+          description={t("deleted.keysNotice")}
         />
       )}
       <DeletedKeysTable

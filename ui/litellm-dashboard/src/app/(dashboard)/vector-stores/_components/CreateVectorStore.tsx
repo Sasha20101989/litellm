@@ -17,6 +17,7 @@ import {
 import { Logo } from "@/components/molecules/logo/Logo";
 import NotificationsManager from "@/components/molecules/notifications_manager";
 import S3VectorsConfig from "./S3VectorsConfig";
+import { useTranslation } from "react-i18next";
 
 const { Dragger } = Upload;
 
@@ -26,6 +27,7 @@ interface CreateVectorStoreProps {
 }
 
 const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSuccess }) => {
+  const { t } = useTranslation("gateway");
   const [form] = Form.useForm();
   const [documents, setDocuments] = useState<DocumentUpload[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -34,6 +36,13 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
   const [vectorStoreDescription, setVectorStoreDescription] = useState<string>("");
   const [ingestResults, setIngestResults] = useState<RAGIngestResponse[]>([]);
   const [providerParams, setProviderParams] = useState<Record<string, any>>({});
+
+  const localizeProviderField = (field: VectorStoreFieldConfig, property: "label" | "tooltip" | "placeholder") => {
+    const fallback = field[property];
+    if (!fallback) return undefined;
+    const providerKey = selectedProvider.replaceAll("/", "_");
+    return t(`vectorStores.providerFields.${providerKey}.${field.name}.${property}`, { defaultValue: fallback });
+  };
 
   const uploadProps: UploadProps = {
     name: "file",
@@ -49,13 +58,13 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
       ].includes(file.type);
 
       if (!isValidType) {
-        MessageManager.error(`${file.name} is not a supported file type. Please upload PDF, TXT, DOCX, or MD files.`);
+        MessageManager.error(t("vectorStores.create.unsupportedFile", { name: file.name }));
         return Upload.LIST_IGNORE;
       }
 
       const isLt50M = file.size / 1024 / 1024 < 50;
       if (!isLt50M) {
-        MessageManager.error(`${file.name} must be smaller than 50MB!`);
+        MessageManager.error(t("vectorStores.create.fileTooLarge", { name: file.name }));
         return Upload.LIST_IGNORE;
       }
 
@@ -89,12 +98,12 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
 
   const handleCreateVectorStore = async () => {
     if (documents.length === 0) {
-      MessageManager.warning("Please upload at least one document");
+      MessageManager.warning(t("vectorStores.create.documentRequired"));
       return;
     }
 
     if (!selectedProvider) {
-      MessageManager.warning("Please select a provider");
+      MessageManager.warning(t("vectorStores.create.providerRequired"));
       return;
     }
 
@@ -102,7 +111,9 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
     const requiredFields = getProviderSpecificFields(selectedProvider).filter((field) => field.required);
     for (const field of requiredFields) {
       if (!providerParams[field.name]) {
-        MessageManager.warning(`Please provide ${field.label}`);
+        MessageManager.warning(
+          t("vectorStores.create.fieldRequired", { field: localizeProviderField(field, "label") || field.label }),
+        );
         return;
       }
     }
@@ -110,17 +121,17 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
     // S3 Vectors specific validation
     if (selectedProvider === "s3_vectors") {
       if (providerParams.vector_bucket_name && providerParams.vector_bucket_name.length < 3) {
-        MessageManager.warning("Vector bucket name must be at least 3 characters");
+        MessageManager.warning(t("vectorStores.create.bucketMin"));
         return;
       }
       if (providerParams.index_name && providerParams.index_name.length > 0 && providerParams.index_name.length < 3) {
-        MessageManager.warning("Index name must be at least 3 characters if provided");
+        MessageManager.warning(t("vectorStores.create.indexMin"));
         return;
       }
     }
 
     if (!accessToken) {
-      MessageManager.error("No access token available");
+      MessageManager.error(t("vectorStores.create.accessTokenMissing"));
       return;
     }
 
@@ -166,7 +177,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
 
       setIngestResults(results);
       NotificationsManager.success(
-        `Successfully created vector store with ${results.length} document(s). Vector Store ID: ${vectorStoreId}`,
+        t("vectorStores.create.createdNotification", { count: results.length, id: vectorStoreId }),
       );
 
       if (onSuccess && vectorStoreId) {
@@ -180,7 +191,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
       }, 3000);
     } catch (error) {
       console.error("Error creating vector store:", error);
-      NotificationsManager.fromBackend(`Failed to create vector store: ${error}`);
+      NotificationsManager.fromBackend(t("vectorStores.create.createFailed", { error: String(error) }));
     } finally {
       setIsCreating(false);
     }
@@ -189,26 +200,22 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
   return (
     <div className="space-y-6">
       <div>
-        <Title>Create Vector Store</Title>
-        <Text className="text-gray-500">
-          Upload documents and select a provider to create a new vector store with embedded content.
-        </Text>
+        <Title>{t("vectorStores.create.title")}</Title>
+        <Text className="text-gray-500">{t("vectorStores.create.subtitle")}</Text>
       </div>
 
       {/* Upload Area */}
       <Card>
         <div className="mb-4">
-          <Text className="font-medium">Step 1: Upload Documents</Text>
-          <Text className="text-sm text-gray-500 block mt-1">
-            Upload one or more documents (PDF, TXT, DOCX, MD). Maximum file size: 50MB per file.
-          </Text>
+          <Text className="font-medium">{t("vectorStores.create.uploadStep")}</Text>
+          <Text className="text-sm text-gray-500 block mt-1">{t("vectorStores.create.uploadDescription")}</Text>
         </div>
         <Dragger {...uploadProps}>
           <p className="ant-upload-drag-icon">
             <InboxOutlined style={{ fontSize: "48px", color: "#1890ff" }} />
           </p>
-          <p className="ant-upload-text">Click or drag files to this area to upload</p>
-          <p className="ant-upload-hint">Support for single or bulk upload. Supported formats: PDF, TXT, DOCX, MD</p>
+          <p className="ant-upload-text">{t("vectorStores.create.uploadAction")}</p>
+          <p className="ant-upload-hint">{t("vectorStores.create.uploadHint")}</p>
         </Dragger>
       </Card>
 
@@ -216,7 +223,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
       {documents.length > 0 && (
         <Card>
           <div className="mb-4">
-            <Text className="font-medium">Uploaded Documents ({documents.length})</Text>
+            <Text className="font-medium">{t("vectorStores.create.uploaded", { count: documents.length })}</Text>
           </div>
           <DocumentsTable documents={documents} onRemove={handleRemoveDocument} />
         </Card>
@@ -226,18 +233,16 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
       <Card>
         <div className="space-y-4">
           <div>
-            <Text className="font-medium">Step 2: Configure Vector Store</Text>
-            <Text className="text-sm text-gray-500 block mt-1">
-              Choose the provider and optionally provide a name and description for your vector store.
-            </Text>
+            <Text className="font-medium">{t("vectorStores.create.configureStep")}</Text>
+            <Text className="text-sm text-gray-500 block mt-1">{t("vectorStores.create.configureDescription")}</Text>
           </div>
 
           <Form form={form} layout="vertical">
             <Form.Item
               label={
                 <span>
-                  Vector Store Name{" "}
-                  <Tooltip title="Optional: Give your vector store a meaningful name">
+                  {t("vectorStores.create.name")}{" "}
+                  <Tooltip title={t("vectorStores.create.nameTooltip")}>
                     <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                   </Tooltip>
                 </span>
@@ -246,7 +251,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
               <Input
                 value={vectorStoreName}
                 onChange={(e) => setVectorStoreName(e.target.value)}
-                placeholder="e.g., Product Documentation, Customer Support KB"
+                placeholder={t("vectorStores.create.namePlaceholder")}
                 size="large"
                 className="rounded-md"
               />
@@ -255,8 +260,8 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
             <Form.Item
               label={
                 <span>
-                  Description{" "}
-                  <Tooltip title="Optional: Describe what this vector store contains">
+                  {t("vectorStores.create.description")}{" "}
+                  <Tooltip title={t("vectorStores.create.descriptionTooltip")}>
                     <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                   </Tooltip>
                 </span>
@@ -265,7 +270,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
               <Input.TextArea
                 value={vectorStoreDescription}
                 onChange={(e) => setVectorStoreDescription(e.target.value)}
-                placeholder="e.g., Contains all product documentation and user guides"
+                placeholder={t("vectorStores.create.descriptionPlaceholder")}
                 rows={2}
                 size="large"
                 className="rounded-md"
@@ -275,8 +280,8 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
             <Form.Item
               label={
                 <span>
-                  Provider{" "}
-                  <Tooltip title="Select the provider for embedding and vector store operations">
+                  {t("vectorStores.create.provider")}{" "}
+                  <Tooltip title={t("vectorStores.create.providerTooltip")}>
                     <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                   </Tooltip>
                 </span>
@@ -286,7 +291,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
               <Select
                 value={selectedProvider}
                 onChange={setSelectedProvider}
-                placeholder="Select a provider"
+                placeholder={t("vectorStores.create.providerPlaceholder")}
                 size="large"
                 style={{ width: "100%" }}
               >
@@ -327,8 +332,8 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
                       key={field.name}
                       label={
                         <span>
-                          {field.label}{" "}
-                          <Tooltip title={field.tooltip}>
+                          {localizeProviderField(field, "label")}{" "}
+                          <Tooltip title={localizeProviderField(field, "tooltip")}>
                             <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                           </Tooltip>
                         </span>
@@ -338,7 +343,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
                       <Input
                         value={providerParams[field.name] || ""}
                         onChange={(e) => setProviderParams((prev) => ({ ...prev, [field.name]: e.target.value }))}
-                        placeholder={field.placeholder}
+                        placeholder={localizeProviderField(field, "placeholder")}
                         size="large"
                         className="rounded-md"
                       />
@@ -351,8 +356,8 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
                     key={field.name}
                     label={
                       <span>
-                        {field.label}{" "}
-                        <Tooltip title={field.tooltip}>
+                        {localizeProviderField(field, "label")}{" "}
+                        <Tooltip title={localizeProviderField(field, "tooltip")}>
                           <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                         </Tooltip>
                       </span>
@@ -363,7 +368,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
                       type={field.type === "password" ? "password" : "text"}
                       value={providerParams[field.name] || ""}
                       onChange={(e) => setProviderParams((prev) => ({ ...prev, [field.name]: e.target.value }))}
-                      placeholder={field.placeholder}
+                      placeholder={localizeProviderField(field, "placeholder")}
                       size="large"
                       className="rounded-md"
                     />
@@ -380,7 +385,7 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
               loading={isCreating}
               disabled={documents.length === 0 || !selectedProvider}
             >
-              {isCreating ? "Creating Vector Store..." : "Create Vector Store"}
+              {isCreating ? t("vectorStores.create.creating") : t("vectorStores.create.submit")}
             </Button>
           </div>
         </div>
@@ -389,14 +394,14 @@ const CreateVectorStore: React.FC<CreateVectorStoreProps> = ({ accessToken, onSu
       {/* Success Message */}
       {ingestResults.length > 0 && (
         <Alert
-          message="Vector Store Created Successfully"
+          message={t("vectorStores.create.createdTitle")}
           description={
             <div>
               <p>
-                <strong>Vector Store ID:</strong> {ingestResults[0]?.vector_store_id}
+                <strong>{t("vectorStores.create.createdId")}</strong> {ingestResults[0]?.vector_store_id}
               </p>
               <p>
-                <strong>Documents Ingested:</strong> {ingestResults.length}
+                <strong>{t("vectorStores.create.documentsIngested")}</strong> {ingestResults.length}
               </p>
             </div>
           }

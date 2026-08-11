@@ -3,6 +3,7 @@
 import type { Table } from "@tanstack/react-table";
 import { RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import type * as React from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,13 @@ interface DataTableToolbarProps<TData> {
   showViewOptions?: boolean;
   children?: React.ReactNode;
   className?: string;
+  labels?: {
+    columns: string;
+    filters: string;
+    refresh: string;
+    clearAll: string;
+    removeFilter: (label: string) => string;
+  };
 }
 
 function defaultFormatValue(value: unknown): string {
@@ -37,7 +45,7 @@ export function DataTableToolbar<TData>({
   table,
   searchValue,
   onSearchChange,
-  searchPlaceholder = "Search",
+  searchPlaceholder,
   onOpenFilters,
   onRefresh,
   isRefreshing = false,
@@ -46,7 +54,18 @@ export function DataTableToolbar<TData>({
   showViewOptions = true,
   children,
   className,
+  labels,
 }: DataTableToolbarProps<TData>) {
+  const { t } = useTranslation("common");
+  const effectiveLabels =
+    labels ??
+    ({
+      columns: t("table.columns"),
+      filters: t("table.filters"),
+      refresh: t("table.refresh"),
+      clearAll: t("table.clearAll"),
+      removeFilter: (label: string) => t("table.removeFilter", { label }),
+    } as const);
   const filters = table.getState().columnFilters;
 
   const labelFor = (columnId: string): string =>
@@ -63,7 +82,7 @@ export function DataTableToolbar<TData>({
             <Input
               value={searchValue ?? ""}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t("actions.search")}
               className="h-8 w-56 pl-8"
               data-testid="datatable-search"
             />
@@ -75,7 +94,7 @@ export function DataTableToolbar<TData>({
             {valueFor(filter.id, filter.value)}
             <button
               type="button"
-              aria-label={`Remove ${labelFor(filter.id)} filter`}
+              aria-label={effectiveLabels.removeFilter(labelFor(filter.id))}
               data-testid={`filter-chip-remove-${filter.id}`}
               onClick={() => table.setColumnFilters((previous) => previous.filter((entry) => entry.id !== filter.id))}
               className="ml-0.5 rounded-full text-muted-foreground hover:text-foreground"
@@ -91,7 +110,7 @@ export function DataTableToolbar<TData>({
             onClick={() => table.setColumnFilters([])}
             data-testid="datatable-clear-filters"
           >
-            Clear all
+            {effectiveLabels.clearAll}
           </Button>
         )}
       </div>
@@ -103,18 +122,18 @@ export function DataTableToolbar<TData>({
             size="icon-sm"
             onClick={onRefresh}
             disabled={isRefreshing}
-            aria-label="Refresh"
-            title="Refresh"
+            aria-label={effectiveLabels.refresh}
+            title={effectiveLabels.refresh}
             data-testid="datatable-refresh"
           >
             <RefreshCw className={isRefreshing ? "animate-spin" : ""} />
           </Button>
         )}
-        {showViewOptions && <DataTableViewOptions table={table} label="Columns" />}
+        {showViewOptions && <DataTableViewOptions table={table} label={effectiveLabels.columns} />}
         {onOpenFilters !== undefined && (
           <Button variant="outline" size="sm" onClick={onOpenFilters} data-testid="datatable-filters-trigger">
             <SlidersHorizontal />
-            Filters
+            {effectiveLabels.filters}
             {filters.length > 0 && (
               <Badge className="ml-1 h-5 min-w-5 justify-center rounded-full px-1" data-testid="datatable-filter-count">
                 {filters.length}

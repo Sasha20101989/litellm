@@ -4,6 +4,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SearchToolView } from "./SearchToolView";
 import { AvailableSearchProvider, SearchTool } from "./types";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  return {
+    useTranslation: (namespace: keyof (typeof resources)["en"] = "common") => ({
+      t: (key: string, values?: Record<string, unknown>) => {
+        const copy = key.split(".").reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, resources[localization.language][namespace]);
+        if (typeof copy !== "string") return key;
+        return Object.entries(values ?? {}).reduce(
+          (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+          copy,
+        );
+      },
+      i18n: { language: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/utils/dataUtils", () => ({
   copyToClipboard: vi.fn().mockResolvedValue(true),
 }));
@@ -51,9 +73,18 @@ describe("SearchToolView", () => {
   };
 
   beforeEach(async () => {
+    localization.language = "en";
     vi.clearAllMocks();
     const { copyToClipboard } = await import("@/utils/dataUtils");
     vi.mocked(copyToClipboard).mockResolvedValue(true);
+  });
+
+  it("renders search tool details in Russian", () => {
+    localization.language = "ru";
+    render(<SearchToolView {...defaultProps} />);
+
+    expect(screen.getByText("Назад ко всем инструментам поиска")).toBeInTheDocument();
+    expect(screen.getByText("Провайдер")).toBeInTheDocument();
   });
 
   it("should render", () => {

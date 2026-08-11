@@ -6,6 +6,24 @@ import AddPluginForm from "./add_plugin_form";
 import { registerClaudeCodePlugin } from "@/components/networking";
 import MessageManager from "@/components/molecules/message_manager";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 vi.mock("@/components/networking", () => ({
   registerClaudeCodePlugin: vi.fn().mockResolvedValue({ status: "success" }),
 }));
@@ -29,7 +47,17 @@ const SUBPATH_PLACEHOLDER = "plugins/my-skill";
 
 describe("AddPluginForm", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the add form in Russian", () => {
+    localization.language = "ru";
+    renderWithProviders(<AddPluginForm {...DEFAULT_PROPS} />);
+
+    expect(screen.getByText("Добавление навыка")).toBeInTheDocument();
+    expect(screen.getByText("URL репозитория")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Добавить навык" })).toBeInTheDocument();
   });
 
   it("renders the host-agnostic repository URL input and subfolder field", () => {

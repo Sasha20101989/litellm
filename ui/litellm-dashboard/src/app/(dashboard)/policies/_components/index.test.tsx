@@ -5,6 +5,29 @@ import { renderWithProviders } from "@/../tests/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PoliciesPanel from "./index";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 /**
  * Ant Design's static Modal.confirm often does not run onOk in the real app (React 18+).
  * In jsdom it may still run; we mock confirm as a no-op so the test fails until the panel
@@ -129,7 +152,18 @@ vi.mock("./add_attachment_form", () => ({
 
 describe("PoliciesPanel attachment delete", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the policy navigation in Russian", () => {
+    localization.language = "ru";
+    renderWithProviders(<PoliciesPanel accessToken="test-token" userRole="Admin" />);
+
+    expect(screen.getByRole("tab", { name: "Шаблоны" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Политики" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Привязки" })).toBeInTheDocument();
+    expect(screen.getByText("О политиках")).toBeInTheDocument();
   });
 
   it("should call deletePolicyAttachmentCall after the user confirms delete in the attachment modal", async () => {

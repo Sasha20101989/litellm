@@ -3,6 +3,7 @@
 import moment from "moment";
 import { CalendarDays } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,17 @@ export function LogsTableToolbar({
   onResetToFirstPage,
   onResetFilters,
 }: LogsTableToolbarProps) {
+  const { t, i18n } = useTranslation("logs");
   const [quickSelectOpen, setQuickSelectOpen] = useState(false);
+
+  const optionLabel = (option: { value: number; unit: string }): string => {
+    if (option.value === 1 && option.unit === "minutes") return t("toolbar.lastMinute");
+    if (option.value === 15 && option.unit === "minutes") return t("toolbar.last15Minutes");
+    if (option.value === 1 && option.unit === "hours") return t("toolbar.lastHour");
+    if (option.value === 4 && option.unit === "hours") return t("toolbar.last4Hours");
+    if (option.value === 24 && option.unit === "hours") return t("toolbar.last24Hours");
+    return t("toolbar.last7Days");
+  };
 
   const applyQuickSelect = (option: { label: string; value: number; unit: string }) => {
     onResetToFirstPage();
@@ -59,7 +70,12 @@ export function LogsTableToolbar({
   const selectedOption = QUICK_SELECT_OPTIONS.find(
     (option) => option.value === selectedTimeInterval.value && option.unit === selectedTimeInterval.unit,
   );
-  const displayLabel = isCustomDate ? getTimeRangeDisplay(isCustomDate, startTime, endTime) : selectedOption?.label;
+  const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-US";
+  const displayLabel = isCustomDate
+    ? getTimeRangeDisplay(isCustomDate, startTime, endTime, locale)
+    : selectedOption
+      ? optionLabel(selectedOption)
+      : "";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -81,7 +97,7 @@ export function LogsTableToolbar({
                 className="w-full justify-start font-normal"
                 onClick={() => applyQuickSelect(option)}
               >
-                {option.label}
+                {optionLabel(option)}
               </Button>
             ))}
             <div className="my-2 border-t" />
@@ -90,7 +106,7 @@ export function LogsTableToolbar({
               className="w-full justify-start font-normal"
               onClick={() => onIsCustomDateChange(!isCustomDate)}
             >
-              Custom Range
+              {t("toolbar.customRange")}
             </Button>
           </div>
         </PopoverContent>
@@ -107,7 +123,7 @@ export function LogsTableToolbar({
               onResetToFirstPage();
             }}
           />
-          <span className="text-sm text-muted-foreground">to</span>
+          <span className="text-sm text-muted-foreground">{t("toolbar.to")}</span>
           <Input
             type="datetime-local"
             className="w-auto"
@@ -121,23 +137,24 @@ export function LogsTableToolbar({
       )}
 
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">Live Tail</span>
-        <Switch checked={isLiveTail} onCheckedChange={onIsLiveTailChange} aria-label="Live Tail" />
+        <span className="text-sm font-medium">{t("toolbar.liveTail")}</span>
+        <Switch checked={isLiveTail} onCheckedChange={onIsLiveTailChange} aria-label={t("toolbar.liveTail")} />
       </div>
 
       <Button variant="outline" size="sm" onClick={onResetFilters}>
-        Reset Filters
+        {t("toolbar.reset")}
       </Button>
     </div>
   );
 }
 
 export function LiveTailBanner({ onStop }: { onStop: () => void }) {
+  const { t } = useTranslation("logs");
   return (
     <div className="mb-4 flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-4 py-2">
-      <span className="text-sm text-green-700">Auto-refreshing every 15 seconds</span>
+      <span className="text-sm text-green-700">{t("toolbar.autoRefresh")}</span>
       <button type="button" onClick={onStop} className="text-sm text-green-600 hover:text-green-800">
-        Stop
+        {t("toolbar.stop")}
       </button>
     </div>
   );

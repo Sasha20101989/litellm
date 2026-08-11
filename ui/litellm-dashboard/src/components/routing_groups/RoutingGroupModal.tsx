@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { Form, Input, Modal, Select, Space, Typography } from "antd";
 import type { RoutingGroup, RoutingStrategy } from "./types";
+import { useTranslation } from "react-i18next";
 
 const { Text, Paragraph } = Typography;
 
@@ -43,6 +44,7 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
   onSubmit,
   saving,
 }) => {
+  const { t } = useTranslation("settings");
   const [form] = Form.useForm<FormValues>();
   const selectedStrategy = Form.useWatch("routing_strategy", form);
 
@@ -71,7 +73,7 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
         form.setFields([
           {
             name: "routing_strategy_args",
-            errors: ["Must be valid JSON"],
+            errors: [t("router.groups.validJson")],
           },
         ]);
         return;
@@ -88,12 +90,16 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
 
   return (
     <Modal
-      title={mode === "create" ? "Create Routing Group" : `Edit ${initialValue?.group_name ?? ""}`}
+      title={
+        mode === "create"
+          ? t("router.groups.createTitle")
+          : t("router.groups.editTitle", { name: initialValue?.group_name ?? "" })
+      }
       open={open}
       onCancel={onClose}
       onOk={handleSubmit}
-      okText={mode === "create" ? "Create Group" : "Save Changes"}
-      cancelText="Cancel"
+      okText={mode === "create" ? t("router.groups.create") : t("router.groups.save")}
+      cancelText={t("router.groups.cancel")}
       confirmLoading={saving}
       destroyOnClose
       width={560}
@@ -106,51 +112,54 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
         initialValues={initialValues}
       >
         <Form.Item
-          label="Group Name"
+          label={t("router.groups.groupName")}
           name="group_name"
           rules={[
-            { required: true, message: "Group name is required" },
-            { max: GROUP_NAME_MAX_LENGTH, message: `Must be ${GROUP_NAME_MAX_LENGTH} characters or fewer` },
+            { required: true, message: t("router.groups.groupRequired") },
+            { max: GROUP_NAME_MAX_LENGTH, message: t("router.groups.groupMax", { count: GROUP_NAME_MAX_LENGTH }) },
             {
               pattern: GROUP_NAME_PATTERN,
-              message: "Only letters, numbers, dot, underscore, and dash are allowed",
+              message: t("router.groups.groupPattern"),
             },
             {
               validator: (_, value: string) => {
                 if (!value) return Promise.resolve();
                 if (reservedNames.has(value.trim().toLowerCase())) {
-                  return Promise.reject(new Error("A group with this name already exists"));
+                  return Promise.reject(new Error(t("router.groups.groupExists")));
                 }
                 return Promise.resolve();
               },
             },
           ]}
-          extra="Use this name as the model in API calls — LiteLLM routes the request to one of the group's models."
+          extra={t("router.groups.groupHelp")}
         >
           <Input placeholder="fast-chat" disabled={mode === "edit"} />
         </Form.Item>
 
         <Form.Item
-          label="Models"
+          label={t("router.groups.models")}
           name="models"
-          rules={[{ required: true, message: "Select at least one model" }]}
-          extra="Models from your model list that this group routes between."
+          rules={[{ required: true, message: t("router.groups.modelRequired") }]}
+          extra={t("router.groups.modelsHelp")}
         >
           <Select
             mode="multiple"
             allowClear
-            placeholder="Select models"
+            placeholder={t("router.groups.selectModels")}
             options={modelOptions.map((m) => ({ label: m, value: m }))}
             optionFilterProp="label"
           />
         </Form.Item>
 
         <Form.Item
-          label="Routing Strategy"
+          label={t("router.strategy")}
           name="routing_strategy"
-          rules={[{ required: true, message: "Strategy is required" }]}
+          rules={[{ required: true, message: t("router.groups.strategyRequired") }]}
         >
-          <Select options={availableStrategies.map((s) => ({ label: s, value: s }))} placeholder="Select strategy" />
+          <Select
+            options={availableStrategies.map((s) => ({ label: s, value: s }))}
+            placeholder={t("router.groups.selectStrategy")}
+          />
         </Form.Item>
 
         {selectedStrategy && strategyDescriptions[selectedStrategy] && (
@@ -159,12 +168,12 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
 
         {STRATEGIES_WITH_ARGS.has(String(selectedStrategy)) && (
           <Form.Item
-            label="Strategy Arguments (JSON)"
+            label={t("router.groups.strategyArguments")}
             name="routing_strategy_args"
             extra={
               selectedStrategy === "latency-based-routing"
-                ? 'Example: { "ttl": 3600, "lowest_latency_buffer": 0 }'
-                : 'Example: { "ttl": 60 }'
+                ? t("router.groups.example", { json: '{ "ttl": 3600, "lowest_latency_buffer": 0 }' })
+                : t("router.groups.example", { json: '{ "ttl": 60 }' })
             }
           >
             <Input.TextArea rows={4} placeholder='{ "ttl": 3600 }' className="font-mono text-xs" />
@@ -173,7 +182,7 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
 
         <Space direction="vertical" className="w-full mt-2">
           <Text type="secondary" className="text-xs">
-            Models not claimed by an explicit group fall through to the proxy&apos;s top-level routing strategy.
+            {t("router.groups.unclaimed")}
           </Text>
         </Space>
       </Form>

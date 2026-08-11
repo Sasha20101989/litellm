@@ -7,6 +7,27 @@ import * as networking from "@/components/networking";
 import SearchTools from "./SearchTools";
 import { AvailableSearchProvider, SearchTool } from "./types";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  return {
+    useTranslation: (namespace: keyof (typeof resources)["en"] = "common") => ({
+      t: (key: string, values?: Record<string, unknown>) => {
+        const copy = key.split(".").reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, resources[localization.language][namespace]);
+        if (typeof copy !== "string") return key;
+        return Object.entries(values ?? {}).reduce(
+          (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+          copy,
+        );
+      },
+    }),
+  };
+});
+
 vi.mock("@/components/networking", () => ({
   fetchSearchTools: vi.fn(),
   updateSearchTool: vi.fn(),
@@ -123,10 +144,19 @@ describe("SearchTools", () => {
   };
 
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     vi.mocked(networking.fetchSearchTools).mockResolvedValue({ search_tools: mockSearchTools });
     vi.mocked(networking.fetchAvailableSearchProviders).mockResolvedValue({ providers: mockAvailableProviders });
     vi.mocked(roles.isAdminRole).mockReturnValue(true);
+  });
+
+  it("renders search tools in Russian", async () => {
+    localization.language = "ru";
+    render(<SearchTools {...defaultProps} />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText("Инструменты поиска")).toBeInTheDocument();
+    expect(screen.getByText("+ Добавить инструмент поиска")).toBeInTheDocument();
   });
 
   it("should render", async () => {

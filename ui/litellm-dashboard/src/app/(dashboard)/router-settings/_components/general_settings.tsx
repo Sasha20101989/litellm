@@ -18,6 +18,7 @@ import { getGeneralSettingsCall, updateConfigFieldSetting, deleteConfigFieldSett
 import { InputNumber, Select as AntdSelect } from "antd";
 import { TrashIcon } from "@heroicons/react/outline";
 import { StatusBadge } from "@/components/shared/table_cells";
+import { useTranslation } from "react-i18next";
 
 import RouterSettings from "@/components/router_settings";
 import Fallbacks from "@/components/Settings/RouterSettings/Fallbacks/Fallbacks";
@@ -48,6 +49,7 @@ const SettingValueEditor: React.FC<{
   setting: generalSettingsItem;
   onChange: (fieldName: string, newValue: any) => void;
 }> = ({ setting, onChange }) => {
+  const { t } = useTranslation("settings");
   if (setting.field_type === "Integer") {
     return (
       <InputNumber
@@ -92,7 +94,7 @@ const SettingValueEditor: React.FC<{
       <AntdSelect
         allowClear
         style={{ minWidth: "8rem" }}
-        placeholder="Default"
+        placeholder={t("router.defaultValue")}
         value={setting.field_value || undefined}
         options={(setting.field_options ?? []).map((option) => ({ label: option, value: option }))}
         onChange={(newValue) => onChange(setting.field_name, newValue ?? "")}
@@ -107,6 +109,7 @@ export const PromptCachingPanel: React.FC<{
   settings: generalSettingsItem[];
   onChange: (fieldName: string, newValue: any) => void;
 }> = ({ accessToken, settings, onChange }) => {
+  const { t } = useTranslation("costOptimization");
   const enableSetting = settings.find((s) => s.field_name === ENABLE_ANTHROPIC_PROMPT_CACHING);
   const ttlSetting = settings.find((s) => s.field_name === ANTHROPIC_PROMPT_CACHING_TTL);
 
@@ -131,12 +134,12 @@ export const PromptCachingPanel: React.FC<{
 
   return (
     <Card>
-      <Title>Prompt Caching</Title>
+      <Title>{t("caching.title")}</Title>
 
       <div className="mt-6 flex items-start justify-between gap-8">
         <div className="max-w-2xl">
-          <Text className="font-medium">Automatic Anthropic prompt caching</Text>
-          <p className="mt-1 text-xs text-gray-500">{enableSetting.field_description}</p>
+          <Text className="font-medium">{t("caching.automatic")}</Text>
+          <p className="mt-1 text-xs text-gray-500">{t("caching.automaticDescription")}</p>
         </div>
         <Switch checked={enabled} onChange={(checked) => persist(ENABLE_ANTHROPIC_PROMPT_CACHING, checked)} />
       </div>
@@ -144,14 +147,14 @@ export const PromptCachingPanel: React.FC<{
       {ttlSetting && (
         <div className="mt-6 flex items-start justify-between gap-8">
           <div className="max-w-2xl">
-            <Text className={`font-medium ${enabled ? "" : "text-gray-400"}`}>Cache lifetime (TTL)</Text>
-            <p className="mt-1 text-xs text-gray-500">{ttlSetting.field_description}</p>
+            <Text className={`font-medium ${enabled ? "" : "text-gray-400"}`}>{t("caching.lifetime")}</Text>
+            <p className="mt-1 text-xs text-gray-500">{t("caching.lifetimeDescription")}</p>
           </div>
           <AntdSelect
             allowClear
             disabled={!enabled}
             style={{ minWidth: "10rem" }}
-            placeholder="5m (default)"
+            placeholder={t("caching.defaultLifetime")}
             value={ttlSetting.field_value || undefined}
             options={(ttlSetting.field_options ?? []).map((option) => ({ label: option, value: option }))}
             onChange={(newValue) => persist(ANTHROPIC_PROMPT_CACHING_TTL, newValue ?? "")}
@@ -163,6 +166,7 @@ export const PromptCachingPanel: React.FC<{
 };
 
 const GeneralSettings: React.FC<GeneralSettingsPageProps> = ({ accessToken, userRole, userID }) => {
+  const { t } = useTranslation("settings");
   const [generalSettings, setGeneralSettings] = useState<generalSettingsItem[]>([]);
 
   useEffect(() => {
@@ -234,11 +238,11 @@ const GeneralSettings: React.FC<GeneralSettingsPageProps> = ({ accessToken, user
     <div className="w-full">
       <Tabs defaultValue="loadbalancing" className="h-[75vh] w-full">
         <TabsList variant="line" className="mx-8 mt-4">
-          <TabsTrigger value="loadbalancing">Loadbalancing</TabsTrigger>
-          <TabsTrigger value="routing-groups">Routing Groups</TabsTrigger>
-          <TabsTrigger value="fallbacks">Fallbacks</TabsTrigger>
-          <TabsTrigger value="prompt-caching">Prompt Caching</TabsTrigger>
-          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="loadbalancing">{t("router.tabs.loadbalancing")}</TabsTrigger>
+          <TabsTrigger value="routing-groups">{t("router.tabs.routingGroups")}</TabsTrigger>
+          <TabsTrigger value="fallbacks">{t("router.tabs.fallbacks")}</TabsTrigger>
+          <TabsTrigger value="prompt-caching">{t("router.tabs.promptCaching")}</TabsTrigger>
+          <TabsTrigger value="general">{t("router.tabs.general")}</TabsTrigger>
         </TabsList>
         <TabsContent value="loadbalancing" className="px-8 py-6">
           <RouterSettings accessToken={accessToken} userRole={userRole} userID={userID} />
@@ -257,10 +261,10 @@ const GeneralSettings: React.FC<GeneralSettingsPageProps> = ({ accessToken, user
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Setting</TableHeaderCell>
-                  <TableHeaderCell>Value</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Action</TableHeaderCell>
+                  <TableHeaderCell>{t("router.table.setting")}</TableHeaderCell>
+                  <TableHeaderCell>{t("router.table.value")}</TableHeaderCell>
+                  <TableHeaderCell>{t("router.table.status")}</TableHeaderCell>
+                  <TableHeaderCell>{t("router.table.action")}</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -286,17 +290,17 @@ const GeneralSettings: React.FC<GeneralSettingsPageProps> = ({ accessToken, user
                       </TableCell>
                       <TableCell>
                         {value.stored_in_db == true ? (
-                          <StatusBadge tone="success" label="In DB" />
+                          <StatusBadge tone="success" label={t("router.status.database")} />
                         ) : value.stored_in_db == false ? (
-                          <StatusBadge tone="neutral" label="In Config" />
+                          <StatusBadge tone="neutral" label={t("router.status.config")} />
                         ) : (
-                          <StatusBadge tone="neutral" label="Not Set" />
+                          <StatusBadge tone="neutral" label={t("router.status.unset")} />
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button onClick={() => handleUpdateField(value.field_name)}>Update</Button>
+                        <Button onClick={() => handleUpdateField(value.field_name)}>{t("router.update")}</Button>
                         <Icon icon={TrashIcon} color="red" onClick={() => handleResetField(value.field_name)}>
-                          Reset
+                          {t("router.reset")}
                         </Icon>
                       </TableCell>
                     </TableRow>

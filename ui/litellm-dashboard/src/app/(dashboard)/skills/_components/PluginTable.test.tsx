@@ -6,6 +6,24 @@ import { Plugin } from "@/components/claude_code_plugins/types";
 
 import PluginTable from "./PluginTable";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 const mockPlugins: Plugin[] = [
   {
     id: "plugin-id-newer",
@@ -39,7 +57,17 @@ const defaultProps = {
 
 describe("PluginTable", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders table controls in Russian", () => {
+    localization.language = "ru";
+    render(<PluginTable {...defaultProps} />);
+
+    expect(screen.getByRole("columnheader", { name: "Название навыка" })).toBeInTheDocument();
+    expect(screen.getByText("Опубликован")).toBeInTheDocument();
+    expect(screen.getByText("Да")).toBeInTheDocument();
   });
 
   it("should render every column header", () => {

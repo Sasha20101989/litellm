@@ -5,6 +5,27 @@ import { renderWithProviders } from "@/../tests/test-utils";
 import SearchToolTable from "./SearchToolTable";
 import { AvailableSearchProvider, SearchTool } from "./types";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  return {
+    useTranslation: (namespace: keyof (typeof resources)["en"] = "common") => ({
+      t: (key: string, values?: Record<string, unknown>) => {
+        const copy = key.split(".").reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, resources[localization.language][namespace]);
+        if (typeof copy !== "string") return key;
+        return Object.entries(values ?? {}).reduce(
+          (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+          copy,
+        );
+      },
+    }),
+  };
+});
+
 const makeSearchTool = (overrides: Partial<SearchTool> = {}): SearchTool => ({
   search_tool_id: "tool-1",
   search_tool_name: "Perplexity Search",
@@ -31,7 +52,16 @@ const defaultProps = {
 
 describe("SearchToolTable", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders the search tool table in Russian", () => {
+    localization.language = "ru";
+    renderWithProviders(<SearchToolTable {...defaultProps} />);
+
+    expect(screen.getByRole("columnheader", { name: "ID инструмента" })).toBeInTheDocument();
+    expect(screen.getByText("Название")).toBeInTheDocument();
   });
 
   it("should display search tool information with the friendly provider name", () => {

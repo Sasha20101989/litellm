@@ -6,6 +6,7 @@ import DefaultProxyAdminTag from "@/components/common_components/DefaultProxyAdm
 import { KeyResponse } from "@/components/key_team_helpers/key_list";
 import { CellTooltip, DateCell, IdentityCell } from "@/components/shared/table_cells";
 import { keyDetailHref } from "@/utils/entityLinks";
+import type { TFunction } from "i18next";
 
 function OwnerCell({ record }: { record: KeyResponse }) {
   const email = record.user?.user_email ?? record.user_id ?? null;
@@ -22,12 +23,12 @@ function OwnerCell({ record }: { record: KeyResponse }) {
   );
 }
 
-export const getProjectKeysTableColumns = (): ColumnDef<KeyResponse>[] => [
+export const getProjectKeysTableColumns = (t: TFunction<"management">): ColumnDef<KeyResponse>[] => [
   {
     id: "key_alias",
     accessorKey: "key_alias",
-    meta: { title: "Key Name" },
-    header: "Key Name",
+    meta: { title: t("projects.columns.keyName") },
+    header: t("projects.columns.keyName"),
     enableSorting: false,
     cell: ({ row }) => (
       <IdentityCell
@@ -39,16 +40,16 @@ export const getProjectKeysTableColumns = (): ColumnDef<KeyResponse>[] => [
   },
   {
     id: "owner",
-    meta: { title: "Owner" },
-    header: "Owner",
+    meta: { title: t("projects.columns.owner") },
+    header: t("projects.columns.owner"),
     enableSorting: false,
     cell: ({ row }) => <OwnerCell record={row.original} />,
   },
   {
     id: "created_at",
     accessorKey: "created_at",
-    meta: { title: "Created" },
-    header: "Created",
+    meta: { title: t("projects.columns.created") },
+    header: t("projects.columns.created"),
     size: 130,
     enableSorting: false,
     cell: ({ row }) => <DateCell value={row.original.created_at} precision="date" />,
@@ -56,10 +57,10 @@ export const getProjectKeysTableColumns = (): ColumnDef<KeyResponse>[] => [
   {
     id: "last_active",
     accessorKey: "last_active",
-    meta: { title: "Last Active" },
-    header: "Last Active",
+    meta: { title: t("projects.columns.lastActive") },
+    header: t("projects.columns.lastActive"),
     size: 130,
     enableSorting: false,
-    cell: ({ row }) => <DateCell value={row.original.last_active} precision="date" fallback="Never" />,
+    cell: ({ row }) => <DateCell value={row.original.last_active} precision="date" fallback={t("projects.never")} />,
   },
 ];
