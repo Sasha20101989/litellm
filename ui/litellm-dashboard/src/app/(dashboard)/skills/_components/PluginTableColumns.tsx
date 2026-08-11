@@ -29,13 +29,13 @@ const CATEGORY_BADGE_CLASS: Record<ReturnType<typeof getCategoryBadgeColor>, str
   gray: "border-gray-200 bg-gray-50 text-gray-600",
 };
 
-function PluginCategoryBadge({ category }: { category?: string }) {
+function PluginCategoryBadge({ category, t }: { category?: string; t: (key: string) => string }) {
   return (
     <Badge
       variant="outline"
       className={cn("whitespace-nowrap font-normal", CATEGORY_BADGE_CLASS[getCategoryBadgeColor(category)])}
     >
-      {category || "Uncategorized"}
+      {category || t("skills.table.uncategorized")}
     </Badge>
   );
 }
@@ -44,13 +44,14 @@ interface PluginRowActionsProps {
   plugin: Plugin;
   isAdmin: boolean;
   onDeleteClick: (pluginName: string, displayName: string) => void;
+  t: (key: string, values?: Record<string, unknown>) => string;
 }
 
-function PluginRowActions({ plugin, isAdmin, onDeleteClick }: PluginRowActionsProps) {
+function PluginRowActions({ plugin, isAdmin, onDeleteClick, t }: PluginRowActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Open skill actions"
+        aria-label={t("skills.table.openActions")}
         data-testid={`plugin-actions-${plugin.name}`}
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "text-muted-foreground")}
       >
@@ -59,10 +60,10 @@ function PluginRowActions({ plugin, isAdmin, onDeleteClick }: PluginRowActionsPr
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuItem
           data-testid="plugin-action-copy"
-          onClick={() => void copyToClipboard(plugin.id, "Skill ID copied")}
+          onClick={() => void copyToClipboard(plugin.id, t("skills.table.copied"))}
         >
           <Copy />
-          Copy skill ID
+          {t("skills.table.copyId")}
         </DropdownMenuItem>
         {isAdmin && (
           <>
@@ -73,7 +74,7 @@ function PluginRowActions({ plugin, isAdmin, onDeleteClick }: PluginRowActionsPr
               onClick={() => onDeleteClick(plugin.name, plugin.name)}
             >
               <Trash2 />
-              Delete
+              {t("skills.delete")}
             </DropdownMenuItem>
           </>
         )}
@@ -86,18 +87,20 @@ interface PluginTableColumnsDeps {
   isAdmin: boolean;
   onPluginClick: (pluginId: string) => void;
   onDeleteClick: (pluginName: string, displayName: string) => void;
+  t: (key: string, values?: Record<string, unknown>) => string;
 }
 
 export const getPluginTableColumns = ({
   isAdmin,
   onPluginClick,
   onDeleteClick,
+  t,
 }: PluginTableColumnsDeps): ColumnDef<Plugin>[] => [
   {
     id: "name",
     accessorKey: "name",
-    meta: { title: "Skill Name" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Skill Name" />,
+    meta: { title: t("skills.table.name") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("skills.table.name")} />,
     size: 220,
     enableSorting: true,
     cell: ({ row }) => (
@@ -112,24 +115,26 @@ export const getPluginTableColumns = ({
   {
     id: "version",
     accessorKey: "version",
-    meta: { title: "Version" },
-    header: "Version",
+    meta: { title: t("skills.table.version") },
+    header: t("skills.table.version"),
     size: 100,
     enableSorting: false,
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.version || "N/A"}</span>,
+    cell: ({ row }) => (
+      <span className="text-sm text-muted-foreground">{row.original.version || t("skills.table.unavailable")}</span>
+    ),
   },
   {
     id: "description",
     accessorKey: "description",
-    meta: { title: "Description" },
-    header: "Description",
+    meta: { title: t("skills.table.description") },
+    header: t("skills.table.description"),
     size: 300,
     enableSorting: false,
     cell: ({ row }) => {
       const description = row.original.description;
       return (
         <span className="block max-w-72 truncate text-sm text-muted-foreground" title={description}>
-          {description || "No description"}
+          {description || t("skills.table.noDescription")}
         </span>
       );
     },
@@ -137,29 +142,32 @@ export const getPluginTableColumns = ({
   {
     id: "category",
     accessorKey: "category",
-    meta: { title: "Category", skeleton: "badge" },
-    header: "Category",
+    meta: { title: t("skills.table.category"), skeleton: "badge" },
+    header: t("skills.table.category"),
     size: 150,
     enableSorting: false,
-    cell: ({ row }) => <PluginCategoryBadge category={row.original.category} />,
+    cell: ({ row }) => <PluginCategoryBadge category={row.original.category} t={t} />,
   },
   {
     id: "enabled",
     accessorKey: "enabled",
-    meta: { title: "Public", skeleton: "badge" },
-    header: "Public",
+    meta: { title: t("skills.table.public"), skeleton: "badge" },
+    header: t("skills.table.public"),
     size: 100,
     enableSorting: false,
     cell: ({ row }) => (
-      <StatusBadge tone={row.original.enabled ? "success" : "neutral"} label={row.original.enabled ? "Yes" : "No"} />
+      <StatusBadge
+        tone={row.original.enabled ? "success" : "neutral"}
+        label={row.original.enabled ? t("skills.table.yes") : t("skills.table.no")}
+      />
     ),
   },
   {
     id: "created_at",
     accessorKey: "created_at",
     sortingFn: "datetime",
-    meta: { title: "Created At" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Created At" />,
+    meta: { title: t("skills.table.created") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("skills.table.created")} />,
     size: 160,
     enableSorting: true,
     cell: ({ row }) => <DateCell value={row.original.created_at} />,
@@ -167,13 +175,13 @@ export const getPluginTableColumns = ({
   {
     id: "actions",
     meta: { className: "text-right", headerClassName: "text-right" },
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">{t("skills.table.actions")}</span>,
     size: 64,
     enableSorting: false,
     enableHiding: false,
     cell: ({ row }) => (
       <div className="flex justify-end">
-        <PluginRowActions plugin={row.original} isAdmin={isAdmin} onDeleteClick={onDeleteClick} />
+        <PluginRowActions plugin={row.original} isAdmin={isAdmin} onDeleteClick={onDeleteClick} t={t} />
       </div>
     ),
   },

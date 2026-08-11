@@ -4,6 +4,7 @@ import { Text, Title, Badge } from "@tremor/react";
 import { enableClaudeCodePlugin, disableClaudeCodePlugin } from "../networking";
 import NotificationsManager from "../molecules/notifications_manager";
 import { Plugin } from "./types";
+import { useTranslation } from "react-i18next";
 
 const { Step } = Steps;
 
@@ -22,6 +23,7 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
   skillsList,
   onSuccess,
 }) => {
+  const { t } = useTranslation("gateway");
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,7 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
 
   const handleNext = () => {
     if (selectedSkills.size === 0) {
-      NotificationsManager.fromBackend("Please select at least one skill");
+      NotificationsManager.fromBackend(t("skills.publish.selectRequired"));
       return;
     }
     setCurrentStep(1);
@@ -69,7 +71,7 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
 
   const handleSubmit = async () => {
     if (selectedSkills.size === 0) {
-      NotificationsManager.fromBackend("Please select at least one skill");
+      NotificationsManager.fromBackend(t("skills.publish.selectRequired"));
       return;
     }
 
@@ -89,12 +91,12 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
         }),
       );
 
-      NotificationsManager.success(`Skill Hub updated — ${selectedSkills.size} skill(s) published`);
+      NotificationsManager.success(t("skills.publish.updated", { count: selectedSkills.size }));
       handleClose();
       onSuccess();
     } catch (error) {
       console.error("Error publishing skills:", error);
-      NotificationsManager.fromBackend("Failed to update skills. Please try again.");
+      NotificationsManager.fromBackend(t("skills.publish.failed"));
     } finally {
       setLoading(false);
     }
@@ -106,26 +108,24 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
   const renderStep1 = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Title>Select Skills to Publish</Title>
+        <Title>{t("skills.publish.selectTitle")}</Title>
         <Checkbox
           checked={allSelected}
           indeterminate={isIndeterminate}
           onChange={(e) => handleSelectAll(e.target.checked)}
           disabled={skillsList.length === 0}
         >
-          Select All ({skillsList.length})
+          {t("skills.publish.selectAll", { count: skillsList.length })}
         </Checkbox>
       </div>
 
-      <Text className="text-sm text-gray-600">
-        Selected skills will be visible to all users in the Skill Hub. Deselected skills will be unpublished.
-      </Text>
+      <Text className="text-sm text-gray-600">{t("skills.publish.description")}</Text>
 
       <div className="max-h-96 overflow-y-auto border rounded-lg p-4">
         <div className="space-y-3">
           {skillsList.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <Text>No skills registered yet.</Text>
+              <Text>{t("skills.publish.empty")}</Text>
             </div>
           ) : (
             skillsList.map((skill) => (
@@ -139,7 +139,7 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
                     <Text className="font-medium font-mono text-sm">{skill.name}</Text>
                     {skill.enabled && (
                       <Badge color="green" size="xs">
-                        Public
+                        {t("skills.publish.public")}
                       </Badge>
                     )}
                   </div>
@@ -160,9 +160,7 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
 
       {selectedSkills.size > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <Text className="text-sm text-blue-800">
-            <strong>{selectedSkills.size}</strong> skill{selectedSkills.size !== 1 ? "s" : ""} will be published
-          </Text>
+          <Text className="text-sm text-blue-800">{t("skills.publish.count", { count: selectedSkills.size })}</Text>
         </div>
       )}
     </div>
@@ -170,17 +168,16 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
 
   const renderStep2 = () => (
     <div className="space-y-4">
-      <Title>Confirm Publish to Skill Hub</Title>
+      <Title>{t("skills.publish.confirmTitle")}</Title>
 
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <Text className="text-sm text-yellow-800">
-          <strong>Note:</strong> Published skills will be visible to all users in the Skill Hub tab. Skills not in the
-          list below will be unpublished.
+          <strong>{t("skills.publish.noteLabel")}</strong> {t("skills.publish.note")}
         </Text>
       </div>
 
       <div className="space-y-3">
-        <Text className="font-medium">Skills to be published:</Text>
+        <Text className="font-medium">{t("skills.publish.selectedTitle")}</Text>
         <div className="max-h-48 overflow-y-auto border rounded-lg p-3">
           <div className="space-y-2">
             {Array.from(selectedSkills).map((name) => {
@@ -201,16 +198,14 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <Text className="text-sm text-blue-800">
-          Total: <strong>{selectedSkills.size}</strong> skill{selectedSkills.size !== 1 ? "s" : ""} will be published
-        </Text>
+        <Text className="text-sm text-blue-800">{t("skills.publish.total", { count: selectedSkills.size })}</Text>
       </div>
     </div>
   );
 
   return (
     <Modal
-      title="Publish to Skill Hub"
+      title={t("skills.publish.modalTitle")}
       open={visible}
       onCancel={handleClose}
       footer={null}
@@ -219,25 +214,25 @@ const MakeSkillPublicForm: React.FC<MakeSkillPublicFormProps> = ({
     >
       <Form form={form} layout="vertical">
         <Steps current={currentStep} className="mb-6">
-          <Step title="Select Skills" />
-          <Step title="Confirm" />
+          <Step title={t("skills.publish.selectStep")} />
+          <Step title={t("skills.publish.confirmStep")} />
         </Steps>
 
         {currentStep === 0 ? renderStep1() : renderStep2()}
 
         <div className="flex justify-between mt-6">
           <Button onClick={currentStep === 0 ? handleClose : () => setCurrentStep(0)}>
-            {currentStep === 0 ? "Cancel" : "Previous"}
+            {currentStep === 0 ? t("skills.cancel") : t("skills.publish.previous")}
           </Button>
           <div className="flex space-x-2">
             {currentStep === 0 && (
               <Button onClick={handleNext} disabled={selectedSkills.size === 0}>
-                Next
+                {t("skills.publish.next")}
               </Button>
             )}
             {currentStep === 1 && (
               <Button onClick={handleSubmit} loading={loading}>
-                Publish to Hub
+                {t("skills.publish.submit")}
               </Button>
             )}
           </div>
