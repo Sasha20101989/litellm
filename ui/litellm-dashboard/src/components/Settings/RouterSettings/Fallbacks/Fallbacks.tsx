@@ -11,6 +11,8 @@ import { getCallbacksCall, setCallbacksCall } from "../../../networking";
 import { isProxyAdminRole } from "@/utils/roles";
 import AddFallbacks from "./AddFallbacks";
 import EditFallbacks from "./EditFallbacks";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 type FallbackEntry = { [modelName: string]: string[] };
 type Fallbacks = FallbackEntry[];
@@ -68,7 +70,7 @@ interface FallbacksProps {
   userID: string | null;
 }
 
-async function testFallbackModelResponse(selectedModel: string, accessToken: string) {
+async function testFallbackModelResponse(selectedModel: string, accessToken: string, t: TFunction<"settings">) {
   const isLocal = process.env.NODE_ENV === "development";
   if (isLocal != true) {
     console.log = function () {};
@@ -81,14 +83,14 @@ async function testFallbackModelResponse(selectedModel: string, accessToken: str
   });
 
   try {
-    NotificationsManager.info("Testing fallback model response...");
+    NotificationsManager.info(t("router.fallbacks.testing"));
 
     const response = await client.chat.completions.create({
       model: selectedModel,
       messages: [
         {
           role: "user",
-          content: "Hi, this is a test message",
+          content: t("router.fallbacks.testMessage"),
         },
       ],
       // @ts-ignore
@@ -97,8 +99,7 @@ async function testFallbackModelResponse(selectedModel: string, accessToken: str
 
     NotificationsManager.success(
       <span>
-        Test model=<strong>{selectedModel}</strong>, received model=
-        <strong>{response.model}</strong>. See{" "}
+        {t("router.fallbacks.testSuccess", { requested: selectedModel, received: response.model })}{" "}
         <a
           href="#"
           onClick={() => window.open("https://docs.litellm.ai/docs/proxy/reliability", "_blank")}
@@ -110,12 +111,13 @@ async function testFallbackModelResponse(selectedModel: string, accessToken: str
     );
   } catch (error) {
     NotificationsManager.fromBackend(
-      `Error occurred while generating model response. Please try again. Error: ${error}`,
+      t("router.fallbacks.testFailed", { error: String(error) }),
     );
   }
 }
 
 const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) => {
+  const { t } = useTranslation("settings");
   const [routerSettings, setRouterSettings] = useState<{ [key: string]: any }>({});
   const [isDeleting, setIsDeleting] = useState(false);
   const [fallbackToDelete, setFallbackToDelete] = useState<FallbackEntry | null>(null);
@@ -189,9 +191,9 @@ const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) 
     try {
       await setCallbacksCall(accessToken, payload);
       setRouterSettings(updatedSettings);
-      NotificationsManager.success("Router settings updated successfully");
+      NotificationsManager.success(t("router.saved"));
     } catch (error) {
-      NotificationsManager.fromBackend("Failed to update router settings: " + error);
+      NotificationsManager.fromBackend(t("router.saveFailed", { error: String(error) }));
     } finally {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
@@ -228,7 +230,7 @@ const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) 
       setRouterSettings(updatedSettings);
     } catch (error) {
       // Revert on error by refetching from server
-      NotificationsManager.fromBackend("Failed to update router settings: " + error);
+      NotificationsManager.fromBackend(t("router.saveFailed", { error: String(error) }));
       if (accessToken && userRole && userID) {
         getCallbacksCall(accessToken, userID, userRole).then((data) => {
           let router_settings = data.router_settings;
@@ -259,16 +261,16 @@ const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) 
       {!hasFallbacks ? (
         <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-6 text-center">
           <Typography.Text type="secondary">
-            No fallbacks configured. Add fallbacks to automatically try another model when the primary fails.
+            {t("router.fallbacks.empty")}
           </Typography.Text>
         </div>
       ) : (
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeaderCell>Model Name</TableHeaderCell>
-              <TableHeaderCell>Fallbacks</TableHeaderCell>
-              <TableHeaderCell>Actions</TableHeaderCell>
+              <TableHeaderCell>{t("router.fallbacks.modelName")}</TableHeaderCell>
+              <TableHeaderCell>{t("router.fallbacks.fallbacks")}</TableHeaderCell>
+              <TableHeaderCell>{t("router.fallbacks.actions")}</TableHeaderCell>
             </TableRow>
           </TableHead>
 
@@ -283,15 +285,15 @@ const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) 
                   <TableCell className="align-top">
                     {canModify && (
                       <>
-                        <Tooltip title="Test fallback">
+                        <Tooltip title={t("router.fallbacks.test")}>
                           <Icon
                             icon={PlayIcon}
                             size="sm"
-                            onClick={() => testFallbackModelResponse(Object.keys(item)[0], accessToken || "")}
+                            onClick={() => testFallbackModelResponse(Object.keys(item)[0], accessToken || "", t)}
                             className="cursor-pointer hover:text-blue-600"
                           />
                         </Tooltip>
-                        <Tooltip title="Edit fallback">
+                        <Tooltip title={t("router.fallbacks.edit")}>
                           <span
                             data-testid="edit-fallback-button"
                             role="button"
@@ -303,7 +305,7 @@ const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) 
                             <Icon icon={PencilAltIcon} size="sm" className="hover:text-blue-600" />
                           </span>
                         </Tooltip>
-                        <Tooltip title="Delete fallback">
+                        <Tooltip title={t("router.fallbacks.delete")}>
                           <span
                             data-testid="delete-fallback-button"
                             role="button"
@@ -336,12 +338,12 @@ const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) 
       )}
       <DeleteResourceModal
         isOpen={isDeleteModalOpen}
-        title="Delete Fallback?"
-        message="Are you sure you want to delete this fallback? This action cannot be undone."
-        resourceInformationTitle="Fallback Information"
+        title={t("router.fallbacks.deleteTitle")}
+        message={t("router.fallbacks.deleteMessage")}
+        resourceInformationTitle={t("router.fallbacks.information")}
         resourceInformation={[
           {
-            label: "Model Name",
+            label: t("router.fallbacks.modelName"),
             value: fallbackToDelete ? Object.keys(fallbackToDelete)[0] : "",
             code: true,
           },

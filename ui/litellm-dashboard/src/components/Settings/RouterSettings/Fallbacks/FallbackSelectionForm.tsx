@@ -10,6 +10,7 @@ import { Plus } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import MessageManager from "@/components/molecules/message_manager";
 import { FallbackGroup, FallbackGroupConfig, FallbackLabels } from "./FallbackGroupConfig";
+import { useTranslation } from "react-i18next";
 
 interface FallbackSelectionFormProps {
   groups: FallbackGroup[];
@@ -28,6 +29,7 @@ export function FallbackSelectionForm({
   maxGroups = 5,
   labels,
 }: FallbackSelectionFormProps) {
+  const { t } = useTranslation("settings");
   const [activeKey, setActiveKey] = useState(groups.length > 0 ? groups[0].id : "1");
 
   // Reset activeKey when groups change (e.g., when modal reopens)
@@ -63,7 +65,7 @@ export function FallbackSelectionForm({
 
   const handleRemoveGroup = (targetId: string) => {
     if (groups.length === 1) {
-      MessageManager.warning(labels?.atLeastOne ?? "At least one group is required");
+      MessageManager.warning(labels?.atLeastOne ?? t("router.fallbacks.atLeastOne"));
       return;
     }
     const newGroups = groups.filter((g) => g.id !== targetId);
@@ -80,7 +82,9 @@ export function FallbackSelectionForm({
 
   // Generate tab items
   const items = groups.map((group, index) => {
-    const label = group.primaryModel ? group.primaryModel : `${labels?.group ?? "Group"} ${index + 1}`;
+    const label = group.primaryModel
+      ? group.primaryModel
+      : `${labels?.group ?? t("router.fallbacks.group")} ${index + 1}`;
     return {
       key: group.id,
       label: label,
@@ -100,9 +104,9 @@ export function FallbackSelectionForm({
   if (groups.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-        <p className="text-gray-500 mb-4">{labels?.empty ?? "No fallback groups configured"}</p>
+        <p className="text-gray-500 mb-4">{labels?.empty ?? t("router.fallbacks.emptyGroups")}</p>
         <Button variant="primary" onClick={handleAddGroup} icon={() => <Plus className="w-4 h-4" />}>
-          {labels?.createFirst ?? "Create First Group"}
+          {labels?.createFirst ?? t("router.fallbacks.createFirst")}
         </Button>
       </div>
     );

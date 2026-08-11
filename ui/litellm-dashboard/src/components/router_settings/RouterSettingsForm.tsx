@@ -3,6 +3,7 @@ import LatencyBasedConfiguration from "./LatencyBasedConfiguration";
 import ReliabilityRetriesSection from "./ReliabilityRetriesSection";
 import RoutingStrategySelector from "./RoutingStrategySelector";
 import TagFilteringToggle from "./TagFilteringToggle";
+import { useTranslation } from "react-i18next";
 
 export interface RouterSettingsFormValue {
   routerSettings: { [key: string]: any };
@@ -39,6 +40,7 @@ const RouterSettingsForm: React.FC<RouterSettingsFormProps> = ({
   routingStrategyDescriptions,
   labels,
 }) => {
+  const { t } = useTranslation("settings");
   const handleStrategyChange = (strategy: string) => {
     onChange({
       ...value,
@@ -58,9 +60,9 @@ const RouterSettingsForm: React.FC<RouterSettingsFormProps> = ({
       {/* Routing Settings Section */}
       <div className="space-y-6">
         <div className="max-w-3xl">
-          <h3 className="text-sm font-medium text-gray-900">{labels?.routingSettings ?? "Routing Settings"}</h3>
+          <h3 className="text-sm font-medium text-gray-900">{labels?.routingSettings ?? t("router.title")}</h3>
           <p className="text-xs text-gray-500 mt-1">
-            {labels?.routingDescription ?? "Configure how requests are routed to deployments"}
+            {labels?.routingDescription ?? t("router.description")}
           </p>
         </div>
 
@@ -72,8 +74,8 @@ const RouterSettingsForm: React.FC<RouterSettingsFormProps> = ({
             routingStrategyDescriptions={routingStrategyDescriptions}
             routerFieldsMetadata={routerFieldsMetadata}
             onStrategyChange={handleStrategyChange}
-            label={labels?.routingStrategy}
-            description={labels?.routingStrategyDescription}
+            label={labels?.routingStrategy ?? t("router.strategy")}
+            description={labels?.routingStrategyDescription ?? t("router.strategyDescription")}
           />
         )}
 
@@ -82,9 +84,9 @@ const RouterSettingsForm: React.FC<RouterSettingsFormProps> = ({
           enabled={value.enableTagFiltering}
           routerFieldsMetadata={routerFieldsMetadata}
           onToggle={handleTagFilteringToggle}
-          label={labels?.tagFiltering}
-          description={labels?.tagFilteringDescription}
-          learnMoreLabel={labels?.learnMore}
+          label={labels?.tagFiltering ?? t("router.tagFiltering")}
+          description={labels?.tagFilteringDescription ?? t("router.tagFilteringDescription")}
+          learnMoreLabel={labels?.learnMore ?? t("router.learnMore")}
         />
       </div>
 
@@ -100,8 +102,8 @@ const RouterSettingsForm: React.FC<RouterSettingsFormProps> = ({
       <ReliabilityRetriesSection
         routerSettings={value.routerSettings}
         routerFieldsMetadata={routerFieldsMetadata}
-        title={labels?.reliability}
-        description={labels?.reliabilityDescription}
+        title={labels?.reliability ?? t("router.reliability")}
+        description={labels?.reliabilityDescription ?? t("router.reliabilityDescription")}
         fieldLabels={labels?.fieldLabels}
         fieldDescriptions={labels?.fieldDescriptions}
       />

@@ -11,7 +11,8 @@ import React, { useMemo, useState } from "react";
 import { fetchAvailableModels } from "@/components/llm_calls/fetch_models";
 import NotificationManager from "../../../molecules/notifications_manager";
 import { AddFallbacksModal } from "./AddFallbacksModal";
-import { FallbackGroup, FallbackGroupConfig } from "./FallbackGroupConfig";
+import { FallbackGroup, FallbackGroupConfig, FallbackLabels } from "./FallbackGroupConfig";
+import { useTranslation } from "react-i18next";
 
 export type FallbackEntry = { [modelName: string]: string[] };
 export type Fallbacks = FallbackEntry[];
@@ -42,6 +43,7 @@ export default function EditFallbacks({
   onClose,
   maxFallbacks = 10,
 }: EditFallbacksProps) {
+  const { t } = useTranslation("settings");
   const [group, setGroup] = useState<FallbackGroup>(() => toGroup(fallbackEntry));
   const [isSaving, setIsSaving] = useState(false);
 
@@ -69,13 +71,34 @@ export default function EditFallbacks({
     setIsSaving(true);
     try {
       await onChange(updatedFallbacks);
-      NotificationManager.success(`Fallbacks for ${primaryModel} updated successfully!`);
+      NotificationManager.success(t("router.fallbacks.updated", { model: primaryModel }));
       onClose();
     } catch (error) {
       console.error("Error updating fallbacks:", error);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const fallbackLabels: FallbackLabels = {
+    group: t("router.fallbacks.group"),
+    atLeastOne: t("router.fallbacks.atLeastOne"),
+    empty: t("router.fallbacks.emptyGroups"),
+    createFirst: t("router.fallbacks.createFirst"),
+    primaryModel: t("router.fallbacks.primaryModel"),
+    selectPrimary: t("router.fallbacks.selectPrimary"),
+    selectPrimaryHint: t("router.fallbacks.selectPrimaryHint"),
+    ifFails: t("router.fallbacks.ifFails"),
+    fallbackChain: t("router.fallbacks.fallbackChain"),
+    maxFallbacks: t("router.fallbacks.maxFallbacks"),
+    selectFallbacks: t("router.fallbacks.selectFallbacks"),
+    maxReached: t("router.fallbacks.maxReached"),
+    more: t("router.fallbacks.more"),
+    selectionHint: t("router.fallbacks.selectionHint"),
+    maxReachedHint: t("router.fallbacks.maxReachedHint"),
+    noFallbacks: t("router.fallbacks.noFallbacks"),
+    addFromDropdown: t("router.fallbacks.addFromDropdown"),
+    removeFallback: t("router.fallbacks.removeFallback"),
   };
 
   return (
@@ -86,10 +109,11 @@ export default function EditFallbacks({
         availableModels={availableModels}
         maxFallbacks={maxFallbacks}
         disablePrimaryModel
+        labels={fallbackLabels}
       />
       <div className="flex items-center justify-end space-x-3 pt-6 mt-6 border-t border-gray-100">
         <Button type="default" onClick={onClose} disabled={isSaving}>
-          Cancel
+          {t("router.fallbacks.cancel")}
         </Button>
         <Button
           type="primary"
@@ -98,7 +122,7 @@ export default function EditFallbacks({
           disabled={isSaving || group.fallbackModels.length === 0}
           loading={isSaving}
         >
-          {isSaving ? "Saving Changes..." : "Save Changes"}
+          {isSaving ? t("router.fallbacks.savingChanges") : t("router.fallbacks.saveChanges")}
         </Button>
       </div>
     </AddFallbacksModal>

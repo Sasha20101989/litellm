@@ -1,5 +1,6 @@
 import React from "react";
 import { Select } from "antd";
+import { useTranslation } from "react-i18next";
 
 interface RoutingStrategySelectorProps {
   selectedStrategy: string | null;
@@ -20,11 +21,12 @@ const RoutingStrategySelector: React.FC<RoutingStrategySelectorProps> = ({
   label,
   description,
 }) => {
+  const { t } = useTranslation("settings");
   return (
     <div className="space-y-2 max-w-3xl">
       <div>
         <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
-          {label || routerFieldsMetadata["routing_strategy"]?.ui_field_name || "Routing Strategy"}
+          {label || routerFieldsMetadata["routing_strategy"]?.ui_field_name || t("router.strategy")}
         </label>
         <p className="text-xs text-gray-500 mt-0.5 mb-2">
           {description || routerFieldsMetadata["routing_strategy"]?.field_description || ""}
