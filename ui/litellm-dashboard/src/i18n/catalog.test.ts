@@ -21,6 +21,7 @@ describe("translation catalog", () => {
       "usage",
       "costOptimization",
       "logs",
+      "management",
     ]);
   });
 

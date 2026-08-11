@@ -9,6 +9,7 @@ import { ProjectResponse } from "@/app/(dashboard)/hooks/projects/useProjects";
 import { DataTable, DataTablePagination } from "@/components/shared/DataTable";
 
 import { getProjectsTableColumns } from "./ProjectsTableColumns";
+import { useTranslation } from "react-i18next";
 
 interface ProjectsTableProps {
   projects: ProjectResponse[];
@@ -23,16 +24,17 @@ const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [DEFAULT_PAGE_SIZE, 25, 50];
 
 function EmptyState({ isFiltered }: { isFiltered: boolean }) {
+  const { t } = useTranslation("management");
   return (
     <div className="flex flex-col items-center gap-1 py-6">
       <div className="mb-1 flex size-10 items-center justify-center rounded-lg bg-muted">
         <FolderKanban className="size-5 text-muted-foreground" />
       </div>
       <div className="text-sm font-medium text-foreground">
-        {isFiltered ? "No matching projects" : "No projects yet"}
+        {isFiltered ? t("projects.noMatches") : t("projects.empty")}
       </div>
       <div className="text-sm text-muted-foreground">
-        {isFiltered ? "Try a different search term." : "Create a project to organize keys within your teams."}
+        {isFiltered ? t("projects.noMatchesDescription") : t("projects.emptyDescription")}
       </div>
     </div>
   );
@@ -46,6 +48,7 @@ export function ProjectsTable({
   teamAliasMap,
   isTeamsLoading,
 }: ProjectsTableProps) {
+  const { t } = useTranslation("management");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [{ page, page_size }, setPagination] = useQueryStates(
     { page: parseAsInteger.withDefault(1), page_size: parseAsInteger.withDefault(DEFAULT_PAGE_SIZE) },
@@ -55,8 +58,8 @@ export function ProjectsTable({
 
   const columns = useMemo(() => {
     const deps = { onProjectClick, teamAliasMap, isTeamsLoading };
-    return getProjectsTableColumns(deps);
-  }, [onProjectClick, teamAliasMap, isTeamsLoading]);
+    return getProjectsTableColumns(deps, t);
+  }, [onProjectClick, teamAliasMap, isTeamsLoading, t]);
 
   const pageCount = Math.max(Math.ceil(projects.length / pageSize), 1);
   const pageIndex = page >= 1 && page <= pageCount ? page - 1 : 0;
@@ -84,7 +87,7 @@ export function ProjectsTable({
         />
       )}
       isLoading={isLoading}
-      loadingMessage="Loading projects…"
+      loadingMessage={t("projects.loading")}
       noDataMessage={<EmptyState isFiltered={isFiltered} />}
       size="compact"
     />

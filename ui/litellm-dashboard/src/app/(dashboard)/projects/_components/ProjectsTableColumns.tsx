@@ -8,6 +8,7 @@ import { DataTableSortHeader } from "@/components/shared/DataTable";
 import { CellTooltip, DateCell, IdentityCell, StatusBadge } from "@/components/shared/table_cells";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { TFunction } from "i18next";
 
 function ProjectTeamCell({
   project,
@@ -35,11 +36,11 @@ function ProjectTeamCell({
   );
 }
 
-function ProjectModelsCell({ project }: { project: ProjectResponse }) {
+function ProjectModelsCell({ project, t }: { project: ProjectResponse; t: TFunction<"management"> }) {
   const models = project.models ?? [];
   return (
     <CellTooltip
-      content={models.length > 0 ? models.join(", ") : "No models"}
+      content={models.length > 0 ? models.join(", ") : t("projects.noModels")}
       trigger={
         <Badge variant="outline" className="cursor-default gap-1.5 font-normal">
           <LayersIcon className="size-3.5" />
@@ -60,7 +61,7 @@ export const getProjectsTableColumns = ({
   onProjectClick,
   teamAliasMap,
   isTeamsLoading,
-}: ProjectsTableColumnsDeps): ColumnDef<ProjectResponse>[] => [
+}: ProjectsTableColumnsDeps, t: TFunction<"management">): ColumnDef<ProjectResponse>[] => [
   {
     id: "project_id",
     accessorKey: "project_id",
@@ -79,8 +80,8 @@ export const getProjectsTableColumns = ({
   {
     id: "project_alias",
     accessorFn: (row) => row.project_alias ?? "",
-    meta: { title: "Name" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Name" />,
+    meta: { title: t("projects.columns.name") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("projects.columns.name")} />,
     size: 200,
     enableSorting: true,
     cell: ({ row }) => (
@@ -92,8 +93,8 @@ export const getProjectsTableColumns = ({
   {
     id: "team",
     accessorFn: (row) => teamAliasMap.get(row.team_id ?? "") ?? "",
-    meta: { title: "Team" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Team" />,
+    meta: { title: t("projects.columns.team") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("projects.columns.team")} />,
     size: 180,
     enableSorting: true,
     cell: ({ row }) => (
@@ -102,23 +103,23 @@ export const getProjectsTableColumns = ({
   },
   {
     id: "models",
-    meta: { title: "Models", skeleton: "badge" },
-    header: "Models",
+    meta: { title: t("projects.columns.models"), skeleton: "badge" },
+    header: t("projects.columns.models"),
     size: 110,
     enableSorting: false,
-    cell: ({ row }) => <ProjectModelsCell project={row.original} />,
+    cell: ({ row }) => <ProjectModelsCell project={row.original} t={t} />,
   },
   {
     id: "status",
     accessorKey: "blocked",
-    meta: { title: "Status", skeleton: "badge" },
-    header: "Status",
+    meta: { title: t("projects.columns.status"), skeleton: "badge" },
+    header: t("projects.columns.status"),
     size: 110,
     enableSorting: false,
     cell: ({ row }) => (
       <StatusBadge
         tone={row.original.blocked ? "error" : "success"}
-        label={row.original.blocked ? "Blocked" : "Active"}
+        label={row.original.blocked ? t("projects.blocked") : t("projects.active")}
       />
     ),
   },
@@ -126,8 +127,8 @@ export const getProjectsTableColumns = ({
     id: "created_at",
     accessorKey: "created_at",
     sortingFn: "datetime",
-    meta: { title: "Created" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Created" />,
+    meta: { title: t("projects.columns.created") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("projects.columns.created")} />,
     size: 140,
     enableSorting: true,
     cell: ({ row }) => <DateCell value={row.original.created_at} precision="date" />,
@@ -135,8 +136,8 @@ export const getProjectsTableColumns = ({
   {
     id: "updated_at",
     accessorKey: "updated_at",
-    meta: { title: "Updated" },
-    header: "Updated",
+    meta: { title: t("projects.columns.updated") },
+    header: t("projects.columns.updated"),
     size: 140,
     enableSorting: false,
     cell: ({ row }) => <DateCell value={row.original.updated_at} precision="date" />,
