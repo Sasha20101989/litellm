@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
+import { useTranslation } from "react-i18next";
 
 interface SearchResult {
   title: string;
@@ -25,6 +26,7 @@ interface SearchToolTesterProps {
 }
 
 export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolName, accessToken, className = "" }) => {
+  const { t, i18n } = useTranslation("gateway");
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchHistory, setSearchHistory] = useState<
@@ -39,7 +41,7 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
 
   const handleSearch = async () => {
     if (!query.trim()) {
-      MessageManager.warning("Please enter a search query");
+      MessageManager.warning(t("searchTools.tester.queryRequired"));
       return;
     }
 
@@ -61,20 +63,20 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
       setSearchHistory((prev) => [historyEntry, ...prev]);
     } catch (error) {
       console.error("Error querying search tool:", error);
-      NotificationsManager.fromBackend("Failed to query search tool");
+      NotificationsManager.fromBackend(t("searchTools.tester.queryFailed"));
     } finally {
       setIsLoading(false);
     }
   };
 
   const formatTimestamp = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleString();
+    return new Date(timestamp).toLocaleString(i18n.language);
   };
 
   const clearHistory = () => {
     setSearchHistory([]);
     setExpandedResults({});
-    NotificationsManager.success("Search history cleared");
+    NotificationsManager.success(t("searchTools.tester.historyCleared"));
   };
 
   const toggleResultExpansion = (historyIndex: number, resultIndex: number) => {
@@ -90,7 +92,7 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
   return (
     <Card className={`mt-6 ${className}`}>
       <div className="px-6">
-        <h2 className="text-lg font-semibold text-foreground">Test Search Tool</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("searchTools.tester.title")}</h2>
       </div>
 
       <div className="flex min-h-[600px] flex-col px-6">
@@ -107,14 +109,14 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                     handleSearch();
                   }
                 }}
-                placeholder="Enter your search query..."
+                placeholder={t("searchTools.tester.placeholder")}
                 disabled={isLoading}
                 className="h-12 pl-11 text-[15px]"
               />
             </div>
             <Button onClick={handleSearch} disabled={isLoading || !query.trim()} className="h-12 px-6 text-[15px]">
               {isLoading ? <UiLoadingSpinner className="size-4" /> : <Search className="size-4" />}
-              Search
+              {t("searchTools.tester.search")}
             </Button>
           </div>
         </div>
@@ -125,15 +127,15 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
               <div className="mb-6 flex size-24 items-center justify-center rounded-full bg-muted">
                 <Search className="size-12 text-muted-foreground" />
               </div>
-              <p className="text-lg font-medium text-foreground">Test your search tool</p>
-              <p className="mt-2 text-sm text-muted-foreground">Enter a query above to see search results</p>
+              <p className="text-lg font-medium text-foreground">{t("searchTools.tester.emptyTitle")}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{t("searchTools.tester.emptyHint")}</p>
             </div>
           ) : (
             <div>
               {isLoading && (
                 <div className="flex flex-col items-center justify-center py-16">
                   <UiLoadingSpinner className="size-8 text-primary" />
-                  <p className="mt-4 font-medium text-muted-foreground">Searching...</p>
+                  <p className="mt-4 font-medium text-muted-foreground">{t("searchTools.tester.searching")}</p>
                 </div>
               )}
 
@@ -143,7 +145,7 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                          Search Query
+                          {t("searchTools.tester.query")}
                         </p>
                         <div className="mt-1.5 text-base font-semibold text-foreground">{latestResults.query}</div>
                       </div>
@@ -151,8 +153,12 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                         <p className="text-xs text-muted-foreground">{formatTimestamp(latestResults.timestamp)}</p>
                         <div className="mt-1 flex items-center gap-3">
                           <div className="text-sm font-semibold text-primary">
-                            {latestResults.response?.results?.length || 0}{" "}
-                            {latestResults.response?.results?.length === 1 ? "result" : "results"}
+                            {t(
+                              latestResults.response?.results?.length === 1
+                                ? "searchTools.tester.resultOne"
+                                : "searchTools.tester.resultMany",
+                              { count: latestResults.response?.results?.length || 0 },
+                            )}
                           </div>
                           {latestResults.latency !== undefined && (
                             <>
@@ -190,7 +196,7 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                                 <Button
                                   variant="ghost"
                                   size="icon-sm"
-                                  aria-label="Open result in new tab"
+                                  aria-label={t("searchTools.tester.openResult")}
                                   className="shrink-0 text-muted-foreground"
                                   onClick={() => window.open(result.url, "_blank")}
                                 >
@@ -213,7 +219,9 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                                   className="mt-3 h-auto p-0"
                                   onClick={() => toggleResultExpansion(0, resultIndex)}
                                 >
-                                  {isResultExpanded ? "Show less" : "Show more"}
+                                  {isResultExpanded
+                                    ? t("searchTools.tester.showLess")
+                                    : t("searchTools.tester.showMore")}
                                 </Button>
                               )}
                             </div>
@@ -226,8 +234,8 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                       <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
                         <Search className="size-6 text-muted-foreground" />
                       </div>
-                      <p className="font-medium text-foreground">No results found</p>
-                      <p className="mt-1 text-sm text-muted-foreground">Try a different search query</p>
+                      <p className="font-medium text-foreground">{t("searchTools.tester.noResults")}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{t("searchTools.tester.noResultsHint")}</p>
                     </div>
                   )}
                 </>
@@ -236,9 +244,9 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
               {searchHistory.length > 1 && (
                 <div className="mt-8 border-t border-border pt-6">
                   <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm font-semibold text-foreground">Previous Searches</p>
+                    <p className="text-sm font-semibold text-foreground">{t("searchTools.tester.previous")}</p>
                     <Button variant="link" size="sm" className="h-auto p-0" onClick={clearHistory}>
-                      Clear All
+                      {t("searchTools.tester.clearAll")}
                     </Button>
                   </div>
                   <div className="space-y-2">
@@ -253,8 +261,12 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                         <div className="truncate text-sm font-medium text-foreground">{entry.query}</div>
                         <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
                           <span className="font-medium text-primary">
-                            {entry.response?.results?.length || 0}{" "}
-                            {entry.response?.results?.length === 1 ? "result" : "results"}
+                            {t(
+                              entry.response?.results?.length === 1
+                                ? "searchTools.tester.resultOne"
+                                : "searchTools.tester.resultMany",
+                              { count: entry.response?.results?.length || 0 },
+                            )}
                           </span>
                           {entry.latency !== undefined && (
                             <>

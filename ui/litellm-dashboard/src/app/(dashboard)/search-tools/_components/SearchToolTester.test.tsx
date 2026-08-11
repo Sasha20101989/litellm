@@ -5,6 +5,29 @@ import { SearchToolTester } from "./SearchToolTester";
 import * as networking from "@/components/networking";
 import NotificationsManager from "@/components/molecules/notifications_manager";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/components/networking", () => ({
   searchToolQueryCall: vi.fn(),
 }));
@@ -44,6 +67,7 @@ const defaultProps = {
 
 describe("SearchToolTester", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     vi.mocked(networking.searchToolQueryCall).mockResolvedValue(mockSearchResults);
     vi.spyOn(Date, "now").mockReturnValue(1000000000000);
@@ -52,6 +76,16 @@ describe("SearchToolTester", () => {
   it("should render", () => {
     render(<SearchToolTester {...defaultProps} />);
     expect(screen.getByText("Test Search Tool")).toBeInTheDocument();
+  });
+
+  it("renders the search tester in Russian", () => {
+    localization.language = "ru";
+    render(<SearchToolTester {...defaultProps} />);
+
+    expect(screen.getByText("Проверка инструмента поиска")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Введите поисковый запрос...")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Искать" })).toBeInTheDocument();
+    expect(screen.getByText("Введите запрос выше, чтобы увидеть результаты")).toBeInTheDocument();
   });
 
   it("should display empty state when no search has been performed", () => {
