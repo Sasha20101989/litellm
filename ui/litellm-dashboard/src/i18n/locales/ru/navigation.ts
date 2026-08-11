@@ -75,6 +75,15 @@ export const ruNavigation = {
       expand: "Развернуть сайдбар",
       collapse: "Свернуть сайдбар",
     },
+    enterpriseUsage: {
+      title: "Использование Enterprise",
+      activePlan: "Активный план",
+      expires: "Истекает {{date}}",
+      expired: "Истёк {{date}}",
+      seats: "Места",
+      teams: "Команды",
+      loading: "Загрузка…",
+    },
     account: {
       account: "Аккаунт",
       accountMenu: "Меню аккаунта",

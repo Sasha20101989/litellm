@@ -75,6 +75,15 @@ export const enNavigation = {
       expand: "Expand sidebar",
       collapse: "Collapse sidebar",
     },
+    enterpriseUsage: {
+      title: "Enterprise usage",
+      activePlan: "Active plan",
+      expires: "Expires {{date}}",
+      expired: "Expired {{date}}",
+      seats: "Seats",
+      teams: "Teams",
+      loading: "Loading…",
+    },
     account: {
       account: "Account",
       accountMenu: "Account menu",
