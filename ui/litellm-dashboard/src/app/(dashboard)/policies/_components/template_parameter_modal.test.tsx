@@ -5,6 +5,24 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/../tests/test-utils";
 import TemplateParameterModal from "./template_parameter_modal";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    const defaultValue = typeof values?.defaultValue === "string" ? values.defaultValue : key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      typeof copy === "string" ? copy : defaultValue,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 const { modelHubCall, enrichPolicyTemplateStream } = vi.hoisted(() => ({
   modelHubCall: vi.fn(),
   enrichPolicyTemplateStream: vi.fn(),
@@ -59,7 +77,17 @@ const renderModal = (props: Partial<typeof defaultProps> = {}) =>
 describe("TemplateParameterModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
     modelHubCall.mockResolvedValue({ data: [{ model_group: "gpt-5.1" }] });
+  });
+
+  it("renders enrichment controls in Russian", async () => {
+    localization.language = "ru";
+    renderModal({ template: enrichmentTemplate });
+
+    expect(await screen.findByText("Поиск конкурентов")).toBeInTheDocument();
+    expect(screen.getByText("Выбрать модель")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Продолжить" })).toBeInTheDocument();
   });
 
   it("renders nothing while closed", () => {

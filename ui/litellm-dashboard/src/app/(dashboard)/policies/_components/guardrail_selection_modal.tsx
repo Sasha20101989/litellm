@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, Info } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface GuardrailInfo {
   guardrail_name: string;
@@ -39,12 +40,13 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
   isLoading = false,
   progressInfo,
 }) => {
+  const { t } = useTranslation("gateway");
   const [selectedGuardrails, setSelectedGuardrails] = useState<Set<string>>(new Set());
 
   // Prepare guardrail info with existence status
   const guardrailsInfo: GuardrailInfo[] = (template?.guardrailDefinitions || []).map((def: any) => ({
     guardrail_name: def.guardrail_name,
-    description: def.guardrail_info?.description || "No description available",
+    description: def.guardrail_info?.description || t("policies.guardrailSelection.noDescription"),
     alreadyExists: existingGuardrails.has(def.guardrail_name),
     definition: def,
   }));
@@ -97,11 +99,14 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
             {template?.title}
             {progressInfo && (
               <Badge variant="secondary">
-                Template {progressInfo.current} of {progressInfo.total}
+                {t("policies.guardrailSelection.progress", {
+                  current: progressInfo.current,
+                  total: progressInfo.total,
+                })}
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription>Review and select guardrails to create for this template</DialogDescription>
+          <DialogDescription>{t("policies.guardrailSelection.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
@@ -110,13 +115,19 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
             <Info className="size-4 text-muted-foreground" />
             <div className="flex-1">
               <div className="text-sm">
-                <span className="font-medium">{guardrailsInfo.length} total guardrails</span>
+                <span className="font-medium">
+                  {t("policies.guardrailSelection.total", { count: guardrailsInfo.length })}
+                </span>
                 <span className="mx-2 text-muted-foreground">•</span>
-                <span className="font-medium text-green-600">{newGuardrailsCount} new</span>
+                <span className="font-medium text-green-600">
+                  {t("policies.guardrailSelection.new", { count: newGuardrailsCount })}
+                </span>
                 {existingCount > 0 && (
                   <>
                     <span className="mx-2 text-muted-foreground">•</span>
-                    <span className="text-muted-foreground">{existingCount} already exist</span>
+                    <span className="text-muted-foreground">
+                      {t("policies.guardrailSelection.existing", { count: existingCount })}
+                    </span>
                   </>
                 )}
               </div>
@@ -124,10 +135,10 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
             {newGuardrailsCount > 0 && (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                  Select All New
+                  {t("policies.guardrailSelection.selectAllNew")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleDeselectAll}>
-                  Deselect All
+                  {t("policies.guardrailSelection.deselectAll")}
                 </Button>
               </div>
             )}
@@ -156,7 +167,9 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-sm font-medium">{guardrail.guardrail_name}</span>
-                      {guardrail.alreadyExists && <Badge variant="secondary">Already exists</Badge>}
+                      {guardrail.alreadyExists && (
+                        <Badge variant="secondary">{t("policies.guardrailSelection.alreadyExists")}</Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground">{guardrail.description}</p>
 
@@ -166,12 +179,16 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
                       <Badge variant="secondary">{guardrail.definition?.litellm_params?.mode || "unknown"}</Badge>
                       {guardrail.definition?.litellm_params?.patterns && (
                         <Badge variant="secondary">
-                          {guardrail.definition.litellm_params.patterns.length} pattern(s)
+                          {t("policies.guardrailSelection.patterns", {
+                            count: guardrail.definition.litellm_params.patterns.length,
+                          })}
                         </Badge>
                       )}
                       {guardrail.definition?.litellm_params?.categories && (
                         <Badge variant="secondary">
-                          {guardrail.definition.litellm_params.categories.length} category/categories
+                          {t("policies.guardrailSelection.categories", {
+                            count: guardrail.definition.litellm_params.categories.length,
+                          })}
                         </Badge>
                       )}
                     </div>
@@ -183,8 +200,8 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
 
           {guardrailsInfo.length === 0 && (
             <div className="py-8 text-center text-muted-foreground">
-              <p>No guardrails defined for this template.</p>
-              <p className="text-sm mt-2">This template will use existing guardrails in your system.</p>
+              <p>{t("policies.guardrailSelection.empty")}</p>
+              <p className="text-sm mt-2">{t("policies.guardrailSelection.emptyDescription")}</p>
             </div>
           )}
 
@@ -196,7 +213,9 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-lg">✨</span>
                   <span className="text-sm font-medium">
-                    AI-Discovered Competitors ({template.discoveredCompetitors.length})
+                    {t("policies.guardrailSelection.discoveredCompetitors", {
+                      count: template.discoveredCompetitors.length,
+                    })}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -207,7 +226,7 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
                   ))}
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  These competitor names will be automatically blocked by the competitor-name-blocker guardrail.
+                  {t("policies.guardrailSelection.discoveredDescription")}
                 </p>
               </div>
             </>
@@ -218,29 +237,28 @@ const GuardrailSelectionModal: React.FC<GuardrailSelectionModalProps> = ({
           {/* Selected Summary */}
           <div className="text-sm text-muted-foreground">
             {selectedCount > 0 ? (
-              <p>
-                <span className="font-medium text-foreground">{selectedCount}</span> guardrail
-                {selectedCount > 1 ? "s" : ""} will be created
-              </p>
+              <p>{t("policies.guardrailSelection.selected", { count: selectedCount })}</p>
             ) : existingCount > 0 ? (
-              <p className="text-green-600">All guardrails already exist. You can proceed to use this template.</p>
+              <p className="text-green-600">{t("policies.guardrailSelection.allExist")}</p>
             ) : (
-              <p className="text-amber-600">
-                Select at least one guardrail to create, or click &quot;Use Template&quot; to proceed without creating
-                new guardrails.
-              </p>
+              <p className="text-amber-600">{t("policies.guardrailSelection.selectOne")}</p>
             )}
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={isLoading}>
-            Cancel
+            {t("policies.guardrailSelection.cancel")}
           </Button>
           <Button onClick={handleConfirm} disabled={isLoading || (selectedCount === 0 && existingCount === 0)}>
             {selectedCount > 0
-              ? `Create ${selectedCount} Guardrail${selectedCount > 1 ? "s" : ""} & Use Template`
-              : "Use Template"}
+              ? t(
+                  selectedCount === 1
+                    ? "policies.guardrailSelection.createAndUseOne"
+                    : "policies.guardrailSelection.createAndUseMany",
+                  { count: selectedCount },
+                )
+              : t("policies.guardrailSelection.useTemplate")}
           </Button>
         </DialogFooter>
       </DialogContent>

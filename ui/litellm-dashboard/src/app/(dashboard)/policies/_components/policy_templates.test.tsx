@@ -6,6 +6,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as networking from "@/components/networking";
 import PolicyTemplates from "./policy_templates";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    const defaultValue = typeof values?.defaultValue === "string" ? values.defaultValue : key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      typeof copy === "string" ? copy : defaultValue,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 vi.mock("@/components/networking");
 
 vi.mock("@heroicons/react/outline", () => ({
@@ -48,6 +66,18 @@ const defaultProps = {
 describe("PolicyTemplates", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
+  });
+
+  it("renders template controls in Russian", async () => {
+    localization.language = "ru";
+    vi.mocked(networking.getPolicyTemplates).mockResolvedValue([makeTemplate({ inherits: "base-policy" })]);
+
+    renderWithProviders(<PolicyTemplates {...defaultProps} />);
+
+    expect(await screen.findByText("Шаблоны политик")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Использовать шаблон" })).toBeInTheDocument();
+    expect(screen.getByText("Наследует:")).toBeInTheDocument();
   });
 
   it("should render the section header after loading", async () => {
