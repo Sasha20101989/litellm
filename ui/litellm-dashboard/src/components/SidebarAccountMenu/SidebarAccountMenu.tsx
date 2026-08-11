@@ -18,6 +18,7 @@ import { ChevronsUpDown, Crown, IdCard, LogOut, Mail, ShieldCheck } from "lucide
 import React from "react";
 import { useDashboardLanguage } from "@/i18n/I18nProvider";
 import { getSidebarTranslations } from "@/i18n/sidebar";
+import { accountRoleTranslationKey } from "@/utils/roles";
 
 const RELEASE_NOTES_URL = "https://docs.litellm.ai/release_notes";
 
@@ -92,6 +93,8 @@ const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({ onLogout, colla
   const disableShowNewBadge = useDisableShowNewBadge();
   const { language } = useDashboardLanguage();
   const accountText = getSidebarTranslations(language).account;
+  const roleTranslationKey = accountRoleTranslationKey(userRole);
+  const localizedUserRole = roleTranslationKey ? accountText.roles[roleTranslationKey] : userRole;
 
   const setFlag = (key: string, checked: boolean) => {
     if (checked) {
@@ -138,7 +141,7 @@ const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({ onLogout, colla
   const hue = hueFromString(seed);
   const accountDisplayName = navAccountDisplayName(userEmail, userId);
   const displayName = accountDisplayName === "Account" ? accountText.account : accountDisplayName;
-  const triggerLabel = `${accountText.accountMenu} — ${userRole ?? accountText.unknownRole} — ${accountText.signedInAs} ${userEmail || userId || accountText.unknownUser}`;
+  const triggerLabel = `${accountText.accountMenu} — ${localizedUserRole ?? accountText.unknownRole} — ${accountText.signedInAs} ${userEmail || userId || accountText.unknownUser}`;
 
   return (
     <Popover>
@@ -159,7 +162,9 @@ const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({ onLogout, colla
           <>
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block truncate text-[13px] font-medium text-sidebar-foreground">{displayName}</span>
-              {userRole && <span className="block truncate text-[11px] text-muted-foreground">{userRole}</span>}
+              {localizedUserRole && (
+                <span className="block truncate text-[11px] text-muted-foreground">{localizedUserRole}</span>
+              )}
             </span>
             <ChevronsUpDown size={16} strokeWidth={1.75} className="shrink-0 text-muted-foreground" aria-hidden />
           </>
@@ -215,7 +220,7 @@ const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({ onLogout, colla
             )}
           </InfoRow>
           <InfoRow icon={<ShieldCheck className="size-[17px]" />} label={accountText.role}>
-            <Badge variant="secondary">{userRole}</Badge>
+            <Badge variant="secondary">{localizedUserRole}</Badge>
           </InfoRow>
           <InfoRow icon={<Mail className="size-[17px]" />} label={accountText.email}>
             <MonoValue value={userEmail} copyLabel={accountText.copyEmail} />

@@ -40,6 +40,16 @@ export const enCommon = {
       unknownRole: "Unknown role",
       unknownIdentity: "unknown",
       menuAria: "Account menu — {{role}} — signed in as {{identity}}",
+      roles: {
+        appOwner: "App Owner",
+        admin: "Admin",
+        adminViewer: "Admin Viewer",
+        orgAdmin: "Organization Admin",
+        internalUser: "Internal User",
+        internalViewer: "Internal Viewer",
+        appUser: "App User",
+        unknown: "Unknown Role",
+      },
     },
     blog: {
       title: "Blog",

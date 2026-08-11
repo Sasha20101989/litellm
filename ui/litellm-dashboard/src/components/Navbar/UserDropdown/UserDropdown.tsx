@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/cva.config";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { accountRoleTranslationKey } from "@/utils/roles";
 
 const { Text } = Typography;
 
@@ -76,6 +77,10 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ onLogout, variant = "navbar
   const disableBlogPosts = useDisableBlogPosts();
   const disableBouncingIcon = useDisableBouncingIcon();
   const [disableShowNewBadge, setDisableShowNewBadge] = useState(false);
+  const roleTranslationKey = accountRoleTranslationKey(userRole);
+  const localizedUserRole = roleTranslationKey
+    ? t(`nav.account.roles.${roleTranslationKey}`, { defaultValue: userRole })
+    : userRole;
 
   useEffect(() => {
     const storedValue = getLocalStorageItem("disableShowNewBadge");
@@ -127,7 +132,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ onLogout, variant = "navbar
           <SafetyOutlined />
           <Text type="secondary">{t("nav.account.role")}</Text>
         </Space>
-        <Text>{userRole}</Text>
+        <Text>{localizedUserRole}</Text>
       </Space>
       <Divider style={{ margin: "8px 0" }} />
       <Space style={{ width: "100%", justifyContent: "space-between" }}>
@@ -208,7 +213,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ onLogout, variant = "navbar
   const displayName = navAccountDisplayName(userEmail, userId);
   const localizedDisplayName = displayName === "Account" ? t("nav.account.fallbackName") : displayName;
   const accountMenuLabel = t("nav.account.menuAria", {
-    role: userRole ?? t("nav.account.unknownRole"),
+    role: localizedUserRole ?? t("nav.account.unknownRole"),
     identity: userEmail || userId || t("nav.account.unknownIdentity"),
   });
 

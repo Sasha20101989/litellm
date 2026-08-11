@@ -115,6 +115,8 @@ describe("SidebarAccountMenu", () => {
       "Скрыть прыгающий значок",
       "Выйти",
     ].forEach((label) => expect(screen.getByText(label)).toBeInTheDocument());
+    expect(screen.getAllByText("Администратор").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Копировать эл. почту" })).toBeInTheDocument();
   });
 

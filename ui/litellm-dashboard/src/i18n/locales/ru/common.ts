@@ -40,6 +40,16 @@ export const ruCommon = {
       unknownRole: "Неизвестная роль",
       unknownIdentity: "неизвестный пользователь",
       menuAria: "Меню аккаунта — {{role}} — выполнен вход: {{identity}}",
+      roles: {
+        appOwner: "Владелец приложения",
+        admin: "Администратор",
+        adminViewer: "Администратор с правом просмотра",
+        orgAdmin: "Администратор организации",
+        internalUser: "Внутренний пользователь",
+        internalViewer: "Внутренний наблюдатель",
+        appUser: "Пользователь приложения",
+        unknown: "Неизвестная роль",
+      },
     },
     blog: {
       title: "Блог",
