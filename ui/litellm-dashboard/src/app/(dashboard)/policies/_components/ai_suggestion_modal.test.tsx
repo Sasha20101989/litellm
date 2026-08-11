@@ -5,6 +5,23 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/../tests/test-utils";
 import AiSuggestionModal from "./ai_suggestion_modal";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      typeof copy === "string" ? copy : key,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 const { suggestPolicyTemplates, modelHubCall, testPolicyTemplate, enrichPolicyTemplateStream } = vi.hoisted(() => ({
   suggestPolicyTemplates: vi.fn(),
   modelHubCall: vi.fn(),
@@ -58,8 +75,18 @@ const pickModel = async (user: ReturnType<typeof userEvent.setup>) => {
 describe("AiSuggestionModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
     modelHubCall.mockResolvedValue({ data: [{ model_group: "gpt-5.1" }, { model_group: "claude-opus-4-8" }] });
     suggestPolicyTemplates.mockResolvedValue(suggestResponse);
+  });
+
+  it("renders the suggestion form in Russian", async () => {
+    localization.language = "ru";
+    renderModal();
+
+    expect(await screen.findByText("Подбор политик с помощью ИИ")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Предложить политики" })).toBeDisabled();
+    expect(screen.getByText("Примеры атакующих запросов, которые нужно блокировать")).toBeInTheDocument();
   });
 
   it("renders nothing while closed", () => {
