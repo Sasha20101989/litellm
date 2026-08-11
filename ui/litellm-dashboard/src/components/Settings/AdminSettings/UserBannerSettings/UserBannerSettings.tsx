@@ -15,12 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { SEVERITY_ICONS, UserBannerMarkdown } from "@/components/UserBanner";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const SEVERITY_LABELS: Record<UserBannerSeverity, string> = {
-  info: "Info",
-  warning: "Warning",
-  error: "Error",
-};
+import { useTranslation } from "react-i18next";
 
 const EMPTY_BANNER: UserBanner = { enabled: false, message: "", severity: "info", revision: "" };
 
@@ -49,6 +44,7 @@ interface UserBannerSettingsFormProps {
 }
 
 function UserBannerSettingsForm({ persisted, isLoading, isPending, saveBanner }: UserBannerSettingsFormProps) {
+  const { t } = useTranslation("settings");
   const [draft, setDraft] = useState<UserBannerUpdate>({
     enabled: persisted.enabled,
     message: persisted.message,
@@ -60,7 +56,7 @@ function UserBannerSettingsForm({ persisted, isLoading, isPending, saveBanner }:
   const handleSave = () => {
     saveBanner(draft, {
       onSuccess: () => {
-        NotificationManager.success("User banner updated successfully");
+        NotificationManager.success(t("admin.banner.saved"));
       },
       onError: (error) => {
         NotificationManager.fromBackend(error);
@@ -71,10 +67,9 @@ function UserBannerSettingsForm({ persisted, isLoading, isPending, saveBanner }:
   return (
     <Card>
       <CardHeader>
-        <CardTitle>User Banner</CardTitle>
+        <CardTitle>{t("admin.banner.title")}</CardTitle>
         <CardDescription>
-          Publish an announcement to all dashboard users. Markdown is supported; the banner appears below the header on
-          every page until you unpublish it. Users can dismiss it, and it reappears whenever the content changes.
+          {t("admin.banner.description")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -86,41 +81,45 @@ function UserBannerSettingsForm({ persisted, isLoading, isPending, saveBanner }:
               <Switch
                 checked={draft.enabled}
                 onCheckedChange={(checked: boolean) => setDraft({ ...draft, enabled: checked })}
-                aria-label="Publish user banner"
+                aria-label={t("admin.banner.publish")}
               />
-              <Label>Publish user banner</Label>
+              <Label>{t("admin.banner.publish")}</Label>
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="user-banner-message">Message</Label>
+              <Label htmlFor="user-banner-message">{t("admin.banner.message")}</Label>
               <Textarea
                 id="user-banner-message"
                 value={draft.message}
                 maxLength={4000}
                 rows={3}
-                placeholder="**Scheduled maintenance** tonight at 10 PM UTC. See [status page](https://example.com)."
+                placeholder={t("admin.banner.placeholder")}
                 onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
                   setDraft({ ...draft, message: event.target.value })
                 }
               />
-              {messageMissing && <p className="text-sm text-destructive">Add a message before publishing.</p>}
+              {messageMissing && <p className="text-sm text-destructive">{t("admin.banner.missing")}</p>}
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label>Severity</Label>
+              <Label>{t("admin.banner.severity")}</Label>
               <Select
                 value={draft.severity}
                 onValueChange={(value: string | null) =>
                   setDraft({ ...draft, severity: (value ?? "info") as UserBannerSeverity })
                 }
               >
-                <SelectTrigger className="w-48" aria-label="Banner severity">
-                  <SelectValue placeholder="Severity" />
+                <SelectTrigger className="w-48" aria-label={t("admin.banner.severity")}>
+                  <SelectValue placeholder={t("admin.banner.severity")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(SEVERITY_LABELS) as UserBannerSeverity[]).map((severity) => (
+                  {(["info", "warning", "error"] as UserBannerSeverity[]).map((severity) => (
                     <SelectItem key={severity} value={severity}>
-                      {SEVERITY_LABELS[severity]}
+                      {severity === "info"
+                        ? t("admin.banner.severities.info")
+                        : severity === "warning"
+                          ? t("admin.banner.severities.warning")
+                          : t("admin.banner.severities.error")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -129,7 +128,7 @@ function UserBannerSettingsForm({ persisted, isLoading, isPending, saveBanner }:
 
             {draft.message.trim() !== "" && (
               <div className="flex flex-col gap-2">
-                <Label>Preview</Label>
+                <Label>{t("admin.banner.preview")}</Label>
                 <Alert variant={draft.severity}>
                   {SEVERITY_ICONS[draft.severity]}
                   <AlertDescription>
@@ -141,7 +140,7 @@ function UserBannerSettingsForm({ persisted, isLoading, isPending, saveBanner }:
 
             <div>
               <Button onClick={handleSave} disabled={isPending || messageMissing}>
-                {isPending ? "Saving..." : "Save banner"}
+                {isPending ? t("admin.banner.saving") : t("admin.banner.save")}
               </Button>
             </div>
           </div>

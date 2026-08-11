@@ -3,6 +3,7 @@ import { Form, Button as Button2, Select } from "antd";
 import { Text, TextInput } from "@tremor/react";
 import { getSSOSettings, updateSSOSettings } from "./networking";
 import NotificationManager from "./molecules/notifications_manager";
+import { useTranslation } from "react-i18next";
 
 interface UIAccessControlFormProps {
   accessToken: string | null;
@@ -11,6 +12,7 @@ interface UIAccessControlFormProps {
 
 // Separate UI Access Control Form Component
 const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, onSuccess }) => {
+  const { t } = useTranslation("settings");
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +55,7 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
 
   const handleUIAccessSubmit = async (formValues: Record<string, any>) => {
     if (!accessToken) {
-      NotificationManager.fromBackend("No access token available");
+      NotificationManager.fromBackend(t("admin.accessControl.noToken"));
       return;
     }
 
@@ -81,7 +83,7 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
       onSuccess();
     } catch (error) {
       console.error("Failed to save UI access settings:", error);
-      NotificationManager.fromBackend("Failed to save UI access settings");
+      NotificationManager.fromBackend(t("admin.accessControl.saveFailed"));
     } finally {
       setLoading(false);
     }
@@ -91,15 +93,19 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
     <div style={{ padding: "16px" }}>
       <div style={{ marginBottom: "16px" }}>
         <Text style={{ fontSize: "14px", color: "#6b7280" }}>
-          Configure who can access the UI interface and how group information is extracted from JWT tokens.
+          {t("admin.accessControl.description")}
         </Text>
       </div>
 
       <Form form={form} onFinish={handleUIAccessSubmit} layout="vertical">
-        <Form.Item label="UI Access Mode" name="ui_access_mode_type" tooltip="Controls who can access the UI interface">
-          <Select placeholder="Select access mode">
-            <Select.Option value="all_authenticated_users">All Authenticated Users</Select.Option>
-            <Select.Option value="restricted_sso_group">Restricted SSO Group</Select.Option>
+        <Form.Item
+          label={t("admin.accessControl.mode")}
+          name="ui_access_mode_type"
+          tooltip={t("admin.accessControl.modeTooltip")}
+        >
+          <Select placeholder={t("admin.accessControl.selectMode")}>
+            <Select.Option value="all_authenticated_users">{t("admin.accessControl.allUsers")}</Select.Option>
+            <Select.Option value="restricted_sso_group">{t("admin.accessControl.restrictedGroup")}</Select.Option>
           </Select>
         </Form.Item>
 
@@ -113,9 +119,9 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
             const uiAccessModeType = getFieldValue("ui_access_mode_type");
             return uiAccessModeType === "restricted_sso_group" ? (
               <Form.Item
-                label="Restricted SSO Group"
+                label={t("admin.accessControl.restrictedGroup")}
                 name="restricted_sso_group"
-                rules={[{ required: true, message: "Please enter the restricted SSO group" }]}
+                rules={[{ required: true, message: t("admin.accessControl.restrictedRequired") }]}
               >
                 <TextInput placeholder="ui-access-group" />
               </Form.Item>
@@ -124,9 +130,9 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
         </Form.Item>
 
         <Form.Item
-          label="SSO Group JWT Field"
+          label={t("admin.accessControl.jwtField")}
           name="sso_group_jwt_field"
-          tooltip="JWT field name that contains team/group information. Use dot notation to access nested fields."
+          tooltip={t("admin.accessControl.jwtTooltip")}
         >
           <TextInput placeholder="groups" />
         </Form.Item>
@@ -141,7 +147,7 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
               borderColor: "#6366f1",
             }}
           >
-            Update UI Access Control
+            {t("admin.accessControl.update")}
           </Button2>
         </div>
       </Form>
