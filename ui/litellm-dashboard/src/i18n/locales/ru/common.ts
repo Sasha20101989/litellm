@@ -78,6 +78,7 @@ export const ruCommon = {
       prompts: "Управление промптами",
     },
   },
+  adminOnlyNotice: "Раздел «{{page}}» доступен только администраторам.",
   table: {
     columns: "Столбцы",
     filters: "Фильтры",

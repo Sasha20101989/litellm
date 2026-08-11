@@ -78,6 +78,7 @@ export const enCommon = {
       prompts: "Prompt Management",
     },
   },
+  adminOnlyNotice: "{{page}} is only available to admin users.",
   table: {
     columns: "Columns",
     filters: "Filters",

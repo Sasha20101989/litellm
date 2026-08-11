@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { MemoryRow, createMemory, deleteMemory, fetchMemoryList, updateMemory } from "@/components/networking";
 import DeleteResourceModal from "@/components/common_components/DeleteResourceModal";
@@ -25,6 +26,7 @@ interface MemoryViewProps {
 const DEFAULT_PAGE_SIZE = 50;
 
 export const MemoryView: React.FC<MemoryViewProps> = ({ accessToken }) => {
+  const { t } = useTranslation("gateway");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchInput, { wait: DEBOUNCE_WAIT_MS });
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE });
@@ -42,7 +44,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ accessToken }) => {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: [MEMORY_LIST_KEY, debouncedSearch, pagination.pageIndex, pagination.pageSize],
     queryFn: () => {
-      if (!accessToken) throw new Error("Access token required");
+      if (!accessToken) throw new Error(t("memory.accessTokenRequired"));
       // Prefix search matches the Redis-style mental model (namespace scan):
       // typing "user:" finds "user:profile", "user:prefs", etc.
       return fetchMemoryList(accessToken, {
@@ -70,44 +72,44 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ accessToken }) => {
 
   const createMutation = useMutation({
     mutationFn: (args: { key: string; value: string; metadata: unknown }) => {
-      if (!accessToken) throw new Error("Access token required");
+      if (!accessToken) throw new Error(t("memory.accessTokenRequired"));
       return createMemory(accessToken, args);
     },
     onSuccess: (row) => {
-      MessageManager.success(`Created ${row.key}`);
+      MessageManager.success(t("memory.created", { key: row.key }));
       invalidateList();
     },
     onError: (err: Error) => {
-      MessageManager.error(`Save failed: ${err.message}`);
+      MessageManager.error(t("memory.saveFailed", { message: err.message }));
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (args: { key: string; value?: string; metadata: unknown }) => {
-      if (!accessToken) throw new Error("Access token required");
+      if (!accessToken) throw new Error(t("memory.accessTokenRequired"));
       const { key, ...payload } = args;
       return updateMemory(accessToken, key, payload);
     },
     onSuccess: (row) => {
-      MessageManager.success(`Updated ${row.key}`);
+      MessageManager.success(t("memory.updated", { key: row.key }));
       invalidateList();
     },
     onError: (err: Error) => {
-      MessageManager.error(`Save failed: ${err.message}`);
+      MessageManager.error(t("memory.saveFailed", { message: err.message }));
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (key: string) => {
-      if (!accessToken) throw new Error("Access token required");
+      if (!accessToken) throw new Error(t("memory.accessTokenRequired"));
       return deleteMemory(accessToken, key).then(() => key);
     },
     onSuccess: (key) => {
-      MessageManager.success(`Deleted ${key}`);
+      MessageManager.success(t("memory.deleted", { key }));
       invalidateList();
     },
     onError: (err: Error) => {
-      MessageManager.error(`Delete failed: ${err.message}`);
+      MessageManager.error(t("memory.deleteFailed", { message: err.message }));
     },
   });
 
@@ -149,7 +151,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ accessToken }) => {
       try {
         metadataPayload = JSON.parse(metadataText);
       } catch {
-        MessageManager.error("Metadata must be valid JSON (or leave empty).");
+        MessageManager.error(t("memory.invalidMetadata"));
         return false;
       }
     }
@@ -180,18 +182,18 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ accessToken }) => {
       <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Memory</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t("memory.title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Inspect what your agents have stored under{" "}
+              {t("memory.descriptionBefore")}{" "}
               <code className="rounded-sm border border-border bg-muted px-1 py-0.5 font-mono text-xs text-foreground">
                 /v1/memory
               </code>
-              . Scoped to memories visible to your user / team (admins see all).
+              . {t("memory.descriptionAfter")}
             </p>
           </div>
           <Button onClick={() => setIsCreateOpen(true)}>
             <Plus />
-            New memory
+            {t("memory.new")}
           </Button>
         </div>
 
@@ -230,16 +232,16 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ accessToken }) => {
       {/* Delete confirmation modal */}
       <DeleteResourceModal
         isOpen={!!deleteRow}
-        title="Delete memory"
-        message="This action cannot be undone."
-        resourceInformationTitle="Memory"
+        title={t("memory.deleteModal.title")}
+        message={t("memory.deleteModal.warning")}
+        resourceInformationTitle={t("memory.deleteModal.resource")}
         resourceInformation={
           deleteRow
             ? [
-                { label: "Key", value: deleteRow.key, code: true },
-                { label: "Memory ID", value: deleteRow.memory_id, code: true },
-                { label: "User ID", value: deleteRow.user_id ?? "-", code: true },
-                { label: "Team ID", value: deleteRow.team_id ?? "-", code: true },
+                { label: t("memory.deleteModal.key"), value: deleteRow.key, code: true },
+                { label: t("memory.details.memoryId"), value: deleteRow.memory_id, code: true },
+                { label: t("memory.details.userId"), value: deleteRow.user_id ?? "-", code: true },
+                { label: t("memory.details.teamId"), value: deleteRow.team_id ?? "-", code: true },
               ]
             : []
         }
