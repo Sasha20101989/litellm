@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import type { TFunction } from "i18next";
 import { Copy, Info, MoreHorizontal } from "lucide-react";
 
 import { DataTableSortHeader } from "@/components/shared/DataTable";
@@ -34,12 +35,14 @@ export interface ModelHubData {
   [key: string]: any;
 }
 
-const formatCapabilityName = (key: string) =>
-  key
-    .replace(/^supports_/, "")
+const formatCapabilityName = (key: string, t: TFunction) => {
+  const normalizedKey = key.replace(/^supports_/, "");
+  const fallback = normalizedKey
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+  return t(`publicHub.details.capabilitiesMap.${normalizedKey}`, { defaultValue: fallback });
+};
 
 const getModelCapabilities = (model: ModelHubData) =>
   Object.entries(model)
@@ -57,13 +60,14 @@ const formatTokens = (tokens: number) => {
 interface ModelHubRowActionsProps {
   model: ModelHubData;
   onModelClick: (model: ModelHubData) => void;
+  t: TFunction;
 }
 
-function ModelHubRowActions({ model, onModelClick }: ModelHubRowActionsProps) {
+function ModelHubRowActions({ model, onModelClick, t }: ModelHubRowActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Open model actions"
+        aria-label={t("publicHub.table.openModelActions")}
         data-testid={`model-hub-actions-${model.model_group}`}
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "text-muted-foreground")}
       >
@@ -72,14 +76,14 @@ function ModelHubRowActions({ model, onModelClick }: ModelHubRowActionsProps) {
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuItem data-testid="model-hub-action-details" onClick={() => onModelClick(model)}>
           <Info />
-          View details
+          {t("publicHub.table.viewDetails")}
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="model-hub-action-copy"
-          onClick={() => void copyToClipboard(model.model_group, "Model name copied")}
+          onClick={() => void copyToClipboard(model.model_group, t("publicHub.table.modelNameCopied"))}
         >
           <Copy />
-          Copy model name
+          {t("publicHub.table.copyModelName")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -88,14 +92,15 @@ function ModelHubRowActions({ model, onModelClick }: ModelHubRowActionsProps) {
 
 interface ModelHubTableColumnsDeps {
   onModelClick: (model: ModelHubData) => void;
+  t: TFunction;
 }
 
-export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDeps): ColumnDef<ModelHubData>[] => [
+export const getModelHubTableColumns = ({ onModelClick, t }: ModelHubTableColumnsDeps): ColumnDef<ModelHubData>[] => [
   {
     id: "model_group",
     accessorKey: "model_group",
-    meta: { title: "Public Model Name" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Public Model Name" />,
+    meta: { title: t("publicHub.table.publicModelName") },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.publicModelName")} />,
     size: 220,
     enableSorting: true,
     sortingFn: "alphanumeric",
@@ -106,8 +111,8 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
   {
     id: "providers",
     accessorKey: "providers",
-    meta: { title: "Provider", skeleton: "chips", className: "hidden md:table-cell" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Provider" />,
+    meta: { title: t("publicHub.table.provider"), skeleton: "chips", className: "hidden md:table-cell" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.provider")} />,
     size: 150,
     enableSorting: true,
     sortingFn: (rowA, rowB) => rowA.original.providers.join(", ").localeCompare(rowB.original.providers.join(", ")),
@@ -128,8 +133,8 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
   {
     id: "mode",
     accessorKey: "mode",
-    meta: { title: "Mode", className: "hidden lg:table-cell" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Mode" />,
+    meta: { title: t("publicHub.table.mode"), className: "hidden lg:table-cell" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.mode")} />,
     size: 110,
     enableSorting: true,
     sortingFn: "alphanumeric",
@@ -143,8 +148,8 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
   {
     id: "max_input_tokens",
     accessorKey: "max_input_tokens",
-    meta: { title: "Tokens", className: "hidden lg:table-cell" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Tokens" />,
+    meta: { title: t("publicHub.table.tokens"), className: "hidden lg:table-cell" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.tokens")} />,
     size: 110,
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -165,8 +170,8 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
   {
     id: "input_cost_per_token",
     accessorKey: "input_cost_per_token",
-    meta: { title: "Cost/1M", skeleton: "twoLine" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Cost/1M" />,
+    meta: { title: t("publicHub.table.costPerMillion"), skeleton: "twoLine" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.costPerMillion")} />,
     size: 110,
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -188,8 +193,8 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
   },
   {
     id: "capabilities",
-    meta: { title: "Features", skeleton: "chips" },
-    header: "Features",
+    meta: { title: t("publicHub.table.features"), skeleton: "chips" },
+    header: t("publicHub.table.features"),
     size: 220,
     enableSorting: false,
     cell: ({ row }) => {
@@ -201,7 +206,7 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
         <div className="flex flex-wrap gap-1">
           {capabilities.map((capability) => (
             <Badge key={capability} variant="outline">
-              {formatCapabilityName(capability)}
+              {formatCapabilityName(capability, t)}
             </Badge>
           ))}
         </div>
@@ -211,8 +216,8 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
   {
     id: "is_public_model_group",
     accessorKey: "is_public_model_group",
-    meta: { title: "Public", skeleton: "badge", className: "hidden md:table-cell" },
-    header: ({ column }) => <DataTableSortHeader column={column} title="Public" />,
+    meta: { title: t("publicHub.table.public"), skeleton: "badge", className: "hidden md:table-cell" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.public")} />,
     size: 100,
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -222,21 +227,21 @@ export const getModelHubTableColumns = ({ onModelClick }: ModelHubTableColumnsDe
     },
     cell: ({ row }) =>
       row.original.is_public_model_group === true ? (
-        <StatusBadge tone="success" label="Yes" />
+        <StatusBadge tone="success" label={t("publicHub.table.yes")} />
       ) : (
-        <StatusBadge tone="neutral" label="No" />
+        <StatusBadge tone="neutral" label={t("publicHub.table.no")} />
       ),
   },
   {
     id: "actions",
     meta: { className: "text-right", headerClassName: "text-right" },
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">{t("publicHub.table.actions")}</span>,
     size: 64,
     enableSorting: false,
     enableHiding: false,
     cell: ({ row }) => (
       <div className="flex justify-end">
-        <ModelHubRowActions model={row.original} onModelClick={onModelClick} />
+        <ModelHubRowActions model={row.original} onModelClick={onModelClick} t={t} />
       </div>
     ),
   },
