@@ -60,7 +60,8 @@ const UserEnvVarsModal: React.FC<UserEnvVarsModalProps> = ({ server, open, acces
     saveMutation.mutate(trimmed);
   };
 
-  const displayName = server?.server_name || server?.alias || server?.server_id || t("mcpServers.forms.userEnv.fallbackServer");
+  const displayName =
+    server?.server_name || server?.alias || server?.server_id || t("mcpServers.forms.userEnv.fallbackServer");
   const required = status?.required ?? [];
   const isSaving = saveMutation.isPending;
 
@@ -99,9 +100,7 @@ const UserEnvVarsModal: React.FC<UserEnvVarsModalProps> = ({ server, open, acces
           <Alert type="info" showIcon message={t("mcpServers.forms.userEnv.none")} />
         ) : (
           <>
-            <Text className="text-sm text-gray-600 block">
-              {t("mcpServers.forms.userEnv.privacy")}
-            </Text>
+            <Text className="text-sm text-gray-600 block">{t("mcpServers.forms.userEnv.privacy")}</Text>
             <Form form={form} layout="vertical" onFinish={handleSave} disabled={isSaving}>
               {required.map((spec) => (
                 <Form.Item

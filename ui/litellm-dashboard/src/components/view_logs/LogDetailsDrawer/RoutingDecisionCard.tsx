@@ -153,7 +153,15 @@ export function RoutingDecisionCard({
             <span>{routerModelName}</span>
             {routerType && (
               <span className="font-normal text-muted-foreground">
-                ({routerType === "adaptive" ? t("routing.adaptiveRouter") : routerType === "quality" ? t("routing.qualityRouter") : routerType === "complexity" ? "Auto-Router v2" : routerType})
+                (
+                {routerType === "adaptive"
+                  ? t("routing.adaptiveRouter")
+                  : routerType === "quality"
+                    ? t("routing.qualityRouter")
+                    : routerType === "complexity"
+                      ? "Auto-Router v2"
+                      : routerType}
+                )
               </span>
             )}
           </div>

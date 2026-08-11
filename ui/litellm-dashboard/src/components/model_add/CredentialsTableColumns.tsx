@@ -65,9 +65,7 @@ function CredentialRowActions({ credential, onEdit, onDelete, t }: CredentialRow
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="credential-action-copy"
-          onClick={() =>
-            void copyToClipboard(credential.credential_name, t("models.credentials.actions.copied"))
-          }
+          onClick={() => void copyToClipboard(credential.credential_name, t("models.credentials.actions.copied"))}
         >
           <Copy />
           {t("models.credentials.actions.copy")}

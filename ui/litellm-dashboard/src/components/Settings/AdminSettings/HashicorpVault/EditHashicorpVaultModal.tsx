@@ -115,9 +115,7 @@ const EditHashicorpVaultModal: React.FC<EditHashicorpVaultModalProps> = ({ isVis
     if (!fieldSchema) return null;
 
     const rules =
-      fieldName === "vault_addr"
-        ? [{ pattern: /^https?:\/\/.+/, message: t("admin.vault.urlProtocol") }]
-        : undefined;
+      fieldName === "vault_addr" ? [{ pattern: /^https?:\/\/.+/, message: t("admin.vault.urlProtocol") }] : undefined;
 
     const isSensitive = SENSITIVE_FIELDS.has(fieldName);
     const existingValue = rawValues[fieldName];

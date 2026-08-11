@@ -136,12 +136,8 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
             <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
           )}
           <Text strong>{entry.eval_name}</Text>
-          <Tag color={passed ? "success" : "error"}>
-            {passed ? t("evaluation.passed") : t("evaluation.failed")}
-          </Tag>
-          <Tooltip
-            title={t("evaluation.overallTooltip")}
-          >
+          <Tag color={passed ? "success" : "error"}>{passed ? t("evaluation.passed") : t("evaluation.failed")}</Tag>
+          <Tooltip title={t("evaluation.overallTooltip")}>
             <Text type="secondary" style={{ fontSize: 12, cursor: "help", borderBottom: "1px dashed #aaa" }}>
               {entry.overall_score?.toFixed(0)} / 100
               {entry.threshold != null && ` (${t("evaluation.threshold")}: ${entry.threshold})`}

@@ -37,7 +37,7 @@ const LOCALIZED_FILES = [
 // These values are product names, identifiers, or protocol terms. Translating
 // them would alter commands, configuration, URLs, or externally defined names.
 const TECHNICAL_LITERAL_ALLOWLIST = [
-  { pattern: /^(?:🚅 )?LiteLLM(?: Brand)?$/, reason: "product name" },
+  { pattern: /^(?:🚅 )?(?:LiteLLM(?: Brand)?|Nexoplane)$/, reason: "product name" },
   {
     pattern: /^(?:MASTER_KEY|PROXY_ADMIN_ID|DISABLE_ADMIN_UI=False|UI_USERNAME|AUTO_REDIRECT_UI_LOGIN_TO_SSO=true)$/,
     reason: "configuration identifier",

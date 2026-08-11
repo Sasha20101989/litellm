@@ -212,13 +212,21 @@ function StatusBar({
   return (
     <Space size={SPACING_LARGE}>
       <Tag color={statusColor}>{statusLabel}</Tag>
-      <Tag>{t("details.environment")}: {environment}</Tag>
+      <Tag>
+        {t("details.environment")}: {environment}
+      </Tag>
       <Space size={SPACING_MEDIUM}>
         <Text type="secondary" style={{ fontSize: FONT_SIZE_MEDIUM }}>
-          {moment(log.startTime).locale(i18n.resolvedLanguage === "ru" ? "ru" : "en").format("LL LTS")}
+          {moment(log.startTime)
+            .locale(i18n.resolvedLanguage === "ru" ? "ru" : "en")
+            .format("LL LTS")}
         </Text>
         <Text type="secondary" style={{ fontSize: FONT_SIZE_MEDIUM }}>
-          ({moment(log.startTime).locale(i18n.resolvedLanguage === "ru" ? "ru" : "en").fromNow()})
+          (
+          {moment(log.startTime)
+            .locale(i18n.resolvedLanguage === "ru" ? "ru" : "en")
+            .fromNow()}
+          )
         </Text>
       </Space>
     </Space>

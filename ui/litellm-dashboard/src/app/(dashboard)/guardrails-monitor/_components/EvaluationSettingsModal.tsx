@@ -101,9 +101,7 @@ export function EvaluationSettingsModal({
             rows={6}
             className="font-mono text-sm"
           />
-          <p className="text-xs text-gray-400 mt-1">
-            {t("monitor.evaluation.promptHelp")}
-          </p>
+          <p className="text-xs text-gray-400 mt-1">{t("monitor.evaluation.promptHelp")}</p>
         </div>
 
         <div>
@@ -122,9 +120,7 @@ export function EvaluationSettingsModal({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("monitor.evaluation.model")}</label>
           <Select
-            placeholder={
-              loadingModels ? t("monitor.evaluation.loadingModels") : t("monitor.evaluation.selectModel")
-            }
+            placeholder={loadingModels ? t("monitor.evaluation.loadingModels") : t("monitor.evaluation.selectModel")}
             value={model ?? undefined}
             onChange={setModel}
             options={modelSelectOptions}

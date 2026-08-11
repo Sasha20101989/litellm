@@ -138,7 +138,8 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
               <div className="flex flex-wrap gap-2">
                 {patterns.length > 0 && chip(t("guardrails.patterns", { count: patterns.length }), "slate")}
                 {blockedWords.length > 0 && chip(t("guardrails.keywords", { count: blockedWords.length }), "slate")}
-                {categoryKeywords.length > 0 && chip(t("guardrails.categories", { count: categoryKeywords.length }), "slate")}
+                {categoryKeywords.length > 0 &&
+                  chip(t("guardrails.categories", { count: categoryKeywords.length }), "slate")}
               </div>
             </KV>
           </div>
@@ -153,9 +154,7 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
               <div key={idx} className="p-3 bg-gray-50 rounded-md">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.pattern")}:`}>
-                      {detection.pattern_name || t("guardrails.unknown")}
-                    </KV>
+                    <KV label={`${t("guardrails.pattern")}:`}>{detection.pattern_name || t("guardrails.unknown")}</KV>
                   </div>
                   <div className="space-y-1">
                     <KV label={`${t("guardrails.action")}:`}>
@@ -204,9 +203,7 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
               <div key={idx} className="p-3 bg-gray-50 rounded-md">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.category")}:`}>
-                      {detection.category || t("guardrails.unknown")}
-                    </KV>
+                    <KV label={`${t("guardrails.category")}:`}>{detection.category || t("guardrails.unknown")}</KV>
                     <KV label={`${t("guardrails.keyword")}:`} mono>
                       {detection.keyword || t("guardrails.unknown")}
                     </KV>

@@ -110,9 +110,7 @@ async function testFallbackModelResponse(selectedModel: string, accessToken: str
       </span>,
     );
   } catch (error) {
-    NotificationsManager.fromBackend(
-      t("router.fallbacks.testFailed", { error: String(error) }),
-    );
+    NotificationsManager.fromBackend(t("router.fallbacks.testFailed", { error: String(error) }));
   }
 }
 
@@ -260,9 +258,7 @@ const Fallbacks: React.FC<FallbacksProps> = ({ accessToken, userRole, userID }) 
       )}
       {!hasFallbacks ? (
         <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-6 text-center">
-          <Typography.Text type="secondary">
-            {t("router.fallbacks.empty")}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t("router.fallbacks.empty")}</Typography.Text>
         </div>
       ) : (
         <Table>

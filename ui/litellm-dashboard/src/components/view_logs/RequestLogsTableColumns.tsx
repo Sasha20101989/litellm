@@ -37,14 +37,16 @@ function TruncatedText({ value }: { value: string | undefined }) {
   return <CellTooltip content={display} trigger={<span className="max-w-[15ch] truncate block">{display}</span>} />;
 }
 
-export const getRequestLogsTableColumns = ({
-  onKeyHashClick,
-  onSessionClick,
-}: RequestLogsTableColumnsDeps, t: TFunction<"logs">): ColumnDef<LogEntry>[] => [
+export const getRequestLogsTableColumns = (
+  { onKeyHashClick, onSessionClick }: RequestLogsTableColumnsDeps,
+  t: TFunction<"logs">,
+): ColumnDef<LogEntry>[] => [
   {
     id: "startTime",
     accessorKey: "startTime",
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("columns.time")} variant="dropdown-tristate" />,
+    header: ({ column }) => (
+      <DataTableSortHeader column={column} title={t("columns.time")} variant="dropdown-tristate" />
+    ),
     size: 200,
     enableSorting: true,
     cell: ({ row }) => <DateCell value={row.original.startTime} />,
@@ -130,7 +132,9 @@ export const getRequestLogsTableColumns = ({
   {
     id: "spend",
     accessorKey: "spend",
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("columns.cost")} variant="dropdown-tristate" />,
+    header: ({ column }) => (
+      <DataTableSortHeader column={column} title={t("columns.cost")} variant="dropdown-tristate" />
+    ),
     size: 110,
     enableSorting: true,
     meta: { numeric: true, skeleton: "twoLine" },
@@ -162,7 +166,9 @@ export const getRequestLogsTableColumns = ({
   {
     id: "request_duration_ms",
     accessorKey: "request_duration_ms",
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("columns.duration")} variant="dropdown-tristate" />,
+    header: ({ column }) => (
+      <DataTableSortHeader column={column} title={t("columns.duration")} variant="dropdown-tristate" />
+    ),
     enableSorting: true,
     meta: { numeric: true },
     cell: ({ row }) => {
@@ -179,7 +185,9 @@ export const getRequestLogsTableColumns = ({
   {
     id: "ttft_ms",
     accessorKey: "completionStartTime",
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("columns.ttft")} variant="dropdown-tristate" />,
+    header: ({ column }) => (
+      <DataTableSortHeader column={column} title={t("columns.ttft")} variant="dropdown-tristate" />
+    ),
     enableSorting: true,
     meta: { numeric: true },
     cell: ({ row }) => {
@@ -223,7 +231,9 @@ export const getRequestLogsTableColumns = ({
   {
     id: "model",
     accessorKey: "model",
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("columns.model")} variant="dropdown-tristate" />,
+    header: ({ column }) => (
+      <DataTableSortHeader column={column} title={t("columns.model")} variant="dropdown-tristate" />
+    ),
     size: 200,
     enableSorting: true,
     cell: ({ row }) => {
@@ -250,7 +260,9 @@ export const getRequestLogsTableColumns = ({
   {
     id: "total_tokens",
     accessorKey: "total_tokens",
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("columns.tokens")} variant="dropdown-tristate" />,
+    header: ({ column }) => (
+      <DataTableSortHeader column={column} title={t("columns.tokens")} variant="dropdown-tristate" />
+    ),
     size: 140,
     enableSorting: true,
     meta: { numeric: true },

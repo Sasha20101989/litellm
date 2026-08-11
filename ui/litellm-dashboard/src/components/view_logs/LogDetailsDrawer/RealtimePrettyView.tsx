@@ -227,7 +227,10 @@ function SessionCard({ session, turnCount }: { session: RealtimeSession; turnCou
               <ConfigRow label={t("details.realtime.turnDetection")} value={session.turn_detection.type} />
             )}
             {session.tools && session.tools.length > 0 && (
-              <ConfigRow label={t("tools.title")} value={t("details.realtime.toolsCount", { count: session.tools.length })} />
+              <ConfigRow
+                label={t("tools.title")}
+                value={t("details.realtime.toolsCount", { count: session.tools.length })}
+              />
             )}
           </div>
 
@@ -377,7 +380,9 @@ function ResponseTurn({ response, index }: { response: RealtimeResponse; index: 
 
       {/* Token breakdown if available */}
       {usage?.input_token_details && <TokenBreakdown label={t("details.input")} details={usage.input_token_details} />}
-      {usage?.output_token_details && <TokenBreakdown label={t("details.output")} details={usage.output_token_details} />}
+      {usage?.output_token_details && (
+        <TokenBreakdown label={t("details.output")} details={usage.output_token_details} />
+      )}
     </div>
   );
 }

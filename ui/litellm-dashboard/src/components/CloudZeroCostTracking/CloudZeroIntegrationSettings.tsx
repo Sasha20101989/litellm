@@ -136,7 +136,9 @@ export function CloudZeroIntegrationSettings({ settings, onSettingsUpdated }: Cl
             <CardTitle className="flex items-center gap-2 text-lg">
               {t("logging.cloudZero.configuration")}
               <Badge variant="secondary" className="capitalize">
-                {settings.status?.toLowerCase() === "active" ? t("logging.cloudZero.active") : settings.status || t("logging.cloudZero.active")}
+                {settings.status?.toLowerCase() === "active"
+                  ? t("logging.cloudZero.active")
+                  : settings.status || t("logging.cloudZero.active")}
               </Badge>
             </CardTitle>
             <CardAction className="flex gap-2">
@@ -160,7 +162,9 @@ export function CloudZeroIntegrationSettings({ settings, onSettingsUpdated }: Cl
                 <span className="font-mono">{settings.connection_id || <NotConfigured />}</span>
               </DetailRow>
               <DetailRow label={t("logging.cloudZero.timezone")}>
-                {settings.timezone || <span className="text-muted-foreground italic">{t("logging.cloudZero.defaultUtc")}</span>}
+                {settings.timezone || (
+                  <span className="text-muted-foreground italic">{t("logging.cloudZero.defaultUtc")}</span>
+                )}
               </DetailRow>
             </dl>
 
@@ -201,9 +205,7 @@ export function CloudZeroIntegrationSettings({ settings, onSettingsUpdated }: Cl
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("logging.cloudZero.exportTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("logging.cloudZero.exportDescription")}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t("logging.cloudZero.exportDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={exportMutation.isPending}>{t("logging.cloudZero.cancel")}</AlertDialogCancel>

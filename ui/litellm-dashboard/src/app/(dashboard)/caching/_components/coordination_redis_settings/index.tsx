@@ -109,9 +109,7 @@ const CoordinationRedisSettings: React.FC = () => {
               />
             )}
           </div>
-          <p className="text-xs text-gray-500">
-            {t("caching.coordination.description")}
-          </p>
+          <p className="text-xs text-gray-500">{t("caching.coordination.description")}</p>
           <p className="text-xs text-gray-500">
             {t(`caching.coordination.sourceTooltip.${sourceKey}`, { defaultValue: badge.tooltip })}
           </p>

@@ -153,9 +153,7 @@ const MakeModelPublicForm: React.FC<MakeModelPublicFormProps> = ({
           </div>
         </div>
 
-        <Text className="text-sm text-gray-600">
-          {t("publicHub.forms.models.description")}
-        </Text>
+        <Text className="text-sm text-gray-600">{t("publicHub.forms.models.description")}</Text>
 
         {/* Filters */}
         <ModelFilters

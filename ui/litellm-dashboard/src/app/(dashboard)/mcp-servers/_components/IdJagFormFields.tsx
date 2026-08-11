@@ -160,10 +160,7 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
       </Form.Item>
       <Form.Item
         label={
-          <FieldLabel
-            label={t("mcpServers.forms.idJag.scopes")}
-            tooltip={t("mcpServers.forms.idJag.scopesTooltip")}
-          />
+          <FieldLabel label={t("mcpServers.forms.idJag.scopes")} tooltip={t("mcpServers.forms.idJag.scopesTooltip")} />
         }
         name={["credentials", "scopes"]}
       >

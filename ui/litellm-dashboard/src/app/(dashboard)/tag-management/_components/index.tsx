@@ -145,7 +145,11 @@ const TagManagement: React.FC<TagProps> = ({ accessToken, userID, userRole }) =>
           <div className="mt-2 mb-4 flex w-full items-center justify-between">
             <h1>{t("tags.title")}</h1>
             <div className="flex items-center space-x-2">
-              {lastRefreshed && <p className="text-sm">{t("tags.lastRefreshed")}: {lastRefreshed}</p>}
+              {lastRefreshed && (
+                <p className="text-sm">
+                  {t("tags.lastRefreshed")}: {lastRefreshed}
+                </p>
+              )}
               <Button variant="outline" size="icon-sm" aria-label={t("tags.refresh")} onClick={handleRefreshClick}>
                 <RefreshCw />
               </Button>
@@ -155,7 +159,7 @@ const TagManagement: React.FC<TagProps> = ({ accessToken, userID, userRole }) =>
           <div className="mb-4 text-sm">
             {t("tags.instructions")}
             <p>
-              {t("tags.routingDescription")} {" "}
+              {t("tags.routingDescription")}{" "}
               <a href="https://docs.litellm.ai/docs/proxy/tag_routing" target="_blank" rel="noopener noreferrer">
                 {t("tags.here")}
               </a>

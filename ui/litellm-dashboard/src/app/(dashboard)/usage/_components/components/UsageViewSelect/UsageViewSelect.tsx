@@ -179,9 +179,7 @@ export const UsageViewSelect: React.FC<UsageViewSelectProps> = ({
             <BarChartOutlined style={{ fontSize: "32px" }} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">
-              {title ?? t("selector.title")}
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">{title ?? t("selector.title")}</h3>
             <p className="text-xs text-gray-600 leading-tight">{description ?? t("selector.description")}</p>
           </div>
         </div>

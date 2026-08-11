@@ -61,7 +61,9 @@ export const getDeletedTeamsTableColumns = (t: TFunction<"logs">): ColumnDef<Del
     header: t("deleted.columns.budget"),
     size: 110,
     enableSorting: false,
-    cell: ({ row }) => <MoneyCell value={row.original.max_budget} decimals={0} emptyText={t("deleted.unlimited")} showZero />,
+    cell: ({ row }) => (
+      <MoneyCell value={row.original.max_budget} decimals={0} emptyText={t("deleted.unlimited")} showZero />
+    ),
   },
   {
     id: "models",

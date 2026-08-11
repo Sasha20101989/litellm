@@ -91,12 +91,8 @@ export default function AuditLogsPanel({
     return (
       <div style={{ textAlign: "center", marginTop: "20px" }}>
         <h1 style={{ display: "block", marginBottom: "10px" }}>✨ {t("audit.enterpriseTitle")}</h1>
-        <p style={{ display: "block", marginBottom: "10px" }}>
-          {t("audit.enterpriseDescription")}
-        </p>
-        <p style={{ display: "block", marginBottom: "20px", fontStyle: "italic" }}>
-          {t("audit.preview")}
-        </p>
+        <p style={{ display: "block", marginBottom: "10px" }}>{t("audit.enterpriseDescription")}</p>
+        <p style={{ display: "block", marginBottom: "20px", fontStyle: "italic" }}>{t("audit.preview")}</p>
         <img
           src={resolveLogoSrc(auditLogsPreviewImg)}
           alt={t("audit.previewAlt")}

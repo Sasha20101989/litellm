@@ -32,7 +32,10 @@ export const enSettings = {
         "Randomly choose between deployments within this percentage of the lowest latency. Default: 0 (always choose the lowest latency).",
     },
     fields: {
-      allowed_fails: { label: "Allowed Failures", help: "Number of failures allowed before a deployment enters cooldown" },
+      allowed_fails: {
+        label: "Allowed Failures",
+        help: "Number of failures allowed before a deployment enters cooldown",
+      },
       cooldown_time: { label: "Cooldown Time", help: "How long an unavailable deployment remains in cooldown" },
       num_retries: { label: "Number of Retries", help: "Number of times a failed request is retried" },
       timeout: { label: "Timeout", help: "Maximum request duration before timeout" },
@@ -91,9 +94,9 @@ export const enSettings = {
       create: "Create Group",
       showing_one: "Showing {{count}} result",
       showing_other: "Showing {{count}} results",
-      created: "Created routing group \"{{name}}\"",
-      updated: "Updated routing group \"{{name}}\"",
-      deleted: "Deleted routing group \"{{name}}\"",
+      created: 'Created routing group "{{name}}"',
+      updated: 'Updated routing group "{{name}}"',
+      deleted: 'Deleted routing group "{{name}}"',
       saveFailed: "Failed to save routing group",
       deleteFailed: "Failed to delete routing group",
       deleteTitle: "Delete routing group?",
@@ -120,8 +123,7 @@ export const enSettings = {
       selectStrategy: "Select strategy",
       strategyArguments: "Strategy Arguments (JSON)",
       example: "Example: {{json}}",
-      unclaimed:
-        "Models not assigned to a group use the proxy's top-level routing strategy.",
+      unclaimed: "Models not assigned to a group use the proxy's top-level routing strategy.",
       empty: "No routing groups yet",
       emptyDescription: "Create a group to load-balance a set of models behind one name.",
       loading: "Loading routing groups…",
@@ -134,7 +136,12 @@ export const enSettings = {
     },
   },
   caching: {
-    tabs: { analytics: "Cache Analytics", health: "Cache Health", settings: "Cache Settings", coordination: "Coordination Redis" },
+    tabs: {
+      analytics: "Cache Analytics",
+      health: "Cache Health",
+      settings: "Cache Settings",
+      coordination: "Coordination Redis",
+    },
     lastRefreshed: "Last Refreshed",
     refresh: "Refresh",
     responseCache: "response cache",
@@ -241,14 +248,18 @@ export const enSettings = {
         none: "Not configured",
       },
       sourceTooltip: {
-        coordination_redis: "general_settings.coordination_redis is set, so coordination uses its own Redis connection.",
+        coordination_redis:
+          "general_settings.coordination_redis is set, so coordination uses its own Redis connection.",
         cache_backend: "No coordination Redis is configured; the proxy reuses the response cache's Redis connection.",
         environment: "No coordination Redis is configured; the proxy falls back to REDIS_* environment variables.",
         none: "Cross-pod rate limits, spend tracking, and the pod lock manager have no Redis to coordinate through.",
       },
     },
     fields: {
-      url: { label: "Redis URL", help: "Full Redis/Valkey connection URL. It takes precedence over separate connection fields." },
+      url: {
+        label: "Redis URL",
+        help: "Full Redis/Valkey connection URL. It takes precedence over separate connection fields.",
+      },
       host: { label: "Host", help: "Redis server hostname or IP address" },
       port: { label: "Port", help: "Redis server port number" },
       db: { label: "Database Index", help: "Logical database index used to isolate the cache" },
@@ -268,7 +279,10 @@ export const enSettings = {
       ttl: { label: "TTL (seconds)", help: "Time-to-live for cached items in seconds" },
       max_connections: { label: "Max Connections", help: "Maximum number of connections in the pool" },
       gcp_service_account: { label: "GCP Service Account", help: "GCP service account for IAM authentication" },
-      gcp_ssl_ca_certs: { label: "GCP SSL CA Certificates", help: "Path to the CA certificate file for GCP Memorystore Redis" },
+      gcp_ssl_ca_certs: {
+        label: "GCP SSL CA Certificates",
+        help: "Path to the CA certificate file for GCP Memorystore Redis",
+      },
     },
   },
   logging: {
@@ -428,7 +442,8 @@ export const enSettings = {
       deleted: "CloudZero integration deleted successfully",
       deleteFailed: "Failed to delete CloudZero integration",
       deleteTitle: "Delete CloudZero Integration?",
-      deleteMessage: "Are you sure you want to delete this CloudZero integration? All associated settings and configurations will be permanently removed.",
+      deleteMessage:
+        "Are you sure you want to delete this CloudZero integration? All associated settings and configurations will be permanently removed.",
       details: "Integration Details",
     },
     view: {
@@ -458,7 +473,8 @@ export const enSettings = {
     security: {
       title: "Security Settings",
       deprecatedTitle: "SSO Configuration Deprecated",
-      deprecatedDescription: "Editing SSO settings on this page is deprecated and will be removed in a future version. Use the SSO Settings tab instead.",
+      deprecatedDescription:
+        "Editing SSO settings on this page is deprecated and will be removed in a future version. Use the SSO Settings tab instead.",
       editSso: "Edit SSO Settings",
       addSso: "Add SSO",
       allowedIps: "Allowed IPs",
@@ -508,7 +524,8 @@ export const enSettings = {
       storePrompts: "Store Prompts in Spend Logs",
       storePromptsTooltip: "When enabled, prompts are stored in spend logs for tracking and analysis.",
       retention: "Maximum Spend Logs Retention Period (Optional)",
-      retentionTooltip: "Set the maximum retention period for spend logs, for example 7d or 30d. Leave empty for no limit.",
+      retentionTooltip:
+        "Set the maximum retention period for spend logs, for example 7d or 30d. Leave empty for no limit.",
       retentionPlaceholder: "e.g., 7d, 30d",
       saved: "Spend logs settings updated successfully",
       saveFailed: "Failed to save spend logs settings: {{error}}",
@@ -517,7 +534,8 @@ export const enSettings = {
     },
     banner: {
       title: "User Banner",
-      description: "Publish an announcement to all dashboard users. Markdown is supported; the banner appears below the header on every page until you unpublish it. Users can dismiss it, and it reappears whenever the content changes.",
+      description:
+        "Publish an announcement to all dashboard users. Markdown is supported; the banner appears below the header on every page until you unpublish it. Users can dismiss it, and it reappears whenever the content changes.",
       publish: "Publish user banner",
       message: "Message",
       placeholder: "**Scheduled maintenance** tonight at 10 PM UTC. See [status page](https://example.com).",
@@ -531,7 +549,8 @@ export const enSettings = {
     },
     plugins: {
       title: "Plugins",
-      description: "Register external services as plugins. Once added, users can switch to a plugin from the mode switcher at the top-left of the sidebar.",
+      description:
+        "Register external services as plugins. Once added, users can switch to a plugin from the mode switcher at the top-left of the sidebar.",
       manifest: "Each plugin must expose GET /api/plugin-manifest returning navigation items and capabilities.",
       add: "Add Plugin",
       edit: "Edit Plugin",
@@ -547,13 +566,15 @@ export const enSettings = {
       identifierHelp: "Used in URLs and configuration. No spaces. Example: litellm-platform-plugin",
       urlInvalid: "Must be a valid URL",
       urlHelp: "Base URL of the plugin service",
-      keyHelp: "Optional. The plugin's own credential. LiteLLM injects it as Authorization: Bearer <key> only when reverse-proxying API calls to the plugin backend. Leave blank for plugins that use the forwarded LiteLLM user token.",
+      keyHelp:
+        "Optional. The plugin's own credential. LiteLLM injects it as Authorization: Bearer <key> only when reverse-proxying API calls to the plugin backend. Leave blank for plugins that use the forwarded LiteLLM user token.",
       keepKey: "Leave blank to keep current key",
       optionalKey: "sk-... (optional)",
     },
     scim: {
       title: "SCIM Configuration",
-      description: "System for Cross-domain Identity Management (SCIM) automatically provisions and manages users and groups in LiteLLM.",
+      description:
+        "System for Cross-domain Identity Management (SCIM) automatically provisions and manages users and groups in LiteLLM.",
       loginRequired: "You need to be logged in to create a SCIM token",
       tokenCreated: "SCIM token created successfully",
       tokenFailed: "Failed to create SCIM token: {{error}}",
@@ -563,7 +584,8 @@ export const enSettings = {
       copy: "Copy",
       authToken: "Authentication Token",
       using: "Using SCIM",
-      usingDescription: "You need a SCIM token to authenticate with the SCIM API. Create one below and use it in your SCIM provider configuration.",
+      usingDescription:
+        "You need a SCIM token to authenticate with the SCIM API. Create one below and use it in your SCIM provider configuration.",
       tokenName: "Token Name",
       tokenRequired: "Please enter a name for your token",
       tokenPlaceholder: "SCIM Access Token",
@@ -585,7 +607,8 @@ export const enSettings = {
       add: "Add SSO",
       configure: "Configure SSO",
       empty: "No SSO Configuration Found",
-      emptyDescription: "Configure Single Sign-On (SSO) to enable seamless authentication for team members through your identity provider.",
+      emptyDescription:
+        "Configure Single Sign-On (SSO) to enable seamless authentication for team members through your identity provider.",
       provider: "Provider",
       cancel: "Cancel",
       adding: "Adding...",
@@ -600,7 +623,8 @@ export const enSettings = {
       clearFailed: "Failed to clear SSO settings: {{error}}",
       clearTitle: "Confirm Clear SSO Settings",
       irreversible: "This action cannot be undone.",
-      clearMessage: "Are you sure you want to clear all SSO settings? Users will no longer be able to log in using SSO after this change.",
+      clearMessage:
+        "Are you sure you want to clear all SSO settings? Users will no longer be able to log in using SSO after this change.",
       settings: "SSO Settings",
       generic: "Generic",
       yesClear: "Yes, Clear",
@@ -680,32 +704,41 @@ export const enSettings = {
       requireHubAuth: "Require authentication for public AI Hub",
       requireHubAuthDescription: "Require users to authenticate before opening the public AI Hub.",
       forwardClientHeaders: "Forward client headers to LLM API",
-      forwardClientHeadersDescription: "Forward client headers such as Authorization, anthropic-beta, and custom x-* headers to the upstream LLM. Enable this for Claude Code with a Max subscription or to pass custom and tracing headers to the provider.",
+      forwardClientHeadersDescription:
+        "Forward client headers such as Authorization, anthropic-beta, and custom x-* headers to the upstream LLM. Enable this for Claude Code with a Max subscription or to pass custom and tracing headers to the provider.",
       forwardProviderHeaders: "Forward LLM provider auth headers",
-      forwardProviderHeadersDescription: "Forward provider authentication headers to the upstream LLM, overriding a deployment key for that request. Enable this for Claude Code BYOK.",
+      forwardProviderHeadersDescription:
+        "Forward provider authentication headers to the upstream LLM, overriding a deployment key for that request. Enable this for Claude Code BYOK.",
       enableProjects: "[BETA] Enable Projects (page will refresh)",
       enableProjectsDescription: "Show Projects in the sidebar and the project field in key management.",
       enableChat: "[BETA] Enable Chat page (page will refresh)",
-      enableChatDescription: "Show Chat in the sidebar so users can chat with an LLM and connect their MCP server credentials through OAuth.",
+      enableChatDescription:
+        "Show Chat in the sidebar so users can chat with an LLM and connect their MCP server credentials through OAuth.",
       disableAgents: "Disable agents for internal users",
       disableAgentsDescription: "Hide agents and prevent internal users from accessing them.",
       allowAgentsAdmins: "Allow agents for team admins",
-      allowAgentsAdminsDescription: "Allow team administrators to use agents even when agents are disabled for internal users.",
+      allowAgentsAdminsDescription:
+        "Allow team administrators to use agents even when agents are disabled for internal users.",
       disableVectorStores: "Disable vector stores for internal users",
       disableVectorStoresDescription: "Hide vector stores and prevent internal users from accessing them.",
       allowVectorStoresAdmins: "Allow vector stores for team admins",
-      allowVectorStoresAdminsDescription: "Allow team administrators to use vector stores even when they are disabled for internal users.",
+      allowVectorStoresAdminsDescription:
+        "Allow team administrators to use vector stores even when they are disabled for internal users.",
       scopeUserSearch: "Scope user search to organization",
-      scopeUserSearchDescription: "Restrict user search results to the current organization. When disabled, any authenticated user can search all users.",
+      scopeUserSearchDescription:
+        "Restrict user search results to the current organization. When disabled, any authenticated user can search all users.",
       disableCustomKeys: "Disable custom virtual key values",
-      disableCustomKeysDescription: "Prevent users from specifying custom key values. All keys will be generated automatically.",
+      disableCustomKeysDescription:
+        "Prevent users from specifying custom key values. All keys will be generated automatically.",
       visibility: {
         title: "Internal User Page Visibility",
         notSet: "Not set (all pages visible)",
         selected_one: "{{count}} page selected",
         selected_other: "{{count}} pages selected",
-        description: "By default, all pages are visible to internal users. Select specific pages to restrict visibility.",
-        adminNote: "Only pages available to internal roles are listed. Admin-only pages cannot be made visible to internal users.",
+        description:
+          "By default, all pages are visible to internal users. Select specific pages to restrict visibility.",
+        adminNote:
+          "Only pages available to internal roles are listed. Admin-only pages cannot be made visible to internal users.",
         configure: "Configure Page Visibility",
         pageDescription: "Configure access to the {{page}} page.",
         save: "Save Page Visibility Settings",
@@ -725,13 +758,15 @@ export const enSettings = {
       test: "Test Connection",
       edit: "Edit Configuration",
       delete: "Delete Configuration",
-      secretField: "Secrets must be stored with the field name \"key\"",
+      secretField: 'Secrets must be stored with the field name "key"',
       docs: "View documentation",
       empty: "No Vault Configuration Found",
-      emptyDescription: "Configure Hashicorp Vault to securely manage provider API keys and secrets for your LiteLLM deployment.",
+      emptyDescription:
+        "Configure Hashicorp Vault to securely manage provider API keys and secrets for your LiteLLM deployment.",
       configure: "Configure Vault",
       deleteTitle: "Delete Hashicorp Vault Configuration?",
-      deleteMessage: "Models using Vault secrets will lose access to their API keys until a new configuration is saved.",
+      deleteMessage:
+        "Models using Vault secrets will lose access to their API keys until a new configuration is saved.",
       configuration: "Vault Configuration",
       address: "Vault Address",
       clearTitle: "Clear {{field}}?",

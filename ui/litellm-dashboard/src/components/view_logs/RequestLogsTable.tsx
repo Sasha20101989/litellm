@@ -46,9 +46,7 @@ function RequestLogsEmptyState({ filtered }: { filtered: boolean }) {
         {filtered ? t("request.noMatchesTitle") : t("request.emptyTitle")}
       </div>
       <div className="max-w-xs text-center text-sm text-muted-foreground">
-        {filtered
-          ? t("request.noMatchesDescription")
-          : t("request.emptyDescription")}
+        {filtered ? t("request.noMatchesDescription") : t("request.emptyDescription")}
       </div>
     </div>
   );

@@ -127,9 +127,10 @@ export const ToolPoliciesPanel: React.FC<ToolPoliciesPanelProps> = ({ accessToke
       ),
     };
   }, [tools]);
-  const trendSubtitle = trendDiff === undefined
-    ? undefined
-    : t("toolPolicies.metrics.trend", { diff: trendDiff > 0 ? `+${trendDiff}` : String(trendDiff) });
+  const trendSubtitle =
+    trendDiff === undefined
+      ? undefined
+      : t("toolPolicies.metrics.trend", { diff: trendDiff > 0 ? `+${trendDiff}` : String(trendDiff) });
 
   const scrollToToolRow = (toolId: string) => {
     document.querySelector(`[data-row-id="${CSS.escape(toolId)}"]`)?.scrollIntoView({
@@ -160,7 +161,10 @@ export const ToolPoliciesPanel: React.FC<ToolPoliciesPanelProps> = ({ accessToke
           value={blockedCount}
           valueColor={blockedCount > 0 ? "text-red-600" : undefined}
         />
-        <MetricCard label={t("toolPolicies.metrics.activeTeams")} value={activeTeamsCount > 0 ? activeTeamsCount : "—"} />
+        <MetricCard
+          label={t("toolPolicies.metrics.activeTeams")}
+          value={activeTeamsCount > 0 ? activeTeamsCount : "—"}
+        />
       </div>
 
       {needsReviewTools.length > 0 && (

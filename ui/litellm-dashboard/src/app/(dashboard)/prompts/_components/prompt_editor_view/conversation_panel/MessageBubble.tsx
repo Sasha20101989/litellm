@@ -35,9 +35,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               <RobotOutlined style={{ fontSize: "12px", color: "#4b5563" }} />
             )}
           </div>
-          <strong className="text-sm capitalize">
-            {t(`editor.${message.role}`, { defaultValue: message.role })}
-          </strong>
+          <strong className="text-sm capitalize">{t(`editor.${message.role}`, { defaultValue: message.role })}</strong>
           {message.role === "assistant" && message.model && (
             <span className="text-xs px-2 py-0.5 rounded-sm bg-gray-100 text-gray-600 font-normal">
               {message.model}

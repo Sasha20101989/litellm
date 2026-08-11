@@ -28,9 +28,7 @@ function SkillsEmptyState({ filtered, t }: { filtered: boolean; t: ReturnType<ty
         {filtered ? t("publicHub.skillsDashboard.noMatching") : t("publicHub.skillsDashboard.noSkills")}
       </div>
       <div className="text-sm text-muted-foreground">
-        {filtered
-          ? t("publicHub.skillsDashboard.adjustFilters")
-          : t("publicHub.skillsDashboard.skillsWillAppear")}
+        {filtered ? t("publicHub.skillsDashboard.adjustFilters") : t("publicHub.skillsDashboard.skillsWillAppear")}
       </div>
     </div>
   );

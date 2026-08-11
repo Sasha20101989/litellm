@@ -641,7 +641,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                       <Col numColSpan={2}>
                         <div className="flex items-center gap-4 mt-2 mb-2">
                           <Text className="text-tremor-default text-tremor-content dark:text-dark-tremor-content text-lg">
-                            {t("page.projectSpend")} {" "}
+                            {t("page.projectSpend")}{" "}
                             {dateValue.from && dateValue.to && (
                               <>
                                 {dateValue.from.toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "en-US", {
@@ -704,11 +704,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                               <div className="flex items-center gap-2">
                                 <Title>{t("common.failedRequests")}</Title>
                                 <Tooltip
-                                  title={
-                                    gatewayActivity
-                                      ? t("page.gatewayCountTooltip")
-                                      : t("page.failedCountTooltip")
-                                  }
+                                  title={gatewayActivity ? t("page.gatewayCountTooltip") : t("page.failedCountTooltip")}
                                 >
                                   <InfoCircleOutlined className="text-gray-400 hover:text-gray-600" />
                                 </Tooltip>
@@ -805,7 +801,9 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                                     <div className="bg-white p-4 shadow-lg rounded-lg border">
                                       <p className="font-bold">{data.date}</p>
                                       <p className="text-cyan-500">
-                                        {t("page.spendTooltip", { value: formatNumberWithCommas(data.metrics.spend, 2) })}
+                                        {t("page.spendTooltip", {
+                                          value: formatNumberWithCommas(data.metrics.spend, 2),
+                                        })}
                                       </p>
                                       <p className="text-gray-600">
                                         {t("page.requestsTooltip", { value: data.metrics.api_requests })}

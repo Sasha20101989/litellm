@@ -229,9 +229,7 @@ const UsefulLinksManagement: React.FC<UsefulLinksManagementProps> = ({ accessTok
       <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex flex-col">
           <Title className="mb-0">{t("publicHub.links.title")}</Title>
-          <p className="text-sm text-gray-500">
-            {t("publicHub.links.description")}
-          </p>
+          <p className="text-sm text-gray-500">{t("publicHub.links.description")}</p>
         </div>
         <div className="flex items-center">
           {isExpanded ? (

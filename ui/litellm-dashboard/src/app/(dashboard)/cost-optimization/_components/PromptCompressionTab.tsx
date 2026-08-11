@@ -81,7 +81,7 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
-            {t("compression.description")} {" "}
+            {t("compression.description")}{" "}
             <a
               href="https://docs.litellm.ai/docs/proxy/headroom"
               target="_blank"
@@ -93,9 +93,7 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
           </p>
           {isLoading && <p className="text-sm text-muted-foreground">{t("compression.loading")}</p>}
           {!isLoading && guardrails.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              {t("compression.empty")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("compression.empty")}</p>
           )}
           {!isLoading && guardrails.length > 0 && (
             <ul className="divide-y divide-gray-200">
@@ -154,7 +152,7 @@ const PromptCompressionTab: React.FC<PromptCompressionTabProps> = ({ accessToken
             </Form.Item>
             <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               <p className="text-sm text-yellow-800">
-                {t("compression.enterpriseNotice")} {" "}
+                {t("compression.enterpriseNotice")}{" "}
                 <a
                   href="https://www.litellm.ai/#pricing"
                   target="_blank"

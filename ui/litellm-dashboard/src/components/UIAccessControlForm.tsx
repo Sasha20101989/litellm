@@ -92,9 +92,7 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
   return (
     <div style={{ padding: "16px" }}>
       <div style={{ marginBottom: "16px" }}>
-        <Text style={{ fontSize: "14px", color: "#6b7280" }}>
-          {t("admin.accessControl.description")}
-        </Text>
+        <Text style={{ fontSize: "14px", color: "#6b7280" }}>{t("admin.accessControl.description")}</Text>
       </div>
 
       <Form form={form} onFinish={handleUIAccessSubmit} layout="vertical">

@@ -75,9 +75,7 @@ const SCIMConfig: React.FC<SCIMConfigProps> = ({ accessToken, userID, proxySetti
         <div className="flex items-center mb-4">
           <Title>{t("admin.scim.title")}</Title>
         </div>
-        <Text className="text-gray-600">
-          {t("admin.scim.description")}
-        </Text>
+        <Text className="text-gray-600">{t("admin.scim.description")}</Text>
 
         <Divider />
 
@@ -93,9 +91,7 @@ const SCIMConfig: React.FC<SCIMConfigProps> = ({ accessToken, userID, proxySetti
                 {t("admin.scim.tenantUrl")}
               </Title>
             </div>
-            <Text className="text-gray-600 mb-3">
-              {t("admin.scim.tenantDescription")}
-            </Text>
+            <Text className="text-gray-600 mb-3">{t("admin.scim.tenantDescription")}</Text>
             <div className="flex items-center">
               <TextInput value={scimBaseUrl} disabled={true} className="grow" />
               <CopyToClipboard
@@ -155,9 +151,7 @@ const SCIMConfig: React.FC<SCIMConfigProps> = ({ accessToken, userID, proxySetti
                   <ExclamationCircleOutlined className="h-5 w-5 mr-2" />
                   <Title className="text-lg text-yellow-800">{t("admin.scim.yourToken")}</Title>
                 </div>
-                <Text className="text-yellow-800 mb-4 font-medium">
-                  {t("admin.scim.copyWarning")}
-                </Text>
+                <Text className="text-yellow-800 mb-4 font-medium">{t("admin.scim.copyWarning")}</Text>
                 <div className="flex items-center">
                   <TextInput value={tokenData.key} className="grow mr-2 bg-white" type="password" disabled={true} />
                   <CopyToClipboard

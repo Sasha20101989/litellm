@@ -157,9 +157,7 @@ const RoutingGroups: React.FC = () => {
         onOk={confirmDelete}
         onCancel={() => setDeletingGroup(null)}
       >
-        <Text>
-          {t("router.groups.deleteMessage", { name: deletingGroup?.group_name ?? "" })}
-        </Text>
+        <Text>{t("router.groups.deleteMessage", { name: deletingGroup?.group_name ?? "" })}</Text>
       </Modal>
     </Space>
   );

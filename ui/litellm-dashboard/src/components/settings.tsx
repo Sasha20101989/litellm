@@ -251,9 +251,7 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
         setCallbackConfigs(data || []);
       })
       .catch((error) => {
-        NotificationsManager.fromBackend(
-          t("logging.callbacks.loadFailed", { error: parseErrorMessage(error) }),
-        );
+        NotificationsManager.fromBackend(t("logging.callbacks.loadFailed", { error: parseErrorMessage(error) }));
       });
   }, [accessToken]);
 
@@ -340,9 +338,7 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
     try {
       await setCallbacksCall(accessToken, payload);
       NotificationsManager.success(
-        isEdit
-          ? t("logging.callbacks.updated")
-          : t("logging.callbacks.added", { name: callbackName }),
+        isEdit ? t("logging.callbacks.updated") : t("logging.callbacks.added", { name: callbackName }),
       );
 
       if (isEdit) {

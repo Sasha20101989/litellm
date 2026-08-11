@@ -92,9 +92,7 @@ const PresidioDetectedEntities = ({ entities }: PresidioDetectedEntitiesProps) =
                         </div>
                         <div className="flex">
                           <span className="font-medium w-1/3">{t("guardrails.position")}:</span>
-                          <span>
-                            {t("guardrails.characters", { start: entity.start, end: entity.end })}
-                          </span>
+                          <span>{t("guardrails.characters", { start: entity.start, end: entity.end })}</span>
                         </div>
                         <div className="flex">
                           <span className="font-medium w-1/3">{t("guardrails.confidence")}:</span>

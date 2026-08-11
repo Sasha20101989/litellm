@@ -577,9 +577,7 @@ export function ToolTestPanel({
                     </svg>
                   </div>
                   <h4 className="text-sm font-medium text-gray-900 mb-1">{t("mcpServers.toolTest.ready")}</h4>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    {t("mcpServers.toolTest.readyHint")}
-                  </p>
+                  <p className="text-xs text-gray-500 leading-relaxed">{t("mcpServers.toolTest.readyHint")}</p>
                 </div>
               </div>
             ) : (

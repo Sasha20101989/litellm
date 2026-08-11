@@ -31,9 +31,7 @@ const APIReferenceView: React.FC<ApiRefProps> = ({ proxySettings }) => {
           <DocLink className="ml-3 shrink-0" href="https://docs.litellm.ai/docs/proxy/user_keys" />
         </div>
 
-        <p className="mt-2 mb-2 text-sm text-muted-foreground">
-          {t("apiReference.description")}
-        </p>
+        <p className="mt-2 mb-2 text-sm text-muted-foreground">{t("apiReference.description")}</p>
 
         <Tabs defaultValue="openai">
           <TabsList variant="line" className="border-b rounded-none w-full justify-start h-auto p-0">

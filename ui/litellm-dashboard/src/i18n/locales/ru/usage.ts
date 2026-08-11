@@ -26,8 +26,7 @@ export const ruUsage = {
     tokens: "Токены",
     totalSpendPerTeam: "Общие расходы по командам",
     dailySpendPerTeam: "Расходы команд по дням",
-    customerDescription:
-      "Клиенты ваших вызовов LLM API. Отслеживаются, когда в вызове LLM передаётся параметр `user`",
+    customerDescription: "Клиенты ваших вызовов LLM API. Отслеживаются, когда в вызове LLM передаётся параметр `user`",
     docsHere: "документация",
     selectKey: "Выберите ключ",
     allKeys: "Все ключи",

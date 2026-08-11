@@ -510,9 +510,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
             <CardTitle>{t("legacy.title")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {t("legacy.adminOnly")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("legacy.adminOnly")}</p>
           </CardContent>
         </Card>
       </div>
@@ -786,7 +784,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
 
         <TabsContent value="customer-usage">
           <p className="mb-2 text-[12px] text-muted-foreground italic">
-            {t("legacy.customerDescription")} {" "}
+            {t("legacy.customerDescription")}{" "}
             <a
               className="text-primary"
               href="https://docs.litellm.ai/docs/proxy/users"
@@ -918,7 +916,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
                   <p className="text-sm text-muted-foreground">
-                    {t("legacy.trackCostPerTag")} {" "}
+                    {t("legacy.trackCostPerTag")}{" "}
                     <a
                       className="text-primary"
                       href="https://docs.litellm.ai/docs/proxy/cost_tracking"

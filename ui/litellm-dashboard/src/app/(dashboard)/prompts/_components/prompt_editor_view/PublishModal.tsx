@@ -46,9 +46,7 @@ const PublishModal: React.FC<PublishModalProps> = ({
           onPressEnter={onPublish}
           autoFocus
         />
-        <Text className="text-gray-500 text-xs mt-2">
-          {t("editor.publishHelp")}
-        </Text>
+        <Text className="text-gray-500 text-xs mt-2">{t("editor.publishHelp")}</Text>
       </div>
     </Modal>
   );

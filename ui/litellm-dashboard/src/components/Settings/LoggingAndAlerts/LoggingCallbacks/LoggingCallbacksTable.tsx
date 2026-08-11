@@ -34,9 +34,7 @@ function EmptyState() {
         <Inbox className="size-5 text-muted-foreground" />
       </div>
       <div className="text-sm font-medium text-foreground">{t("logging.callbacks.empty")}</div>
-      <div className="text-sm text-muted-foreground">
-        {t("logging.callbacks.emptyDescription")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("logging.callbacks.emptyDescription")}</div>
     </div>
   );
 }

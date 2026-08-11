@@ -307,7 +307,9 @@ const BaseSSOSettingsForm: React.FC<BaseSSOSettingsFormProps> = ({ form, onFormS
               <>
                 <Form.Item label={t("admin.sso.fields.defaultRole")} name="default_role" initialValue="internal_user">
                   <Select>
-                    <Select.Option value="internal_user_viewer">{t("admin.sso.roles.internal_user_viewer")}</Select.Option>
+                    <Select.Option value="internal_user_viewer">
+                      {t("admin.sso.roles.internal_user_viewer")}
+                    </Select.Option>
                     <Select.Option value="internal_user">{t("admin.sso.roles.internal_user")}</Select.Option>
                     <Select.Option value="proxy_admin_viewer">{t("admin.sso.roles.proxy_admin_viewer")}</Select.Option>
                     <Select.Option value="proxy_admin">{t("admin.sso.roles.proxy_admin")}</Select.Option>

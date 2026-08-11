@@ -94,23 +94,27 @@ export default function SidebarUsageCard({ accessToken, collapsed, onExpandRail 
   }
 
   const expirationDate = licenseInfo?.expiration_date
-    ? new Date(`${licenseInfo.expiration_date}T00:00:00Z`).toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-      })
+    ? new Date(`${licenseInfo.expiration_date}T00:00:00Z`).toLocaleDateString(
+        i18n.language === "ru" ? "ru-RU" : "en-US",
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          timeZone: "UTC",
+        },
+      )
     : null;
   const subtitle = expirationDate
-    ? t(new Date(`${licenseInfo?.expiration_date}T00:00:00Z`) < new Date() ? "sidebar.enterpriseUsage.expired" : "sidebar.enterpriseUsage.expires", {
-        date: expirationDate,
-      })
+    ? t(
+        new Date(`${licenseInfo?.expiration_date}T00:00:00Z`) < new Date()
+          ? "sidebar.enterpriseUsage.expired"
+          : "sidebar.enterpriseUsage.expires",
+        {
+          date: expirationDate,
+        },
+      )
     : t("sidebar.enterpriseUsage.activePlan");
-  const meters = buildMeters(
-    data,
-    t("sidebar.enterpriseUsage.seats"),
-    t("sidebar.enterpriseUsage.teams"),
-  );
+  const meters = buildMeters(data, t("sidebar.enterpriseUsage.seats"), t("sidebar.enterpriseUsage.teams"));
 
   return (
     <Collapsible defaultOpen className="overflow-hidden rounded-xl border border-sidebar-border bg-sidebar">
@@ -119,9 +123,7 @@ export default function SidebarUsageCard({ accessToken, collapsed, onExpandRail 
           <Award className="size-4" strokeWidth={1.75} />
         </span>
         <span className="min-w-0 flex-1 leading-tight">
-          <span className="block text-[13px] font-semibold text-foreground">
-            {t("sidebar.enterpriseUsage.title")}
-          </span>
+          <span className="block text-[13px] font-semibold text-foreground">{t("sidebar.enterpriseUsage.title")}</span>
           <span className="block truncate text-[11px] text-muted-foreground">{subtitle}</span>
         </span>
         <ChevronDown className="size-4 flex-none -rotate-90 text-muted-foreground transition-transform group-data-[panel-open]/usage:rotate-0" />

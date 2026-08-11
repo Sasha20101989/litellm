@@ -88,9 +88,7 @@ const HowItWorks: React.FC = () => {
         <Text className="text-xs text-gray-600 mb-3">{t("tracking.how.enterHeaders")}</Text>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              {t("tracking.how.responseCost")}
-            </label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">{t("tracking.how.responseCost")}</label>
             <TextInput
               placeholder="0.0171938125"
               value={responseCost}
@@ -99,9 +97,7 @@ const HowItWorks: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              {t("tracking.how.discountHeader")}
-            </label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">{t("tracking.how.discountHeader")}</label>
             <TextInput
               placeholder="0.0009049375"
               value={discountAmount}

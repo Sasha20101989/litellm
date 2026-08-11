@@ -61,9 +61,7 @@ const RouterSettingsForm: React.FC<RouterSettingsFormProps> = ({
       <div className="space-y-6">
         <div className="max-w-3xl">
           <h3 className="text-sm font-medium text-gray-900">{labels?.routingSettings ?? t("router.title")}</h3>
-          <p className="text-xs text-gray-500 mt-1">
-            {labels?.routingDescription ?? t("router.description")}
-          </p>
+          <p className="text-xs text-gray-500 mt-1">{labels?.routingDescription ?? t("router.description")}</p>
         </div>
 
         {/* Routing Strategy */}

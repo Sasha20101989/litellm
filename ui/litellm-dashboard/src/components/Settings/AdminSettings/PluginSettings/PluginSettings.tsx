@@ -114,9 +114,7 @@ export default function PluginSettings() {
   return (
     <Card>
       <Title level={4}>{t("admin.plugins.title")}</Title>
-      <Paragraph>
-        {t("admin.plugins.description")}
-      </Paragraph>
+      <Paragraph>{t("admin.plugins.description")}</Paragraph>
       <Paragraph type="secondary" style={{ fontSize: 12 }}>
         {t("admin.plugins.manifest")}
       </Paragraph>
@@ -148,7 +146,7 @@ export default function PluginSettings() {
             name="display_name"
             label={t("admin.plugins.displayName")}
             rules={[{ required: true, message: t("admin.plugins.required") }]}
-          > 
+          >
             <Input placeholder={t("admin.plugins.displayPlaceholder")} />
           </Form.Item>
           <Form.Item
@@ -162,11 +160,7 @@ export default function PluginSettings() {
           >
             <Input placeholder="https://your-plugin.example.com" />
           </Form.Item>
-          <Form.Item
-            name="plugin_key"
-            label={t("admin.plugins.key")}
-            extra={t("admin.plugins.keyHelp")}
-          >
+          <Form.Item name="plugin_key" label={t("admin.plugins.key")} extra={t("admin.plugins.keyHelp")}>
             <Input.Password
               placeholder={editingIndex !== null ? t("admin.plugins.keepKey") : t("admin.plugins.optionalKey")}
             />

@@ -129,9 +129,7 @@ ${formattedBody}
   return (
     <div className="p-2">
       <h1 className="text-lg font-medium text-foreground">{t("transform.title")}</h1>
-      <p className="text-sm text-muted-foreground">
-        {t("transform.subtitle")}
-      </p>
+      <p className="text-sm text-muted-foreground">{t("transform.subtitle")}</p>
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Original Request Panel */}
         <Card>
@@ -204,7 +202,7 @@ ${formattedBody}
       </div>
       <div className="mt-4 text-right">
         <p className="text-sm text-muted-foreground">
-          {t("transform.foundError")} {" "}
+          {t("transform.foundError")}{" "}
           <a
             className="underline underline-offset-4"
             href="https://github.com/BerriAI/litellm/issues"

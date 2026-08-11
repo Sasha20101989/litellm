@@ -193,8 +193,14 @@ const PerUserUsage: React.FC<PerUserUsageProps> = ({ accessToken, selectedTags, 
                 const categories = {
                   [t("perUser.ranges.oneToNine")]: { range: [1, 9], agents: {} as Record<string, number> },
                   [t("perUser.ranges.tenToNinetyNine")]: { range: [10, 99], agents: {} as Record<string, number> },
-                  [t("perUser.ranges.hundredToNineHundred")]: { range: [100, 999], agents: {} as Record<string, number> },
-                  [t("perUser.ranges.oneToNineThousand")]: { range: [1000, 9999], agents: {} as Record<string, number> },
+                  [t("perUser.ranges.hundredToNineHundred")]: {
+                    range: [100, 999],
+                    agents: {} as Record<string, number>,
+                  },
+                  [t("perUser.ranges.oneToNineThousand")]: {
+                    range: [1000, 9999],
+                    agents: {} as Record<string, number>,
+                  },
                   [t("perUser.ranges.tenToNinetyNineThousand")]: {
                     range: [10000, 99999],
                     agents: {} as Record<string, number>,

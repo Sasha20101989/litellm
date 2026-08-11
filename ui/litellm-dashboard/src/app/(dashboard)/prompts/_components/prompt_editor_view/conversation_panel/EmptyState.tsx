@@ -11,11 +11,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ hasVariables }) => {
   return (
     <div className="h-full flex flex-col items-center justify-center text-gray-400">
       <RobotOutlined style={{ fontSize: "48px", marginBottom: "16px" }} />
-      <span className="text-base">
-        {hasVariables
-          ? t("variables.fillThenMessage")
-          : t("variables.typeMessage")}
-      </span>
+      <span className="text-base">{hasVariables ? t("variables.fillThenMessage") : t("variables.typeMessage")}</span>
     </div>
   );
 };

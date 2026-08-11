@@ -11,4 +11,8 @@ describe("localization audit", () => {
   it("allows documented technical literals", () => {
     expect(auditSource("return <code>MASTER_KEY</code>", "fixture.tsx")).toEqual([]);
   });
+
+  it("allows the Nexoplane product name", () => {
+    expect(auditSource('return <img alt="Nexoplane" />', "fixture.tsx")).toEqual([]);
+  });
 });

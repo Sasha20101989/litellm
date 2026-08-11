@@ -397,9 +397,7 @@ const ModelHubTable: React.FC<ModelHubTableProps> = ({ accessToken, publicPage, 
             <div className="flex flex-col items-start">
               <Title className="text-center">{t("publicHub.admin.title")}</Title>
               {isAdminRole(userRole || "") ? (
-                <p className="text-sm text-gray-600">
-                  {t("publicHub.admin.description")}
-                </p>
+                <p className="text-sm text-gray-600">{t("publicHub.admin.description")}</p>
               ) : (
                 <p className="text-sm text-gray-600">{t("publicHub.admin.viewerDescription")}</p>
               )}
@@ -463,9 +461,7 @@ const ModelHubTable: React.FC<ModelHubTableProps> = ({ accessToken, publicPage, 
                     noDataMessage={
                       <HubEmptyState
                         title={
-                          modelHubData?.length
-                            ? t("publicHub.admin.noMatchingModels")
-                            : t("publicHub.admin.noModels")
+                          modelHubData?.length ? t("publicHub.admin.noMatchingModels") : t("publicHub.admin.noModels")
                         }
                         body={
                           modelHubData?.length
@@ -546,10 +542,7 @@ const ModelHubTable: React.FC<ModelHubTableProps> = ({ accessToken, publicPage, 
                     isLoading={mcpLoading}
                     loadingMessage={t("publicHub.admin.loadingMcp")}
                     noDataMessage={
-                      <HubEmptyState
-                        title={t("publicHub.admin.noMcp")}
-                        body={t("publicHub.admin.mcpWillAppear")}
-                      />
+                      <HubEmptyState title={t("publicHub.admin.noMcp")} body={t("publicHub.admin.mcpWillAppear")} />
                     }
                     size="compact"
                   />
@@ -661,7 +654,9 @@ const ModelHubTable: React.FC<ModelHubTableProps> = ({ accessToken, publicPage, 
                 </div>
                 <div>
                   <Text className="font-medium">{t("publicHub.details.maxOutputTokens")}</Text>
-                  <Text>{selectedModel.max_output_tokens?.toLocaleString() || t("publicHub.details.notSpecified")}</Text>
+                  <Text>
+                    {selectedModel.max_output_tokens?.toLocaleString() || t("publicHub.details.notSpecified")}
+                  </Text>
                 </div>
                 <div>
                   <Text className="font-medium">{t("publicHub.details.inputCost")}</Text>

@@ -80,15 +80,21 @@ const SingleModelBreakdown: React.FC<{
             </Text>
           </div>
           <div>
-            <Text className="text-xs text-gray-500 block">{t("tracking.calculator.periodInput", { period: periodLabel })}</Text>
+            <Text className="text-xs text-gray-500 block">
+              {t("tracking.calculator.periodInput", { period: periodLabel })}
+            </Text>
             <Text className="text-sm">{formatCost(periodInputCost)}</Text>
           </div>
           <div>
-            <Text className="text-xs text-gray-500 block">{t("tracking.calculator.periodOutput", { period: periodLabel })}</Text>
+            <Text className="text-xs text-gray-500 block">
+              {t("tracking.calculator.periodOutput", { period: periodLabel })}
+            </Text>
             <Text className="text-sm">{formatCost(periodOutputCost)}</Text>
           </div>
           <div>
-            <Text className="text-xs text-gray-500 block">{t("tracking.calculator.periodMargin", { period: periodLabel })}</Text>
+            <Text className="text-xs text-gray-500 block">
+              {t("tracking.calculator.periodMargin", { period: periodLabel })}
+            </Text>
             <Text className={`text-sm ${(periodMarginCost ?? 0) > 0 ? "text-amber-600" : ""}`}>
               {formatCost(periodMarginCost)}
             </Text>
@@ -100,11 +106,16 @@ const SingleModelBreakdown: React.FC<{
         <div className="text-xs text-gray-400 pt-2 border-t border-gray-200">
           {t("tracking.calculator.tokenPricing")}{" "}
           {result.input_cost_per_token && (
-            <span>{t("tracking.calculator.input")} ${formatNumberWithCommas(result.input_cost_per_token * 1_000_000, 2)}/1M</span>
+            <span>
+              {t("tracking.calculator.input")} ${formatNumberWithCommas(result.input_cost_per_token * 1_000_000, 2)}/1M
+            </span>
           )}
           {result.input_cost_per_token && result.output_cost_per_token && " | "}
           {result.output_cost_per_token && (
-            <span>{t("tracking.calculator.output")} ${formatNumberWithCommas(result.output_cost_per_token * 1_000_000, 2)}/1M</span>
+            <span>
+              {t("tracking.calculator.output")} ${formatNumberWithCommas(result.output_cost_per_token * 1_000_000, 2)}
+              /1M
+            </span>
           )}
         </div>
       )}
@@ -309,7 +320,9 @@ const MultiCostResults: React.FC<MultiCostResultsProps> = ({ multiResult, timePe
           </Col>
           <Col xs={24} sm={12}>
             <Statistic
-              title={<span className="text-xs">{t("tracking.calculator.totalPeriodCost", { period: periodLabel })}</span>}
+              title={
+                <span className="text-xs">{t("tracking.calculator.totalPeriodCost", { period: periodLabel })}</span>
+              }
               value={formatCost(timePeriod === "day" ? multiResult.totals.daily_cost : multiResult.totals.monthly_cost)}
               valueStyle={{
                 color: timePeriod === "day" ? "#52c41a" : "#722ed1",
@@ -328,7 +341,9 @@ const MultiCostResults: React.FC<MultiCostResultsProps> = ({ multiResult, timePe
               </div>
             </Col>
             <Col xs={24} sm={12}>
-              <div className="text-xs text-gray-500">{t("tracking.calculator.periodMargin", { period: periodLabel })}</div>
+              <div className="text-xs text-gray-500">
+                {t("tracking.calculator.periodMargin", { period: periodLabel })}
+              </div>
               <div className="text-sm font-mono text-amber-600">
                 {formatCost(timePeriod === "day" ? multiResult.totals.daily_margin : multiResult.totals.monthly_margin)}
               </div>

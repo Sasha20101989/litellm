@@ -26,9 +26,7 @@ export function AddFallbacksModal({ open, onCancel, children }: AddFallbacksModa
             </div>
             <div>
               <h2 className="text-lg font-bold m-0">{t("router.fallbacks.modalTitle")}</h2>
-              <p className="text-sm text-gray-500 font-normal m-0">
-                {t("router.fallbacks.modalDescription")}
-              </p>
+              <p className="text-sm text-gray-500 font-normal m-0">{t("router.fallbacks.modalDescription")}</p>
             </div>
           </div>
         </div>

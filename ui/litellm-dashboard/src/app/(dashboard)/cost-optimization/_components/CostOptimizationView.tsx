@@ -57,9 +57,7 @@ const CostOptimizationView: React.FC<CostOptimizationViewProps> = ({ accessToken
           <PiggyBank className="size-6 text-emerald-600" strokeWidth={1.75} />
           <h1 className="text-xl font-semibold text-foreground">{t("page.title")}</h1>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t("page.description")}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("page.description")}</p>
       </div>
 
       <Alert
@@ -68,7 +66,7 @@ const CostOptimizationView: React.FC<CostOptimizationViewProps> = ({ accessToken
         message={t("page.experimental")}
         description={
           <span>
-            {t("page.feedback")} {" "}
+            {t("page.feedback")}{" "}
             <a
               href="https://github.com/BerriAI/litellm/discussions/32168"
               target="_blank"

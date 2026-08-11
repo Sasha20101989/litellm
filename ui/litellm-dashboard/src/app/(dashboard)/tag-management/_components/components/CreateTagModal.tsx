@@ -40,11 +40,7 @@ const CreateTagModal: React.FC<CreateTagModalProps> = ({ visible, onCancel, onSu
   return (
     <Modal title={t("tags.createTitle")} open={visible} width={800} footer={null} onCancel={handleCancel}>
       <Form form={form} onFinish={handleFinish} labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} labelAlign="left">
-        <Form.Item
-          label={t("tags.name")}
-          name="tag_name"
-          rules={[{ required: true, message: t("tags.nameRequired") }]}
-        >
+        <Form.Item label={t("tags.name")} name="tag_name" rules={[{ required: true, message: t("tags.nameRequired") }]}>
           <TextInput />
         </Form.Item>
 
@@ -84,7 +80,7 @@ const CreateTagModal: React.FC<CreateTagModalProps> = ({ visible, onCancel, onSu
               className="mt-4"
               label={
                 <span>
-                  {t("tags.maxBudgetUsd")} {" "}
+                  {t("tags.maxBudgetUsd")}{" "}
                   <Tooltip title={t("tags.maxBudgetExtendedTooltip")}>
                     <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                   </Tooltip>
@@ -98,7 +94,7 @@ const CreateTagModal: React.FC<CreateTagModalProps> = ({ visible, onCancel, onSu
               className="mt-4"
               label={
                 <span>
-                  {t("tags.resetBudget")} {" "}
+                  {t("tags.resetBudget")}{" "}
                   <Tooltip title={t("tags.resetBudgetTooltip")}>
                     <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                   </Tooltip>
@@ -111,7 +107,7 @@ const CreateTagModal: React.FC<CreateTagModalProps> = ({ visible, onCancel, onSu
 
             <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
               <p className="text-sm text-gray-600">
-                {t("tags.unsupportedLimits")} {" "}
+                {t("tags.unsupportedLimits")}{" "}
                 <a
                   href="https://github.com/BerriAI/litellm/issues/new"
                   target="_blank"

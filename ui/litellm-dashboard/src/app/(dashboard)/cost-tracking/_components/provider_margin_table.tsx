@@ -175,7 +175,9 @@ const ProviderMarginTable: React.FC<ProviderMarginTableProps> = ({
           header: t("tracking.actions"),
           cell: (row) => {
             const displayName =
-              row.provider === "global" ? t("tracking.margins.globalShort") : getProviderLogoAndName(row.provider).displayName;
+              row.provider === "global"
+                ? t("tracking.margins.globalShort")
+                : getProviderLogoAndName(row.provider).displayName;
             return (
               <Icon
                 icon={TrashIcon}

@@ -223,9 +223,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
           token_type: token.token_type,
         };
         setToken(mcpServer.server_id, browserHeldToken, userID);
-        NotificationsManager.success(
-          t("mcpServers.create.tokenHeld"),
-        );
+        NotificationsManager.success(t("mcpServers.create.tokenHeld"));
         return;
       }
 
@@ -244,9 +242,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
       // Re-capture after writing credentials so the token is not invalidated by its own credential write.
       authorizedIdentityRef.current = getOAuthAuthorizationIdentity(form.getFieldsValue(true));
 
-      NotificationsManager.success(
-        t("mcpServers.create.oauthAuthorized"),
-      );
+      NotificationsManager.success(t("mcpServers.create.oauthAuthorized"));
     },
     onBeforeRedirect: persistEditUiState,
     flowSource: "edit",
@@ -679,9 +675,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
       ([, displayName]) => displayName && !TOOL_DISPLAY_NAME_PATTERN.test(displayName),
     );
     if (invalidDisplayName) {
-      NotificationsManager.fromBackend(
-        t("mcpServers.create.errors.invalidToolName", { name: invalidDisplayName[1] }),
-      );
+      NotificationsManager.fromBackend(t("mcpServers.create.errors.invalidToolName", { name: invalidDisplayName[1] }));
       return;
     }
     try {
@@ -1123,13 +1117,15 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
                     <Select.Option value="token">{t("mcpServers.create.authTypes.token")}</Select.Option>
                     <Select.Option value="basic">{t("mcpServers.create.authTypes.basic")}</Select.Option>
                     <Select.Option value="oauth2">{t("mcpServers.create.authTypes.oauth")}</Select.Option>
-                    <Select.Option value="oauth2_token_exchange">{t("mcpServers.create.authTypes.exchange")}</Select.Option>
+                    <Select.Option value="oauth2_token_exchange">
+                      {t("mcpServers.create.authTypes.exchange")}
+                    </Select.Option>
                     <Select.Option value="oauth2_id_jag">{t("mcpServers.create.authTypes.idJag")}</Select.Option>
                     <Select.Option value="aws_sigv4">{t("mcpServers.create.authTypes.aws")}</Select.Option>
-                    <Select.Option value="true_passthrough">{t("mcpServers.create.authTypes.passthrough")}</Select.Option>
-                    <Select.Option value="oauth_delegate">
-                      {t("mcpServers.create.authTypes.delegate")}
+                    <Select.Option value="true_passthrough">
+                      {t("mcpServers.create.authTypes.passthrough")}
                     </Select.Option>
+                    <Select.Option value="oauth_delegate">{t("mcpServers.create.authTypes.delegate")}</Select.Option>
                   </Select>
                 </Form.Item>
                 <TruePassthroughWarning authType={authType} />
@@ -1152,9 +1148,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
 
             {isStdioTransport && (
               <div className="rounded-lg border border-gray-200 p-4 space-y-4">
-                <p className="text-sm text-gray-600">
-                  {t("mcpServers.edit.stdioDescription")}
-                </p>
+                <p className="text-sm text-gray-600">{t("mcpServers.edit.stdioDescription")}</p>
 
                 <Form.Item
                   label={t("mcpServers.edit.command")}
@@ -1267,7 +1261,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
             {!isStdioTransport && isAwsSigV4AuthType && (
               <>
                 <p className="text-sm text-gray-500 mb-2">
-                  {t("mcpServers.edit.awsDescription")} {" "}
+                  {t("mcpServers.edit.awsDescription")}{" "}
                   <a
                     href="https://docs.litellm.ai/docs/mcp_aws_sigv4"
                     target="_blank"

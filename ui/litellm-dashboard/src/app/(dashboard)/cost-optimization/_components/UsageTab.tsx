@@ -300,9 +300,7 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
         <Card>
           <CardHeader>
             <CardTitle>{t("usage.spendByTool")}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {t("usage.spendByToolDescription")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("usage.spendByToolDescription")}</p>
           </CardHeader>
           <CardContent>
             {topTools.length === 0 ? (

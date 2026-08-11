@@ -315,7 +315,11 @@ const SSOModals: React.FC<SSOModalsProps> = ({
               {({ getFieldValue }) => {
                 const provider = getFieldValue("sso_provider");
                 return provider === "okta" || provider === "generic" ? (
-                  <Form.Item label={t("admin.sso.fields.useRoleMappings")} name="use_role_mappings" valuePropName="checked">
+                  <Form.Item
+                    label={t("admin.sso.fields.useRoleMappings")}
+                    name="use_role_mappings"
+                    valuePropName="checked"
+                  >
                     <Checkbox />
                   </Form.Item>
                 ) : null;
@@ -352,11 +356,19 @@ const SSOModals: React.FC<SSOModalsProps> = ({
                 const useRoleMappings = getFieldValue("use_role_mappings");
                 return useRoleMappings ? (
                   <>
-                    <Form.Item label={t("admin.sso.fields.defaultRole")} name="default_role" initialValue="internal_user">
+                    <Form.Item
+                      label={t("admin.sso.fields.defaultRole")}
+                      name="default_role"
+                      initialValue="internal_user"
+                    >
                       <Select>
-                        <Select.Option value="internal_user_viewer">{t("admin.sso.roles.internal_user_viewer")}</Select.Option>
+                        <Select.Option value="internal_user_viewer">
+                          {t("admin.sso.roles.internal_user_viewer")}
+                        </Select.Option>
                         <Select.Option value="internal_user">{t("admin.sso.roles.internal_user")}</Select.Option>
-                        <Select.Option value="proxy_admin_viewer">{t("admin.sso.roles.proxy_admin_viewer")}</Select.Option>
+                        <Select.Option value="proxy_admin_viewer">
+                          {t("admin.sso.roles.proxy_admin_viewer")}
+                        </Select.Option>
                         <Select.Option value="proxy_admin">{t("admin.sso.roles.proxy_admin")}</Select.Option>
                       </Select>
                     </Form.Item>

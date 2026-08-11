@@ -169,9 +169,7 @@ const CostTrackingSettings: React.FC<CostTrackingSettingsProps> = ({ userID, use
             <Title>{t("tracking.title")}</Title>
             <DocsMenu items={docsLinks} />
           </div>
-          <Text className="text-gray-500 mt-1">
-            {t("tracking.description")}
-          </Text>
+          <Text className="text-gray-500 mt-1">{t("tracking.description")}</Text>
         </div>
       </div>
 
@@ -183,9 +181,7 @@ const CostTrackingSettings: React.FC<CostTrackingSettingsProps> = ({ userID, use
             <AccordionHeader className="px-6 py-4">
               <div className="flex flex-col items-start w-full">
                 <Text className="text-lg font-semibold text-gray-900">{t("tracking.discounts.title")}</Text>
-                <Text className="text-sm text-gray-500 mt-1">
-                  {t("tracking.discounts.description")}
-                </Text>
+                <Text className="text-sm text-gray-500 mt-1">{t("tracking.discounts.description")}</Text>
               </div>
             </AccordionHeader>
             <AccordionBody className="px-0">
@@ -226,9 +222,7 @@ const CostTrackingSettings: React.FC<CostTrackingSettingsProps> = ({ userID, use
                             />
                           </svg>
                           <Text className="text-gray-700 font-medium mb-2">{t("tracking.discounts.empty")}</Text>
-                          <Text className="text-gray-500 text-sm">
-                            {t("tracking.discounts.emptyHint")}
-                          </Text>
+                          <Text className="text-gray-500 text-sm">{t("tracking.discounts.emptyHint")}</Text>
                         </div>
                       )}
                     </div>
@@ -250,9 +244,7 @@ const CostTrackingSettings: React.FC<CostTrackingSettingsProps> = ({ userID, use
             <AccordionHeader className="px-6 py-4">
               <div className="flex flex-col items-start w-full">
                 <Text className="text-lg font-semibold text-gray-900">{t("tracking.margins.title")}</Text>
-                <Text className="text-sm text-gray-500 mt-1">
-                  {t("tracking.margins.description")}
-                </Text>
+                <Text className="text-sm text-gray-500 mt-1">{t("tracking.margins.description")}</Text>
               </div>
             </AccordionHeader>
             <AccordionBody className="px-0">
@@ -299,9 +291,7 @@ const CostTrackingSettings: React.FC<CostTrackingSettingsProps> = ({ userID, use
           <AccordionHeader className="px-6 py-4">
             <div className="flex flex-col items-start w-full">
               <Text className="text-lg font-semibold text-gray-900">{t("tracking.calculator.title")}</Text>
-              <Text className="text-sm text-gray-500 mt-1">
-                {t("tracking.calculator.description")}
-              </Text>
+              <Text className="text-sm text-gray-500 mt-1">{t("tracking.calculator.description")}</Text>
             </div>
           </AccordionHeader>
           <AccordionBody className="px-0">
@@ -329,9 +319,7 @@ const CostTrackingSettings: React.FC<CostTrackingSettingsProps> = ({ userID, use
         }}
       >
         <div className="mt-6">
-          <Text className="text-sm text-gray-600 mb-6">
-            {t("tracking.discounts.modalDescription")}
-          </Text>
+          <Text className="text-sm text-gray-600 mb-6">{t("tracking.discounts.modalDescription")}</Text>
           <Form form={form} onFinish={handleFormSubmit} layout="vertical" className="space-y-6">
             <AddProviderForm
               discountConfig={discountConfig}
@@ -362,9 +350,7 @@ const CostTrackingSettings: React.FC<CostTrackingSettingsProps> = ({ userID, use
         }}
       >
         <div className="mt-6">
-          <Text className="text-sm text-gray-600 mb-6">
-            {t("tracking.margins.modalDescription")}
-          </Text>
+          <Text className="text-sm text-gray-600 mb-6">{t("tracking.margins.modalDescription")}</Text>
           <Form form={marginForm} layout="vertical" className="space-y-6">
             <AddMarginForm
               marginConfig={marginConfig}

@@ -401,9 +401,7 @@ const RequestLifecycle = ({ entries }: { entries: GuardrailInformation[] }) => {
 
   return (
     <div>
-      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-        {t("guardrails.lifecycle")}
-      </h4>
+      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">{t("guardrails.lifecycle")}</h4>
       <div className="relative">
         {timeline.map((item, idx) => (
           <div key={idx} className="flex items-start gap-3 relative">

@@ -120,9 +120,7 @@ export default function CredentialsPanel({ uploadProps }: CredentialsPanelProps)
   return (
     <div className="mx-auto flex w-full flex-auto flex-col gap-4 overflow-y-auto p-2">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          {t("models.credentials.description")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("models.credentials.description")}</p>
         {canModifyCredentials && (
           <Button onClick={() => setIsAddModalOpen(true)}>
             <Plus className="size-4" />

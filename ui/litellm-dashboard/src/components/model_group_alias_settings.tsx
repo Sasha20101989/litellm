@@ -35,7 +35,7 @@ const ModelGroupAliasSettings: React.FC<ModelGroupAliasSettingsProps> = ({
       id: `${index}-${aliasName}`,
       aliasName,
       // if object, use its model field; otherwise use the string
-      targetModelGroup: typeof value === "string" ? value : (value?.model ?? ""),
+      targetModelGroup: typeof value === "string" ? value : value?.model ?? "",
     }));
     setAliases(aliasArray);
   }, [initialModelGroupAlias]);

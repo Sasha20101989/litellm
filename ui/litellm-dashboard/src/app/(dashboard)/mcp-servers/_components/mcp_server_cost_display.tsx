@@ -19,9 +19,7 @@ const MCPServerCostDisplay: React.FC<MCPServerCostDisplayProps> = ({ costConfig 
       <div className="mt-6 border-t border-border pt-6">
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted p-4">
-            <p className="text-sm text-muted-foreground">
-              {t("mcpServers.costDisplay.empty")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("mcpServers.costDisplay.empty")}</p>
           </div>
         </div>
       </div>

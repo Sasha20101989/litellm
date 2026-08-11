@@ -57,9 +57,7 @@ function AuditLogsEmptyState({ filtered }: { filtered: boolean }) {
         {filtered ? t("audit.noMatchesTitle") : t("audit.emptyTitle")}
       </div>
       <div className="max-w-xs text-center text-sm text-muted-foreground">
-        {filtered
-          ? t("audit.noMatchesDescription")
-          : t("audit.emptyDescription")}
+        {filtered ? t("audit.noMatchesDescription") : t("audit.emptyDescription")}
       </div>
     </div>
   );

@@ -31,9 +31,7 @@ const ExportTypeSelector: React.FC<ExportTypeSelectorProps> = ({ value, onChange
             <Radio value="daily_with_keys" className="mt-0.5" />
             <div className="ml-3 flex-1">
               <div className="font-medium text-sm">{t("export.keysTitle", { entity: entityLabel })}</div>
-              <div className="text-xs text-gray-500 mt-0.5">
-                {t("export.keysDescription", { entity: entityLabel })}
-              </div>
+              <div className="text-xs text-gray-500 mt-0.5">{t("export.keysDescription", { entity: entityLabel })}</div>
             </div>
           </label>
 

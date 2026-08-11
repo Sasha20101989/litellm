@@ -135,7 +135,8 @@ export const enManagement = {
     dynamicDeleteDisabled: "Dynamically generated spend tags cannot be deleted",
     lastRefreshed: "Last Refreshed",
     instructions: "Click a tag name to view and edit its details.",
-    routingDescription: "Use tags to restrict certain LLMs based on tags passed in a request. Read more about tag routing",
+    routingDescription:
+      "Use tags to restrict certain LLMs based on tags passed in a request. Read more about tag routing",
     here: "here",
     createNew: "Create New Tag",
     deleteMessage: "Are you sure you want to delete this tag? This action cannot be undone.",

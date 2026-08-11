@@ -68,9 +68,7 @@ function UserBannerSettingsForm({ persisted, isLoading, isPending, saveBanner }:
     <Card>
       <CardHeader>
         <CardTitle>{t("admin.banner.title")}</CardTitle>
-        <CardDescription>
-          {t("admin.banner.description")}
-        </CardDescription>
+        <CardDescription>{t("admin.banner.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (

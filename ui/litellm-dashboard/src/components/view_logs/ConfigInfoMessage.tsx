@@ -31,18 +31,16 @@ export const ConfigInfoMessage: React.FC<ConfigInfoMessageProps> = ({ show }) =>
       <div>
         <h4 className="text-sm font-medium text-blue-800">{t("configInfo.title")}</h4>
         <p className="text-sm text-blue-700 mt-1">
-          {t("configInfo.descriptionBefore")} {" "}
-          <code className="bg-blue-100 px-1 py-0.5 rounded-sm">proxy_config.yaml</code>, {t("configInfo.descriptionAfter")}{" "}
-          <strong>{t("configInfo.settingsPath")}</strong>.
+          {t("configInfo.descriptionBefore")}{" "}
+          <code className="bg-blue-100 px-1 py-0.5 rounded-sm">proxy_config.yaml</code>,{" "}
+          {t("configInfo.descriptionAfter")} <strong>{t("configInfo.settingsPath")}</strong>.
         </p>
         <pre className="mt-2 bg-white p-3 rounded-sm border border-blue-200 text-xs font-mono overflow-auto">
           {`general_settings:
   store_model_in_db: true
   store_prompts_in_spend_logs: true`}
         </pre>
-        <p className="text-xs text-blue-700 mt-2">
-          {t("configInfo.note")}
-        </p>
+        <p className="text-xs text-blue-700 mt-2">{t("configInfo.note")}</p>
       </div>
     </div>
   );

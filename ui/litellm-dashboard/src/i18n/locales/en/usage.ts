@@ -1,8 +1,7 @@
 export const enUsage = {
   legacy: {
     title: "Usage",
-    adminOnly:
-      "Proxy-wide usage is only available to admin users. Your own usage is on the Usage page.",
+    adminOnly: "Proxy-wide usage is only available to admin users. Your own usage is on the Usage page.",
     databaseLimitTitle: "Database Query Limit Reached",
     databaseLimitDescription:
       "SpendLogs in DB has {{count}} rows. Please follow our guide to view usage when SpendLogs has more than 1M rows.",
@@ -26,8 +25,7 @@ export const enUsage = {
     tokens: "Tokens",
     totalSpendPerTeam: "Total Spend Per Team",
     dailySpendPerTeam: "Daily Spend Per Team",
-    customerDescription:
-      "Customers of your LLM API calls. Tracked when a `user` param is passed in your LLM calls",
+    customerDescription: "Customers of your LLM API calls. Tracked when a `user` param is passed in your LLM calls",
     docsHere: "docs here",
     selectKey: "Select Key",
     allKeys: "All Keys",
@@ -201,8 +199,7 @@ export const enUsage = {
     summary: {
       requestCost: "Request Cost",
       flatCost: "Flat Cost",
-      totalCostTooltip:
-        "Request cost plus flat cost for reserved capacity. Select this tile to see the breakdown.",
+      totalCostTooltip: "Request cost plus flat cost for reserved capacity. Select this tile to see the breakdown.",
       requestCostTooltip:
         "Usage-based cost of the requests this entity sent during the selected period, priced per token.",
       flatCostTooltip:

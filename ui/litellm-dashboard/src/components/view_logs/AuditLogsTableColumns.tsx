@@ -78,9 +78,7 @@ export const getAuditLogsTableColumns = (
     size: 130,
     enableSorting: false,
     cell: ({ row }) => (
-      <span className="text-sm">
-        {getAuditTableNameDisplay(t)[row.original.table_name] ?? row.original.table_name}
-      </span>
+      <span className="text-sm">{getAuditTableNameDisplay(t)[row.original.table_name] ?? row.original.table_name}</span>
     ),
   },
   {

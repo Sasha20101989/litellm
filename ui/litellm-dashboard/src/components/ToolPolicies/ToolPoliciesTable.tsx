@@ -46,9 +46,7 @@ function ToolPoliciesEmptyState({ filtered }: { filtered: boolean }) {
         {filtered ? t("toolPolicies.table.noMatching") : t("toolPolicies.table.noTools")}
       </div>
       <div className="max-w-xs text-center text-sm text-muted-foreground">
-        {filtered
-          ? t("toolPolicies.table.noMatchingDescription")
-          : t("toolPolicies.table.noToolsDescription")}
+        {filtered ? t("toolPolicies.table.noMatchingDescription") : t("toolPolicies.table.noToolsDescription")}
       </div>
     </div>
   );

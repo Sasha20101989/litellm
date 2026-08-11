@@ -78,11 +78,7 @@ const SpendByProvider: React.FC<SpendByProviderProps> = ({ loading, isDateChangi
                 <InfoCircleOutlined className="text-gray-400 hover:text-gray-600" />
               </Tooltip>
             </div>
-            <Switch
-              checked={includeUnknown}
-              onChange={setIncludeUnknown}
-              aria-label={t("provider.showUnknown")}
-            />
+            <Switch checked={includeUnknown} onChange={setIncludeUnknown} aria-label={t("provider.showUnknown")} />
           </div>
         </div>
       </div>

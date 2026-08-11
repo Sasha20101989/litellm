@@ -351,9 +351,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
             <Card className="mt-6">
               <Title className="mb-3">
                 {t("details.history", {
-                  environment: selectedEnv
-                    ? t(`environments.${selectedEnv}`, { defaultValue: selectedEnv })
-                    : "",
+                  environment: selectedEnv ? t(`environments.${selectedEnv}`, { defaultValue: selectedEnv }) : "",
                 })}
               </Title>
               {loadingVersions ? (
@@ -425,9 +423,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
               ) : (
                 <Text className="text-gray-400">
                   {t("details.noVersions", {
-                    environment: selectedEnv
-                      ? t(`environments.${selectedEnv}`, { defaultValue: selectedEnv })
-                      : "",
+                    environment: selectedEnv ? t(`environments.${selectedEnv}`, { defaultValue: selectedEnv }) : "",
                   })}
                 </Text>
               )}
@@ -525,9 +521,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
         okText={t("list.delete")}
         okButtonProps={{ danger: true }}
       >
-        <p>
-          {t("details.deleteConfirm", { name: basePromptId })}
-        </p>
+        <p>{t("details.deleteConfirm", { name: basePromptId })}</p>
         <p>{t("details.irreversible")}</p>
       </Modal>
     </div>

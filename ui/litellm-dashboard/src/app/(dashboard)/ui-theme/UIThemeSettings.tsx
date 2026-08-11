@@ -120,9 +120,7 @@ const UIThemeSettings: React.FC<UIThemeSettingsProps> = ({ userID, userRole, acc
     <div className="w-full mx-auto max-w-4xl px-6 py-8">
       <div className="mb-8">
         <h1 className="mb-2 text-2xl font-bold">{t("theme.title")}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t("theme.description")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("theme.description")}</p>
       </div>
       <Card>
         <CardContent className="space-y-6">
@@ -139,9 +137,7 @@ const UIThemeSettings: React.FC<UIThemeSettingsProps> = ({ userID, userRole, acc
                 setLogoUrl(event.target.value || null);
               }}
             />
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t("theme.logoHint")}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("theme.logoHint")}</p>
           </div>
           <div>
             <Label htmlFor="ui-theme-favicon-url" className="mb-2">
@@ -156,9 +152,7 @@ const UIThemeSettings: React.FC<UIThemeSettingsProps> = ({ userID, userRole, acc
                 setFaviconUrl(event.target.value || null);
               }}
             />
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t("theme.faviconHint")}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("theme.faviconHint")}</p>
           </div>
           <div className="flex gap-3 pt-4">
             <Button onClick={handleSave} disabled={loading}>

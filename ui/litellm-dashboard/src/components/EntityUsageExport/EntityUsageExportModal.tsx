@@ -39,7 +39,15 @@ const EntityUsageExportModal: React.FC<EntityUsageExportModalProps> = ({
         handleExportCSV(spendData, exportScope, exportEntityLabel, entityType, teamAliasMap);
         NotificationsManager.success(t("export.success", { entity: entityLabel, format: "CSV" }));
       } else {
-        handleExportJSON(spendData, exportScope, exportEntityLabel, entityType, dateRange, selectedFilters, teamAliasMap);
+        handleExportJSON(
+          spendData,
+          exportScope,
+          exportEntityLabel,
+          entityType,
+          dateRange,
+          selectedFilters,
+          teamAliasMap,
+        );
         NotificationsManager.success(t("export.success", { entity: entityLabel, format: "JSON" }));
       }
       onClose();
@@ -85,9 +93,7 @@ const EntityUsageExportModal: React.FC<EntityUsageExportModalProps> = ({
               disabled={isExporting || isLoadingTeams}
               type="primary"
             >
-              {isExporting
-                ? t("export.exporting")
-                : t("export.exportFormat", { format: exportFormat.toUpperCase() })}
+              {isExporting ? t("export.exporting") : t("export.exportFormat", { format: exportFormat.toUpperCase() })}
             </Button>
           </div>
         )}

@@ -33,9 +33,7 @@ function EmptyState() {
         <Inbox className="size-5 text-muted-foreground" />
       </div>
       <div className="text-sm font-medium text-foreground">{t("router.groups.empty")}</div>
-      <div className="text-sm text-muted-foreground">
-        {t("router.groups.emptyDescription")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("router.groups.emptyDescription")}</div>
     </div>
   );
 }

@@ -342,8 +342,12 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                     <p className="font-bold">{data.date}</p>
                     {showFlatCost ? (
                       <>
-                        <p className="text-cyan-500">{requestCostLabel}: ${formatNumberWithCommas(requestSpend, 2)}</p>
-                        <p className="text-violet-500">{flatCostLabel}: ${formatNumberWithCommas(flatCost, 2)}</p>
+                        <p className="text-cyan-500">
+                          {requestCostLabel}: ${formatNumberWithCommas(requestSpend, 2)}
+                        </p>
+                        <p className="text-violet-500">
+                          {flatCostLabel}: ${formatNumberWithCommas(flatCost, 2)}
+                        </p>
                         <p className="font-semibold">
                           {t("entity.totalCost")}: ${formatNumberWithCommas(requestSpend + flatCost, 2)}
                         </p>
@@ -353,10 +357,18 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                         {t("common.totalSpend")}: ${formatNumberWithCommas(data.metrics.spend, 2)}
                       </p>
                     )}
-                    <p className="text-gray-600">{t("common.totalRequests")}: {data.metrics.api_requests}</p>
-                    <p className="text-gray-600">{t("common.successful")}: {data.metrics.successful_requests}</p>
-                    <p className="text-gray-600">{t("common.failed")}: {data.metrics.failed_requests}</p>
-                    <p className="text-gray-600">{t("common.totalTokens")}: {data.metrics.total_tokens}</p>
+                    <p className="text-gray-600">
+                      {t("common.totalRequests")}: {data.metrics.api_requests}
+                    </p>
+                    <p className="text-gray-600">
+                      {t("common.successful")}: {data.metrics.successful_requests}
+                    </p>
+                    <p className="text-gray-600">
+                      {t("common.failed")}: {data.metrics.failed_requests}
+                    </p>
+                    <p className="text-gray-600">
+                      {t("common.totalTokens")}: {data.metrics.total_tokens}
+                    </p>
                     <p className="text-gray-600">
                       {t("entity.totalEntities", { entity: capitalizedEntityLabel, count: entityCount })}
                     </p>
@@ -425,13 +437,21 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
                     return (
                       <div className="bg-white p-4 shadow-lg rounded-lg border">
                         <p className="font-bold">{data.metadata.alias}</p>
-                        <p className="text-cyan-500">{t("common.spend")}: ${formatNumberWithCommas(data.metrics.spend, 4)}</p>
-                        <p className="text-gray-600">{t("common.requests")}: {data.metrics.api_requests.toLocaleString()}</p>
+                        <p className="text-cyan-500">
+                          {t("common.spend")}: ${formatNumberWithCommas(data.metrics.spend, 4)}
+                        </p>
+                        <p className="text-gray-600">
+                          {t("common.requests")}: {data.metrics.api_requests.toLocaleString()}
+                        </p>
                         <p className="text-green-600">
                           {t("common.successful")}: {data.metrics.successful_requests.toLocaleString()}
                         </p>
-                        <p className="text-red-600">{t("common.failed")}: {data.metrics.failed_requests.toLocaleString()}</p>
-                        <p className="text-gray-600">{t("common.tokens")}: {data.metrics.total_tokens.toLocaleString()}</p>
+                        <p className="text-red-600">
+                          {t("common.failed")}: {data.metrics.failed_requests.toLocaleString()}
+                        </p>
+                        <p className="text-gray-600">
+                          {t("common.tokens")}: {data.metrics.total_tokens.toLocaleString()}
+                        </p>
                       </div>
                     );
                   }}
@@ -632,9 +652,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
           type="info"
           className="mb-2"
           message={
-            <span>
-              {t("entity.partialData", { current: progress.currentPage, total: progress.totalPages })}
-            </span>
+            <span>{t("entity.partialData", { current: progress.currentPage, total: progress.totalPages })}</span>
           }
         />
       )}
@@ -681,11 +699,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
       {entityType === "team" && (
         <div className="mb-4">
           <Text className="mb-2">{t("entity.filterByTeam")}</Text>
-          <TeamMultiSelect
-            value={selectedTags}
-            onChange={setSelectedTags}
-            placeholder={t("entity.searchTeams")}
-          />
+          <TeamMultiSelect value={selectedTags} onChange={setSelectedTags} placeholder={t("entity.searchTeams")} />
         </div>
       )}
       <UsageExportHeader

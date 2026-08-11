@@ -203,8 +203,14 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
                     {t("caching.health.cacheDetails")}
                   </td>
                 </tr>
-                <TableClickableErrorField label={t("caching.health.configuration")} value={String(parsedLitellmParams?.type)} />
-                <TableClickableErrorField label={t("caching.health.pingResponse")} value={String(response.ping_response)} />
+                <TableClickableErrorField
+                  label={t("caching.health.configuration")}
+                  value={String(parsedLitellmParams?.type)}
+                />
+                <TableClickableErrorField
+                  label={t("caching.health.pingResponse")}
+                  value={String(response.ping_response)}
+                />
                 <TableClickableErrorField label={t("caching.health.setResponse")} value={response.set_cache_response} />
                 <TableClickableErrorField
                   label="litellm_settings.cache_params"
@@ -221,8 +227,14 @@ const HealthCheckDetails: React.FC<{ response: any }> = ({ response }) => {
                     </tr>
                     <TableClickableErrorField label={t("caching.health.redisHost")} value={redisDetails.redis_host} />
                     <TableClickableErrorField label={t("caching.health.redisPort")} value={redisDetails.redis_port} />
-                    <TableClickableErrorField label={t("caching.health.redisVersion")} value={redisDetails.redis_version} />
-                    <TableClickableErrorField label={t("caching.health.startupNodes")} value={redisDetails.startup_nodes} />
+                    <TableClickableErrorField
+                      label={t("caching.health.redisVersion")}
+                      value={redisDetails.redis_version}
+                    />
+                    <TableClickableErrorField
+                      label={t("caching.health.startupNodes")}
+                      value={redisDetails.startup_nodes}
+                    />
                     <TableClickableErrorField label={t("caching.health.namespace")} value={redisDetails.namespace} />
                   </>
                 )}

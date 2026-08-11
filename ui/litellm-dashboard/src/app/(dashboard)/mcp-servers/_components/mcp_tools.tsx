@@ -313,9 +313,7 @@ const MCPToolsViewer = ({
                   </div>
 
                   {!showHeaderInput && Object.keys(passthroughHeaders).length === 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {t("mcpServers.toolsViewer.headersHint")}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t("mcpServers.toolsViewer.headersHint")}</p>
                   )}
 
                   {showHeaderInput && (
@@ -404,9 +402,7 @@ const MCPToolsViewer = ({
                   <div className="rounded-lg border border-border bg-card p-4 text-center">
                     <Lock className="mx-auto mb-2 size-6 text-muted-foreground" />
                     <p className="mb-1 text-xs font-medium">{t("mcpServers.toolsViewer.authRequired")}</p>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      {t("mcpServers.toolsViewer.authUpstream")}
-                    </p>
+                    <p className="mb-3 text-xs text-muted-foreground">{t("mcpServers.toolsViewer.authUpstream")}</p>
                     <Button
                       size="sm"
                       onClick={startAuthorizationCodeAuthorize}
@@ -565,9 +561,7 @@ const MCPToolsViewer = ({
                 <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
                   <Bot className="mb-4 size-12" />
                   <p className="mb-2 text-lg font-medium">{t("mcpServers.toolsViewer.selectTool")}</p>
-                  <p className="max-w-md text-center text-sm">
-                    {t("mcpServers.toolsViewer.selectToolHint")}
-                  </p>
+                  <p className="max-w-md text-center text-sm">{t("mcpServers.toolsViewer.selectToolHint")}</p>
                 </div>
               ) : (
                 /* Tool Test Panel */

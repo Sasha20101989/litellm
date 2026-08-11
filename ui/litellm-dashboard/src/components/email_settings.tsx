@@ -23,12 +23,37 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ accessToken, premiumUser,
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
   const requiredMarker = <span className="text-destructive"> {t("logging.email.required")} </span>;
   const fieldHelp: Record<string, React.ReactNode> = {
-    SMTP_HOST: <>{t("logging.email.fields.SMTP_HOST")}{requiredMarker}</>,
-    SMTP_PORT: <>{t("logging.email.fields.SMTP_PORT")}{requiredMarker}</>,
-    SMTP_USERNAME: <>{t("logging.email.fields.SMTP_USERNAME")}{requiredMarker}</>,
+    SMTP_HOST: (
+      <>
+        {t("logging.email.fields.SMTP_HOST")}
+        {requiredMarker}
+      </>
+    ),
+    SMTP_PORT: (
+      <>
+        {t("logging.email.fields.SMTP_PORT")}
+        {requiredMarker}
+      </>
+    ),
+    SMTP_USERNAME: (
+      <>
+        {t("logging.email.fields.SMTP_USERNAME")}
+        {requiredMarker}
+      </>
+    ),
     SMTP_PASSWORD: requiredMarker,
-    SMTP_SENDER_EMAIL: <>{t("logging.email.fields.SMTP_SENDER_EMAIL")}{requiredMarker}</>,
-    TEST_EMAIL_ADDRESS: <>{t("logging.email.fields.TEST_EMAIL_ADDRESS")}{requiredMarker}</>,
+    SMTP_SENDER_EMAIL: (
+      <>
+        {t("logging.email.fields.SMTP_SENDER_EMAIL")}
+        {requiredMarker}
+      </>
+    ),
+    TEST_EMAIL_ADDRESS: (
+      <>
+        {t("logging.email.fields.TEST_EMAIL_ADDRESS")}
+        {requiredMarker}
+      </>
+    ),
     EMAIL_LOGO_URL: t("logging.email.fields.EMAIL_LOGO_URL"),
     EMAIL_SUPPORT_CONTACT: t("logging.email.fields.EMAIL_SUPPORT_CONTACT"),
   };

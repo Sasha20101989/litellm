@@ -85,9 +85,7 @@ export default function AddFallbacks({ accessToken, value = [], onChange }: AddF
     // Validation
     const invalidGroups = groups.filter((g) => !g.primaryModel || g.fallbackModels.length === 0);
     if (invalidGroups.length > 0) {
-      MessageManager.error(
-        t("router.fallbacks.incomplete", { count: invalidGroups.length }),
-      );
+      MessageManager.error(t("router.fallbacks.incomplete", { count: invalidGroups.length }));
       return;
     }
 

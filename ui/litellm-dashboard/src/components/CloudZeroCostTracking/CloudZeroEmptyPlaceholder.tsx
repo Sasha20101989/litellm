@@ -14,9 +14,7 @@ export default function CloudZeroEmptyPlaceholder({ startCreation }: CloudZeroEm
       <div className="flex flex-col items-center gap-2">
         <Inbox className="size-10 text-muted-foreground" aria-hidden />
         <h4 className="text-base font-semibold">{t("logging.cloudZero.empty")}</h4>
-        <p className="mx-auto max-w-md text-sm text-muted-foreground">
-          {t("logging.cloudZero.emptyDescription")}
-        </p>
+        <p className="mx-auto max-w-md text-sm text-muted-foreground">{t("logging.cloudZero.emptyDescription")}</p>
         <Button size="lg" onClick={startCreation} className="mt-4">
           {t("logging.cloudZero.add")}
         </Button>

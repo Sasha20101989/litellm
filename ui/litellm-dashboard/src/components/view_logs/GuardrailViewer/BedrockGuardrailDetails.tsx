@@ -264,10 +264,8 @@ export const BedrockGuardrailDetails: React.FC<{ response: BedrockGuardrailRespo
                 {assess.contentPolicy && chip(t("guardrails.bedrock.content"), "slate")}
                 {assess.topicPolicy && chip(t("guardrails.bedrock.topic"), "slate")}
                 {assess.sensitiveInformationPolicy && chip(t("guardrails.bedrock.sensitiveInfo"), "slate")}
-                {assess.contextualGroundingPolicy &&
-                  chip(t("guardrails.bedrock.contextualGroundingShort"), "slate")}
-                {assess.automatedReasoningPolicy &&
-                  chip(t("guardrails.bedrock.automatedReasoningShort"), "slate")}
+                {assess.contextualGroundingPolicy && chip(t("guardrails.bedrock.contextualGroundingShort"), "slate")}
+                {assess.automatedReasoningPolicy && chip(t("guardrails.bedrock.automatedReasoningShort"), "slate")}
               </div>
             );
 

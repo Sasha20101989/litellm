@@ -129,9 +129,7 @@ const MakeMCPPublicForm: React.FC<MakeMCPPublicFormProps> = ({
           </div>
         </div>
 
-        <Text className="text-sm text-gray-600">
-          {t("publicHub.forms.mcp.description")}
-        </Text>
+        <Text className="text-sm text-gray-600">{t("publicHub.forms.mcp.description")}</Text>
 
         <div className="max-h-96 overflow-y-auto border rounded-lg p-4">
           <div className="space-y-3">

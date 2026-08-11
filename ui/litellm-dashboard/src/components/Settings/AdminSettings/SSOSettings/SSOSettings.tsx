@@ -75,7 +75,10 @@ export default function SSOSettings() {
           label: t("admin.sso.fields.google_client_secret"),
           render: (values: SSOSettingsValues) => <RedactableField value={values.google_client_secret} />,
         },
-        { label: t("admin.sso.fields.proxyBaseUrl"), render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url) },
+        {
+          label: t("admin.sso.fields.proxyBaseUrl"),
+          render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url),
+        },
       ],
     },
     microsoft: {
@@ -89,8 +92,14 @@ export default function SSOSettings() {
           label: t("admin.sso.fields.microsoft_client_secret"),
           render: (values: SSOSettingsValues) => <RedactableField value={values.microsoft_client_secret} />,
         },
-        { label: t("admin.sso.fields.microsoft_tenant"), render: (values: any) => renderSimpleValue(values.microsoft_tenant) },
-        { label: t("admin.sso.fields.proxyBaseUrl"), render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url) },
+        {
+          label: t("admin.sso.fields.microsoft_tenant"),
+          render: (values: any) => renderSimpleValue(values.microsoft_tenant),
+        },
+        {
+          label: t("admin.sso.fields.proxyBaseUrl"),
+          render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url),
+        },
       ],
     },
     okta: {
@@ -116,8 +125,14 @@ export default function SSOSettings() {
           label: t("admin.sso.fields.generic_userinfo_endpoint"),
           render: (values: SSOSettingsValues) => renderEndpointValue(values.generic_userinfo_endpoint),
         },
-        { label: t("admin.sso.fields.generic_scope"), render: (values: SSOSettingsValues) => renderSimpleValue(values.generic_scope) },
-        { label: t("admin.sso.fields.proxyBaseUrl"), render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url) },
+        {
+          label: t("admin.sso.fields.generic_scope"),
+          render: (values: SSOSettingsValues) => renderSimpleValue(values.generic_scope),
+        },
+        {
+          label: t("admin.sso.fields.proxyBaseUrl"),
+          render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url),
+        },
         isTeamMappingsEnabled
           ? {
               label: t("admin.sso.fields.teamIdsJwt"),
@@ -149,8 +164,14 @@ export default function SSOSettings() {
           label: t("admin.sso.fields.generic_userinfo_endpoint"),
           render: (values: SSOSettingsValues) => renderEndpointValue(values.generic_userinfo_endpoint),
         },
-        { label: t("admin.sso.fields.generic_scope"), render: (values: SSOSettingsValues) => renderSimpleValue(values.generic_scope) },
-        { label: t("admin.sso.fields.proxyBaseUrl"), render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url) },
+        {
+          label: t("admin.sso.fields.generic_scope"),
+          render: (values: SSOSettingsValues) => renderSimpleValue(values.generic_scope),
+        },
+        {
+          label: t("admin.sso.fields.proxyBaseUrl"),
+          render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url),
+        },
         isTeamMappingsEnabled
           ? {
               label: t("admin.sso.fields.teamIdsJwt"),
@@ -187,7 +208,10 @@ export default function SSOSettings() {
             </Tag>
           ),
         },
-        { label: t("admin.sso.fields.proxyBaseUrl"), render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url) },
+        {
+          label: t("admin.sso.fields.proxyBaseUrl"),
+          render: (values: SSOSettingsValues) => renderSimpleValue(values.proxy_base_url),
+        },
       ],
     },
   };

@@ -157,9 +157,7 @@ export function LoggingSettingsView({
         <div className="flex items-center gap-2 mb-6">
           <div>
             <span className="block font-semibold text-gray-900">{t("logging.view.settings")}</span>
-            <span className="block text-xs text-gray-500">
-              {t("logging.view.description")}
-            </span>
+            <span className="block text-xs text-gray-500">{t("logging.view.description")}</span>
           </div>
         </div>
         {content}

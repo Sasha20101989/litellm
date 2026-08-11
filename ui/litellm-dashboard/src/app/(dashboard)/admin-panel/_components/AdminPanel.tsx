@@ -81,9 +81,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ proxySettings }) => {
   const handleShowAllowedIPs = async () => {
     try {
       if (premiumUser !== true) {
-        NotificationsManager.fromBackend(
-          t("admin.security.premiumOnly"),
-        );
+        NotificationsManager.fromBackend(t("admin.security.premiumOnly"));
         return;
       }
       if (accessToken) {
@@ -298,7 +296,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ proxySettings }) => {
               footer={null}
             >
               <Form onFinish={handleAddIP}>
-                <Form.Item name="ip" rules={[{ required: true, message: t("admin.security.enterIp") }]}> 
+                <Form.Item name="ip" rules={[{ required: true, message: t("admin.security.enterIp") }]}>
                   <Input placeholder={t("admin.security.ipPlaceholder")} />
                 </Form.Item>
                 <Form.Item>

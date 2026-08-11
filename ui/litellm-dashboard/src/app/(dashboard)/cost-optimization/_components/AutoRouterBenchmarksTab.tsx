@@ -88,9 +88,7 @@ const HeroCard: React.FC<{ view: BenchmarkView }> = ({ view }) => {
               <p className="text-3xl font-semibold text-foreground">{stats.sessions.toLocaleString()}</p>
             </div>
             <div className="flex flex-col justify-center gap-1 px-6 py-4">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                {t("autoRouter.totalTurns")}
-              </p>
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("autoRouter.totalTurns")}</p>
               <p className="text-3xl font-semibold text-foreground">{stats.turns.toLocaleString()}</p>
             </div>
           </div>
@@ -214,9 +212,7 @@ const CachingCard: React.FC<{ cache: AutoRouterCacheStats }> = ({ cache }) => {
                   </span>
                   <span className="font-medium tabular-nums text-foreground">{pctLabel(expiredMissPct)}</span>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-64">
-                  {t("autoRouter.expiredMissInfo")}
-                </TooltipContent>
+                <TooltipContent className="max-w-64">{t("autoRouter.expiredMissInfo")}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
@@ -224,9 +220,7 @@ const CachingCard: React.FC<{ cache: AutoRouterCacheStats }> = ({ cache }) => {
 
         <div className="flex flex-col gap-3 p-6">
           <div className="flex items-baseline justify-between">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              {t("autoRouter.shareOfTurns")}
-            </p>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("autoRouter.shareOfTurns")}</p>
             <p className="text-xs text-muted-foreground">
               {t("autoRouter.turnsMeasured", { count: total.toLocaleString() })}
             </p>
@@ -281,9 +275,7 @@ const BenchmarksBody: React.FC<BenchmarksBodyProps> = ({ isPending, error, data,
         />
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {t("autoRouter.comparison")}
-      </p>
+      <p className="text-xs text-muted-foreground">{t("autoRouter.comparison")}</p>
 
       <div className="space-y-4">
         <div className="flex flex-wrap items-baseline gap-2">

@@ -344,7 +344,9 @@ export const MCPServerView: React.FC<MCPServerViewProps> = ({
                   Array.isArray(mcpServer.extra_headers) &&
                   mcpServer.extra_headers.some((h) => typeof h === "string" && h.toLowerCase() === "authorization") && (
                     <div className="grid grid-cols-3 gap-4 py-3">
-                      <p className="text-sm font-medium text-muted-foreground">{t("mcpServers.view.oauthPassthrough")}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t("mcpServers.view.oauthPassthrough")}
+                      </p>
                       <div className="col-span-2">
                         {mcpServer.oauth_passthrough ? (
                           <Badge variant="outline">

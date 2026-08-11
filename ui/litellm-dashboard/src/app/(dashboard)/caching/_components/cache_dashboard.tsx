@@ -158,7 +158,11 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
         </TabsList>
 
         <div className="flex items-center space-x-2">
-          {lastRefreshed && <p className="text-sm text-muted-foreground">{t("caching.lastRefreshed")}: {lastRefreshed}</p>}
+          {lastRefreshed && (
+            <p className="text-sm text-muted-foreground">
+              {t("caching.lastRefreshed")}: {lastRefreshed}
+            </p>
+          )}
           <Button variant="outline" size="icon-sm" onClick={handleRefreshClick} aria-label={t("caching.refresh")}>
             <RefreshCw />
           </Button>
@@ -169,7 +173,7 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
         <Card>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t("caching.analyticsBefore")} {" "}
+              {t("caching.analyticsBefore")}{" "}
               <a
                 href="https://docs.litellm.ai/docs/proxy/caching"
                 target="_blank"
@@ -178,7 +182,7 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
               >
                 {t("caching.responseCache")}
               </a>{" "}
-              {t("caching.analyticsMiddle")} {" "}
+              {t("caching.analyticsMiddle")}{" "}
               <a
                 href="https://docs.litellm.ai/docs/completion/prompt_caching"
                 target="_blank"
@@ -291,9 +295,7 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
 
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">
-                  {t("caching.tokensChart")}
-                </CardTitle>
+                <CardTitle className="text-base font-semibold">{t("caching.tokensChart")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <BarChart

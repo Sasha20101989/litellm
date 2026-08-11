@@ -99,9 +99,7 @@ const OpenAPIQuickPicker: React.FC<OpenAPIQuickPickerProps> = ({ accessToken, se
         })}
       </div>
 
-      <p className="mt-2 text-xs text-muted-foreground">
-        {t("mcpServers.forms.openapi.pickerHint")}
-      </p>
+      <p className="mt-2 text-xs text-muted-foreground">{t("mcpServers.forms.openapi.pickerHint")}</p>
     </div>
   );
 };

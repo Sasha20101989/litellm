@@ -163,20 +163,23 @@ const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({
     };
   }, [isOpen]);
 
-  const formatDisplayRange = useCallback((from: Date | undefined, to: Date | undefined) => {
-    if (!from || !to) return t("datePicker.selectRange");
+  const formatDisplayRange = useCallback(
+    (from: Date | undefined, to: Date | undefined) => {
+      if (!from || !to) return t("datePicker.selectRange");
 
-    const formatDateTime = (date: Date) => {
-      return date.toLocaleString(i18n.language === "ru" ? "ru-RU" : "en-US", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    };
+      const formatDateTime = (date: Date) => {
+        return date.toLocaleString(i18n.language === "ru" ? "ru-RU" : "en-US", {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      };
 
-    return `${formatDateTime(from)} - ${formatDateTime(to)}`;
-  }, [i18n.language, t]);
+      return `${formatDateTime(from)} - ${formatDateTime(to)}`;
+    },
+    [i18n.language, t],
+  );
 
   // CRITICAL: Apply the same date adjustment logic as the original component
   const adjustDateRange = useCallback((newValue: DateRangePickerValue): DateRangePickerValue => {

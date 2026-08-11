@@ -44,7 +44,10 @@ export const buildSummaryTiles = (
           tooltip: t?.("entity.summary.totalCostTooltip") ?? TOTAL_COST_TOOLTIP,
           expandable: true,
         }
-      : { title: t?.("common.totalSpend") ?? "Total Spend", value: `$${formatNumberWithCommas(metadata.total_spend, 2)}` },
+      : {
+          title: t?.("common.totalSpend") ?? "Total Spend",
+          value: `$${formatNumberWithCommas(metadata.total_spend, 2)}`,
+        },
     { title: t?.("common.totalRequests") ?? "Total Requests", value: metadata.total_api_requests.toLocaleString() },
     {
       title: t?.("common.successfulRequests") ?? "Successful Requests",

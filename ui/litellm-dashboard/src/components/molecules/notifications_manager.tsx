@@ -42,7 +42,7 @@ const RUSSIAN_TITLES: Record<string, string> = {
 };
 
 const localizedTitle = (title: string): string =>
-  notificationLanguage === "ru" ? (RUSSIAN_TITLES[title] ?? title) : title;
+  notificationLanguage === "ru" ? RUSSIAN_TITLES[title] ?? title : title;
 
 // Helper to get the best available notification instance
 const getNotification = () => notificationInstance || staticNotification;

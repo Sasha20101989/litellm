@@ -142,9 +142,7 @@ export const getAgentHubTableColumns = ({ onAgentClick, t }: AgentHubTableColumn
       const skills = row.original.skills || [];
       return (
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium">
-            {t("publicHub.table.skillCount", { count: skills.length })}
-          </span>
+          <span className="text-xs font-medium">{t("publicHub.table.skillCount", { count: skills.length })}</span>
           {skills.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {skills.slice(0, 2).map((skill) => (

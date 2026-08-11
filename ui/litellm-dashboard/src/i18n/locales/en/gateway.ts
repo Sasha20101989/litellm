@@ -4266,11 +4266,14 @@ export const enGateway = {
       },
       byok: {
         title: "BYOK (Bring Your Own Key)",
-        tooltip: "When enabled, each user provides their own API key for this service. Keys are stored per user and never shared.",
+        tooltip:
+          "When enabled, each user provides their own API key for this service. Keys are stored per user and never shared.",
         sentAs: "User keys will be sent as:",
-        selectAuth: "Set the Authentication Type below to specify how user keys are sent (for example, Bearer Token or API Key header).",
+        selectAuth:
+          "Set the Authentication Type below to specify how user keys are sent (for example, Bearer Token or API Key header).",
         accessDescription: "Access Description",
-        accessDescriptionTooltip: "List of permissions shown to users in the connection dialog (for example, ‘Create and manage Jira issues’).",
+        accessDescriptionTooltip:
+          "List of permissions shown to users in the connection dialog (for example, ‘Create and manage Jira issues’).",
         accessDescriptionPlaceholder: "Add access description items (press Enter after each)",
         helpUrl: "API Key Help URL",
         helpUrlTooltip: "Optional link that helps users find their API key",
@@ -4298,16 +4301,19 @@ export const enGateway = {
         subjectTypeTooltip: "Type of the incoming user token. Defaults to the RFC 8693 access-token type.",
         scopes: "Scopes",
         scopesOptional: "Scopes (optional)",
-        entraScopesTooltip: "Microsoft Entra OBO carries the target resource in the scope, so at least one scope is required.",
+        entraScopesTooltip:
+          "Microsoft Entra OBO carries the target resource in the scope, so at least one scope is required.",
         scopesTooltip: "Optional scopes requested during token exchange.",
         entraScopeRequired: "Microsoft Entra OBO requires a scope, for example api://<app-id>/.default",
       },
       idJag: {
         orgEndpoint: "Org Token Endpoint (leg 1)",
-        orgEndpointTooltip: "Your identity provider organization authorization server token endpoint used for the first ID-JAG exchange.",
+        orgEndpointTooltip:
+          "Your identity provider organization authorization server token endpoint used for the first ID-JAG exchange.",
         orgEndpointRequired: "The org token endpoint is required for ID-JAG",
         resourceEndpoint: "Resource Token Endpoint (leg 2)",
-        resourceEndpointTooltip: "The upstream resource authorization server token endpoint used to obtain the MCP access token.",
+        resourceEndpointTooltip:
+          "The upstream resource authorization server token endpoint used to obtain the MCP access token.",
         resourceEndpointRequired: "The resource token endpoint is required for ID-JAG",
         clientId: "Client ID",
         clientIdTooltip: "OAuth2 client ID LiteLLM authenticates as on both exchange legs.",
@@ -4769,7 +4775,8 @@ export const enGateway = {
       awsService: "AWS Service Name",
       awsServiceHint: "AWS service name for SigV4 signing. Defaults to ‘bedrock-agentcore’.",
       awsAccessKey: "AWS Access Key ID",
-      awsAccessKeyHint: "Optional. If omitted, the boto3 credential chain is used (IAM role, environment variables, etc.).",
+      awsAccessKeyHint:
+        "Optional. If omitted, the boto3 credential chain is used (IAM role, environment variables, etc.).",
       awsSecret: "AWS Secret Access Key",
       awsSecretHint: "Optional. Required when AWS Access Key ID is provided.",
       awsSessionToken: "AWS Session Token",
@@ -4777,7 +4784,8 @@ export const enGateway = {
       awsRoleArn: "AWS Role ARN",
       awsRoleArnHint: "Optional. IAM role ARN to assume through STS before signing.",
       awsSessionName: "AWS Session Name",
-      awsSessionNameHint: "Optional. Session name for AssumeRole, shown in CloudTrail. Generated automatically if omitted.",
+      awsSessionNameHint:
+        "Optional. Session name for AssumeRole, shown in CloudTrail. Generated automatically if omitted.",
       keepExisting: "Leave blank to keep existing",
       cancel: "Cancel",
       save: "Save Changes",

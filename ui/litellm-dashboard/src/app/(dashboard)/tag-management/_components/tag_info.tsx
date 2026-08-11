@@ -142,11 +142,7 @@ const TagInfoView: React.FC<TagInfoViewProps> = ({ tagId, onClose, accessToken, 
       {isEditing ? (
         <Card>
           <Form form={form} onFinish={handleSave} layout="vertical" initialValues={tagDetails}>
-            <Form.Item
-              label={t("tags.name")}
-              name="name"
-              rules={[{ required: true, message: t("tags.nameRequired") }]}
-            >
+            <Form.Item label={t("tags.name")} name="name" rules={[{ required: true, message: t("tags.nameRequired") }]}>
               <Input className="rounded-md border-gray-300" />
             </Form.Item>
 
@@ -182,7 +178,7 @@ const TagInfoView: React.FC<TagInfoViewProps> = ({ tagId, onClose, accessToken, 
                 <Form.Item
                   label={
                     <span>
-                      {t("tags.maxBudgetUsd")} {" "}
+                      {t("tags.maxBudgetUsd")}{" "}
                       <Tooltip title={t("tags.maxBudgetTooltip")}>
                         <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                       </Tooltip>
@@ -196,7 +192,7 @@ const TagInfoView: React.FC<TagInfoViewProps> = ({ tagId, onClose, accessToken, 
                 <Form.Item
                   label={
                     <span>
-                      {t("tags.resetBudget")} {" "}
+                      {t("tags.resetBudget")}{" "}
                       <Tooltip title={t("tags.budgetDurationTooltip")}>
                         <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                       </Tooltip>
@@ -209,7 +205,7 @@ const TagInfoView: React.FC<TagInfoViewProps> = ({ tagId, onClose, accessToken, 
 
                 <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
                   <p className="text-sm text-gray-600">
-                    {t("tags.unsupportedLimits")} {" "}
+                    {t("tags.unsupportedLimits")}{" "}
                     <a
                       href="https://github.com/BerriAI/litellm/issues/new"
                       target="_blank"

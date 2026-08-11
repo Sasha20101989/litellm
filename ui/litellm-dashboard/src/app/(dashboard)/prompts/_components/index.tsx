@@ -215,9 +215,7 @@ const PromptsPanel: React.FC<PromptsProps> = ({ accessToken, userRole }) => {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>{t("list.deleteTitle")}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("list.deleteConfirm", { name: promptToDelete.name })}
-              </AlertDialogDescription>
+              <AlertDialogDescription>{t("list.deleteConfirm", { name: promptToDelete.name })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isDeleting}>{t("list.cancel")}</AlertDialogCancel>

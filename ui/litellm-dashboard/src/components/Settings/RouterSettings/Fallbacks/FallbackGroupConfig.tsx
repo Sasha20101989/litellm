@@ -131,10 +131,7 @@ export function FallbackGroupConfig({
         <label className="block text-sm font-semibold text-gray-700 mb-2">
           {labels?.fallbackChain ?? t("router.fallbacks.fallbackChain")} <span className="text-red-500">*</span>
           <span className="text-xs text-gray-500 font-normal ml-2">
-            {(labels?.maxFallbacks ?? t("router.fallbacks.maxFallbacks")).replace(
-              "__VALUE__",
-              String(maxFallbacks),
-            )}
+            {(labels?.maxFallbacks ?? t("router.fallbacks.maxFallbacks")).replace("__VALUE__", String(maxFallbacks))}
           </span>
         </label>
 
@@ -148,10 +145,7 @@ export function FallbackGroupConfig({
               placeholder={
                 canAddMoreFallbacks
                   ? labels?.selectFallbacks ?? t("router.fallbacks.selectFallbacks")
-                  : (labels?.maxReached ?? t("router.fallbacks.maxReached")).replace(
-                      "__VALUE__",
-                      String(maxFallbacks),
-                    )
+                  : (labels?.maxReached ?? t("router.fallbacks.maxReached")).replace("__VALUE__", String(maxFallbacks))
               }
               value={group.fallbackModels}
               onChange={handleFallbackSelect}
@@ -191,9 +185,7 @@ export function FallbackGroupConfig({
             />
             <p className="text-xs text-gray-500 mt-1 ml-1">
               {canAddMoreFallbacks
-                ? (
-                    labels?.selectionHint ?? t("router.fallbacks.selectionHint")
-                  )
+                ? (labels?.selectionHint ?? t("router.fallbacks.selectionHint"))
                     .replace("__USED__", String(group.fallbackModels.length))
                     .replace("__MAX__", String(maxFallbacks))
                 : (labels?.maxReachedHint ?? t("router.fallbacks.maxReachedHint")).replace(

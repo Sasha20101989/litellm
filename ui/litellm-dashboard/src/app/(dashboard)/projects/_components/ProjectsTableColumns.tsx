@@ -57,11 +57,10 @@ interface ProjectsTableColumnsDeps {
   isTeamsLoading: boolean;
 }
 
-export const getProjectsTableColumns = ({
-  onProjectClick,
-  teamAliasMap,
-  isTeamsLoading,
-}: ProjectsTableColumnsDeps, t: TFunction<"management">): ColumnDef<ProjectResponse>[] => [
+export const getProjectsTableColumns = (
+  { onProjectClick, teamAliasMap, isTeamsLoading }: ProjectsTableColumnsDeps,
+  t: TFunction<"management">,
+): ColumnDef<ProjectResponse>[] => [
   {
     id: "project_id",
     accessorKey: "project_id",

@@ -55,7 +55,8 @@ const PromptMessagesCard: React.FC<PromptMessagesCardProps> = ({
       <div className="mb-2">
         <Text className="text-sm font-medium">{t("editor.messages")}</Text>
         <Text className="text-gray-500 text-xs mt-1">
-          {t("editor.variableSyntaxBefore")} <code className="bg-gray-100 px-1 rounded-sm text-xs">{"{{variable}}"}</code>{" "}
+          {t("editor.variableSyntaxBefore")}{" "}
+          <code className="bg-gray-100 px-1 rounded-sm text-xs">{"{{variable}}"}</code>{" "}
           {t("editor.variableSyntaxAfter")}
         </Text>
       </div>
