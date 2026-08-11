@@ -3,6 +3,7 @@
 import { SortingState } from "@tanstack/react-table";
 import { Inbox } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { DataTable } from "@/components/shared/DataTable";
 import { DeletedTeam } from "@/app/(dashboard)/hooks/teams/useTeams";
@@ -17,21 +18,23 @@ interface DeletedTeamsTableProps {
 const DEFAULT_SORTING: SortingState = [{ id: "deleted_at", desc: true }];
 
 function EmptyState() {
+  const { t } = useTranslation("logs");
   return (
     <div className="flex flex-col items-center gap-1 py-6">
       <div className="mb-1 flex size-10 items-center justify-center rounded-lg bg-muted">
         <Inbox className="size-5 text-muted-foreground" />
       </div>
-      <div className="text-sm font-medium text-foreground">No deleted teams found</div>
-      <div className="text-sm text-muted-foreground">Teams deleted from this proxy will show up here.</div>
+      <div className="text-sm font-medium text-foreground">{t("deleted.emptyTeamsTitle")}</div>
+      <div className="text-sm text-muted-foreground">{t("deleted.emptyTeamsDescription")}</div>
     </div>
   );
 }
 
 export function DeletedTeamsTable({ teams, isLoading }: DeletedTeamsTableProps) {
+  const { t } = useTranslation("logs");
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
 
-  const columns = useMemo(() => getDeletedTeamsTableColumns(), []);
+  const columns = useMemo(() => getDeletedTeamsTableColumns(t), [t]);
 
   return (
     <DataTable
@@ -42,7 +45,7 @@ export function DeletedTeamsTable({ teams, isLoading }: DeletedTeamsTableProps) 
       sorting={sorting}
       onSortingChange={setSorting}
       isLoading={isLoading}
-      loadingMessage="Loading deleted teams…"
+      loadingMessage={t("deleted.loadingTeams")}
       noDataMessage={<EmptyState />}
       size="compact"
     />

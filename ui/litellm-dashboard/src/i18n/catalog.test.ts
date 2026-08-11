@@ -20,6 +20,7 @@ describe("translation catalog", () => {
       "chat",
       "usage",
       "costOptimization",
+      "logs",
     ]);
   });
 

@@ -6,6 +6,7 @@ import DeletedTeamsPage from "../DeletedTeamsPage/DeletedTeamsPage";
 import AuditLogsPanel from "./AuditLogsPanel";
 import RequestLogsPanel from "./RequestLogsPanel";
 import { AntDLoadingSpinner } from "../ui/AntDLoadingSpinner";
+import { useTranslation } from "react-i18next";
 
 interface SpendLogsTableProps {
   accessToken: string | null;
@@ -22,13 +23,9 @@ interface LogsTab {
   label: string;
 }
 
-const REQUEST_LOGS_TAB: LogsTab = { id: "request logs", label: "Request Logs" };
-const AUDIT_LOGS_TAB: LogsTab = { id: "audit logs", label: "Audit Logs" };
-const DELETED_KEYS_TAB: LogsTab = { id: "deleted keys", label: "Deleted Keys" };
-const DELETED_TEAMS_TAB: LogsTab = { id: "deleted teams", label: "Deleted Teams" };
-
 export default function SpendLogsTable({ accessToken, token, userRole, userID, premiumUser }: SpendLogsTableProps) {
-  const [activeTab, setActiveTab] = useState<LogsTabId>(REQUEST_LOGS_TAB.id);
+  const { t } = useTranslation("logs");
+  const [activeTab, setActiveTab] = useState<LogsTabId>("request logs");
   const canViewAuditLogs = useCan("viewAuditLogs");
   const canViewDeletedTeams = useCan("viewDeletedTeams");
 
@@ -41,10 +38,10 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
   }
 
   const tabs: LogsTab[] = [
-    REQUEST_LOGS_TAB,
-    ...(canViewAuditLogs ? [AUDIT_LOGS_TAB] : []),
-    DELETED_KEYS_TAB,
-    ...(canViewDeletedTeams ? [DELETED_TEAMS_TAB] : []),
+    { id: "request logs", label: t("tabs.requests") },
+    ...(canViewAuditLogs ? [{ id: "audit logs" as const, label: t("tabs.audit") }] : []),
+    { id: "deleted keys", label: t("tabs.deletedKeys") },
+    ...(canViewDeletedTeams ? [{ id: "deleted teams" as const, label: t("tabs.deletedTeams") }] : []),
   ];
 
   const renderPanel = (tabId: LogsTabId) => {

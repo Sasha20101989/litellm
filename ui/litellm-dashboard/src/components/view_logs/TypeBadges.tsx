@@ -2,6 +2,7 @@
  * Compact type-indicator badges for LLM, Agent, and MCP log entries.
  * Used in the request logs table and session type column.
  */
+import { useTranslation } from "react-i18next";
 
 export const SparkleIcon = ({ size = 12 }: { size?: number }) => (
   <svg
@@ -71,9 +72,13 @@ export const McpBadge = ({ count }: { count?: number }) => (
   </span>
 );
 
-export const AgentBadge = ({ count }: { count?: number }) => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-full text-[11px] font-medium whitespace-nowrap">
-    <AgentIcon />
-    {count != null ? count : "Agent"}
-  </span>
-);
+export const AgentBadge = ({ count }: { count?: number }) => {
+  const { t } = useTranslation("logs");
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-full text-[11px] font-medium whitespace-nowrap">
+      <AgentIcon />
+      {count != null ? count : t("columns.agent")}
+    </span>
+  );
+};
