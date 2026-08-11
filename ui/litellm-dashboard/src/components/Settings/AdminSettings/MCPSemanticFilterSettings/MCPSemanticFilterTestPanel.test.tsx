@@ -5,6 +5,24 @@ import userEvent from "@testing-library/user-event";
 import MCPSemanticFilterTestPanel from "./MCPSemanticFilterTestPanel";
 import { TestResult } from "./semanticFilterTestUtils";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 vi.mock("@/components/common_components/ModelSelector", () => ({
   default: ({ onChange, value, labelText, disabled }: any) => (
     <div>
@@ -34,6 +52,7 @@ const buildProps = (overrides: Partial<React.ComponentProps<typeof MCPSemanticFi
 
 describe("MCPSemanticFilterTestPanel", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
   });
 
@@ -157,5 +176,19 @@ describe("MCPSemanticFilterTestPanel", () => {
     await user.click(screen.getByRole("tab", { name: "API Usage" }));
 
     expect(screen.getByText(curlCommand)).toBeInTheDocument();
+  });
+
+  it("renders test and API instructions in Russian", async () => {
+    localization.language = "ru";
+    const user = userEvent.setup();
+    render(<MCPSemanticFilterTestPanel {...buildProps({ filterEnabled: false })} />);
+
+    expect(screen.getByText("Проверка настроек")).toBeInTheDocument();
+    expect(screen.getByText("Тестовый запрос")).toBeInTheDocument();
+    expect(screen.getByText("Семантическая фильтрация отключена")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Использование API" }));
+    expect(screen.getByText("Заголовки ответа для проверки:")).toBeInTheDocument();
+    expect(screen.queryByText("Response headers to check:")).not.toBeInTheDocument();
   });
 });

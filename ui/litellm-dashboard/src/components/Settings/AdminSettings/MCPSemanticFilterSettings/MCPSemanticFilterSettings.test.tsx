@@ -6,6 +6,24 @@ import MCPSemanticFilterSettings from "./MCPSemanticFilterSettings";
 import { useMCPSemanticFilterSettings } from "@/app/(dashboard)/hooks/mcpSemanticFilterSettings/useMCPSemanticFilterSettings";
 import { useUpdateMCPSemanticFilterSettings } from "@/app/(dashboard)/hooks/mcpSemanticFilterSettings/useUpdateMCPSemanticFilterSettings";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
+});
+
 vi.mock("@/app/(dashboard)/hooks/mcpSemanticFilterSettings/useMCPSemanticFilterSettings", () => ({
   useMCPSemanticFilterSettings: vi.fn(),
 }));
@@ -54,6 +72,7 @@ async function renderSettings(props: React.ComponentProps<typeof MCPSemanticFilt
 
 describe("MCPSemanticFilterSettings", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     vi.mocked(useMCPSemanticFilterSettings).mockReturnValue({
       data: defaultSettingsData,
@@ -66,6 +85,17 @@ describe("MCPSemanticFilterSettings", () => {
       isPending: false,
       error: null,
     } as any);
+  });
+
+  it("renders semantic filter settings in Russian", async () => {
+    localization.language = "ru";
+    await renderSettings({ accessToken: "test-token" });
+
+    expect(screen.getByText("Семантическая фильтрация инструментов")).toBeInTheDocument();
+    expect(screen.getByText("Включить семантическую фильтрацию")).toBeInTheDocument();
+    expect(screen.getByText("Порог сходства")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Сохранить настройки/i })).toBeInTheDocument();
+    expect(screen.queryByText("Semantic Tool Filtering")).not.toBeInTheDocument();
   });
 
   it("should render", async () => {

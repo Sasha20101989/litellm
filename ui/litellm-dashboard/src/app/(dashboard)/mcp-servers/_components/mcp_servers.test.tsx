@@ -28,6 +28,14 @@ vi.mock("react-i18next", async () => {
 vi.mock("@/components/networking", () => ({
   fetchMCPServers: vi.fn(),
   fetchMCPServerHealth: vi.fn(),
+  fetchMCPToolsets: vi.fn().mockResolvedValue([]),
+  fetchMCPSubmissions: vi.fn().mockResolvedValue({
+    total: 0,
+    pending_review: 0,
+    active: 0,
+    rejected: 0,
+    items: [],
+  }),
   deleteMCPServer: vi.fn(),
   getProxyBaseUrl: vi.fn().mockReturnValue("http://localhost:4000"),
   fetchMCPClientIp: vi.fn().mockResolvedValue(null),
@@ -82,6 +90,61 @@ describe("MCPServers", () => {
     expect(screen.getByRole("tab", { name: "Все серверы" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Наборы инструментов" })).toBeInTheDocument();
     expect(screen.getByText("+ Добавить MCP-сервер")).toBeInTheDocument();
+  });
+
+  it("renders every MCP tab and its default content in Russian", async () => {
+    localization.language = "ru";
+    vi.mocked(networking.fetchMCPServers).mockResolvedValue([]);
+    vi.mocked(networking.fetchMCPToolsets).mockResolvedValue([]);
+    vi.mocked(networking.fetchMCPSubmissions).mockResolvedValue({
+      total: 1,
+      pending_review: 1,
+      active: 0,
+      rejected: 0,
+      items: [
+        {
+          server_id: "submitted-server",
+          server_name: "Submitted Server",
+          approval_status: "pending_review",
+          transport: "sse",
+          submitted_by: "user-1",
+          created_at: "2026-01-01T00:00:00Z",
+          created_by: "user-1",
+          updated_at: "2026-01-01T00:00:00Z",
+          updated_by: "user-1",
+          teams: [],
+          mcp_access_groups: [],
+        },
+      ],
+    });
+    const queryClient = createQueryClient();
+    const user = userEvent.setup();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MCPServers {...defaultProps} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Новое")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Наборы инструментов" }));
+    expect(await screen.findByText("Наборы MCP-инструментов")).toBeInTheDocument();
+    expect(screen.queryByText("MCP Toolsets")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Подключение" }));
+    expect(await screen.findByText("Подключите MCP-клиент")).toBeInTheDocument();
+    expect(screen.queryByText("Connect to your MCP client")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Сетевые настройки" }));
+    expect(await screen.findByText("Диапазоны частных IP-адресов")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Сохранить" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: /Предложенные MCP/ }));
+    expect(await screen.findByText("Правила отправки")).toBeInTheDocument();
+    expect(screen.getByText("Ожидают проверки")).toBeInTheDocument();
+    expect((await screen.findAllByText("Ожидает проверки")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Submission Rules")).not.toBeInTheDocument();
   });
 
   it("should render the MCPServers component with title", async () => {

@@ -541,7 +541,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
             )}
             {isAdminRole(userRole) && (
               <TabsTrigger value="submitted" className="flex-none gap-2 rounded-none px-4 py-2">
-                {t("mcpServers.tabs.submitted")} <NewBadge />
+                {t("mcpServers.tabs.submitted")} <NewBadge label={t("mcpServers.newBadge")} />
               </TabsTrigger>
             )}
           </TabsList>
