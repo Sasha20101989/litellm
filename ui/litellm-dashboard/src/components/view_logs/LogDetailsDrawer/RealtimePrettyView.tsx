@@ -15,6 +15,7 @@ import {
   UpOutlined,
 } from "@ant-design/icons";
 import { SectionHeader } from "./SectionHeader";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -90,6 +91,7 @@ export function isRealtimeResponse(response: any): boolean {
 }
 
 export function RealtimePrettyView({ response, metrics }: RealtimePrettyViewProps) {
+  const { t } = useTranslation("logs");
   const events: RealtimeEvent[] = response?.results || [];
   const usage = response?.usage;
 
@@ -122,7 +124,7 @@ export function RealtimePrettyView({ response, metrics }: RealtimePrettyViewProp
             fontSize: 13,
           }}
         >
-          No recognized realtime events found
+          {t("details.realtime.noEvents")}
         </div>
       )}
     </div>
@@ -130,6 +132,7 @@ export function RealtimePrettyView({ response, metrics }: RealtimePrettyViewProp
 }
 
 function SessionCard({ session, turnCount }: { session: RealtimeSession; turnCount: number }) {
+  const { t } = useTranslation("logs");
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
@@ -170,14 +173,14 @@ function SessionCard({ session, turnCount }: { session: RealtimeSession; turnCou
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <SettingOutlined style={{ color: "#8c8c8c", fontSize: 14 }} />
-            <Text style={{ fontWeight: 500, fontSize: 14 }}>Session</Text>
+            <Text style={{ fontWeight: 500, fontSize: 14 }}>{t("details.realtime.session")}</Text>
           </div>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {session.model}
           </Text>
           {turnCount > 0 && (
             <Tag color="purple" style={{ margin: 0, fontWeight: 500 }}>
-              {turnCount} {turnCount === 1 ? "turn" : "turns"}
+              {t("details.realtime.turn", { count: turnCount })}
             </Tag>
           )}
           {session.voice && (
@@ -214,15 +217,17 @@ function SessionCard({ session, turnCount }: { session: RealtimeSession; turnCou
               fontSize: 13,
             }}
           >
-            <ConfigRow label="Model" value={session.model} />
-            <ConfigRow label="Voice" value={session.voice} />
-            <ConfigRow label="Temperature" value={session.temperature} />
-            <ConfigRow label="Max Output Tokens" value={session.max_response_output_tokens} />
-            <ConfigRow label="Input Audio Format" value={session.input_audio_format} />
-            <ConfigRow label="Output Audio Format" value={session.output_audio_format} />
-            {session.turn_detection && <ConfigRow label="Turn Detection" value={session.turn_detection.type} />}
+            <ConfigRow label={t("details.model")} value={session.model} />
+            <ConfigRow label={t("details.realtime.voice")} value={session.voice} />
+            <ConfigRow label={t("details.realtime.temperature")} value={session.temperature} />
+            <ConfigRow label={t("details.realtime.maxOutputTokens")} value={session.max_response_output_tokens} />
+            <ConfigRow label={t("details.realtime.inputAudioFormat")} value={session.input_audio_format} />
+            <ConfigRow label={t("details.realtime.outputAudioFormat")} value={session.output_audio_format} />
+            {session.turn_detection && (
+              <ConfigRow label={t("details.realtime.turnDetection")} value={session.turn_detection.type} />
+            )}
             {session.tools && session.tools.length > 0 && (
-              <ConfigRow label="Tools" value={`${session.tools.length} tool(s)`} />
+              <ConfigRow label={t("tools.title")} value={t("details.realtime.toolsCount", { count: session.tools.length })} />
             )}
           </div>
 
@@ -238,7 +243,7 @@ function SessionCard({ session, turnCount }: { session: RealtimeSession; turnCou
                   marginBottom: 4,
                 }}
               >
-                Instructions
+                {t("details.realtime.instructions")}
               </Text>
               <div
                 style={{
@@ -324,6 +329,7 @@ function ConversationCard({
 }
 
 function ResponseTurn({ response, index }: { response: RealtimeResponse; index: number }) {
+  const { t } = useTranslation("logs");
   const outputs = response.output || [];
   const usage = response.usage;
 
@@ -345,17 +351,20 @@ function ResponseTurn({ response, index }: { response: RealtimeResponse; index: 
         }}
       >
         <Tag color={response.status === "completed" ? "green" : "orange"} style={{ margin: 0 }}>
-          {response.status || "unknown"}
+          {response.status || t("details.realtime.unknown")}
         </Tag>
         {usage && (
           <Text type="secondary" style={{ fontSize: 11 }}>
-            {usage.input_tokens ?? 0} in / {usage.output_tokens ?? 0} out tokens
+            {t("details.realtime.tokenUsage", {
+              input: usage.input_tokens ?? 0,
+              output: usage.output_tokens ?? 0,
+            })}
           </Text>
         )}
         {response.conversation_id && (
           <Tooltip title={response.conversation_id}>
             <Text type="secondary" style={{ fontSize: 11, cursor: "help" }}>
-              conv: {response.conversation_id.slice(0, 12)}...
+              {t("details.realtime.conversation")}: {response.conversation_id.slice(0, 12)}...
             </Text>
           </Tooltip>
         )}
@@ -367,13 +376,14 @@ function ResponseTurn({ response, index }: { response: RealtimeResponse; index: 
       ))}
 
       {/* Token breakdown if available */}
-      {usage?.input_token_details && <TokenBreakdown label="Input" details={usage.input_token_details} />}
-      {usage?.output_token_details && <TokenBreakdown label="Output" details={usage.output_token_details} />}
+      {usage?.input_token_details && <TokenBreakdown label={t("details.input")} details={usage.input_token_details} />}
+      {usage?.output_token_details && <TokenBreakdown label={t("details.output")} details={usage.output_token_details} />}
     </div>
   );
 }
 
 function OutputMessage({ output }: { output: RealtimeOutputItem }) {
+  const { t } = useTranslation("logs");
   const contents = output.content || [];
   const hasTranscripts = contents.some((c) => c.transcript || c.text);
 
@@ -391,7 +401,7 @@ function OutputMessage({ output }: { output: RealtimeOutputItem }) {
           marginBottom: 3,
         }}
       >
-        {output.role?.toUpperCase() || "ASSISTANT"}
+        {output.role?.toUpperCase() || t("details.assistant")}
       </Text>
       {contents.map((c, cIdx) => {
         const text = c.transcript || c.text;
@@ -445,6 +455,7 @@ function OutputMessage({ output }: { output: RealtimeOutputItem }) {
 }
 
 function TokenBreakdown({ label, details }: { label: string; details: Record<string, any> }) {
+  const { t } = useTranslation("logs");
   const entries = Object.entries(details).filter(
     ([, v]) => typeof v === "number" || (typeof v === "object" && v !== null),
   );
@@ -454,7 +465,7 @@ function TokenBreakdown({ label, details }: { label: string; details: Record<str
   return (
     <div style={{ marginTop: 4 }}>
       <Text type="secondary" style={{ fontSize: 10, letterSpacing: "0.5px", textTransform: "uppercase" }}>
-        {label} Token Breakdown
+        {t("details.realtime.tokenBreakdown", { label })}
       </Text>
       <div
         style={{

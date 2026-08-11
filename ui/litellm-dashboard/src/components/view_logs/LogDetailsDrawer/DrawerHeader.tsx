@@ -16,6 +16,7 @@ import {
   FONT_FAMILY_MONO,
   SPACING_SMALL,
 } from "./constants";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -95,12 +96,13 @@ function ModelProviderSection({
   providerLogo?: string;
   providerName?: string;
 }) {
+  const { t } = useTranslation("logs");
   return (
     <Space size={SPACING_MEDIUM} style={{ marginBottom: SPACING_MEDIUM }}>
       {providerLogo && (
         <img
           src={providerLogo}
-          alt={providerName || "Provider"}
+          alt={providerName || t("details.providerAlt")}
           style={{ width: 24, height: 24 }}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -128,12 +130,13 @@ function ModelProviderSection({
  * Request ID display with copy functionality
  */
 function RequestIdSection({ requestId }: { requestId: string }) {
+  const { t } = useTranslation("logs");
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       <Tooltip title={requestId}>
         <Text
           strong
-          copyable={{ text: requestId, tooltips: ["Copy Request ID", "Copied!"] }}
+          copyable={{ text: requestId, tooltips: [t("details.copyRequestId"), t("details.copied")] }}
           style={{
             fontSize: FONT_SIZE_HEADER,
             fontFamily: FONT_FAMILY_MONO,
@@ -163,6 +166,7 @@ function NavigationSection({
   onNext: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("logs");
   const keyboardShortcutStyle = {
     border: "1px solid #d9d9d9",
     borderRadius: 4,
@@ -183,7 +187,7 @@ function NavigationSection({
         <DownOutlined />
         <span style={keyboardShortcutStyle}>J</span>
       </Button>
-      <Tooltip title="ESC to close">
+      <Tooltip title={t("details.closeHint")}>
         <Button type="text" icon={<CloseOutlined />} onClick={onClose} />
       </Tooltip>
     </Space>
@@ -204,16 +208,17 @@ function StatusBar({
   statusColor: "error" | "success";
   environment: string;
 }) {
+  const { t, i18n } = useTranslation("logs");
   return (
     <Space size={SPACING_LARGE}>
       <Tag color={statusColor}>{statusLabel}</Tag>
-      <Tag>Env: {environment}</Tag>
+      <Tag>{t("details.environment")}: {environment}</Tag>
       <Space size={SPACING_MEDIUM}>
         <Text type="secondary" style={{ fontSize: FONT_SIZE_MEDIUM }}>
-          {moment(log.startTime).format("MMM D, YYYY h:mm:ss A")}
+          {moment(log.startTime).locale(i18n.resolvedLanguage === "ru" ? "ru" : "en").format("LL LTS")}
         </Text>
         <Text type="secondary" style={{ fontSize: FONT_SIZE_MEDIUM }}>
-          ({moment(log.startTime).fromNow()})
+          ({moment(log.startTime).locale(i18n.resolvedLanguage === "ru" ? "ru" : "en").fromNow()})
         </Text>
       </Space>
     </Space>

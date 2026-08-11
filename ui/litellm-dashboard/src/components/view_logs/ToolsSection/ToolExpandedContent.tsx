@@ -7,6 +7,7 @@ import { Typography, Radio } from "antd";
 import { ParsedTool } from "./types";
 import { FormattedToolView } from "./FormattedToolView";
 import { JsonToolView } from "./JsonToolView";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -17,6 +18,7 @@ interface ToolExpandedContentProps {
 }
 
 export function ToolExpandedContent({ tool }: ToolExpandedContentProps) {
+  const { t } = useTranslation("logs");
   const [viewMode, setViewMode] = useState<ViewMode>("formatted");
 
   return (
@@ -30,10 +32,10 @@ export function ToolExpandedContent({ tool }: ToolExpandedContentProps) {
         }}
       >
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Description
+          {t("tools.description")}
         </Text>
         <Radio.Group size="small" value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
-          <Radio.Button value="formatted">Formatted</Radio.Button>
+          <Radio.Button value="formatted">{t("tools.formatted")}</Radio.Button>
           <Radio.Button value="json">JSON</Radio.Button>
         </Radio.Group>
       </div>

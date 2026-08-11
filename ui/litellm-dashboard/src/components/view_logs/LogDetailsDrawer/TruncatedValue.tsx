@@ -1,5 +1,6 @@
 import { Typography, Tooltip } from "antd";
 import { DEFAULT_MAX_WIDTH, FONT_FAMILY_MONO, FONT_SIZE_SMALL } from "./constants";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -13,12 +14,13 @@ interface TruncatedValueProps {
  * Useful for displaying long IDs, URLs, or other text that may overflow.
  */
 export function TruncatedValue({ value, maxWidth = DEFAULT_MAX_WIDTH }: TruncatedValueProps) {
+  const { t } = useTranslation("logs");
   if (!value) return <Text type="secondary">-</Text>;
 
   return (
     <Tooltip title={value}>
       <Text
-        copyable={{ text: value, tooltips: ["Copy", "Copied!"] }}
+        copyable={{ text: value, tooltips: [t("details.copy"), t("details.copied")] }}
         style={{
           maxWidth,
           display: "inline-block",

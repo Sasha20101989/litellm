@@ -35,6 +35,7 @@ import {
 } from "./constants";
 import { ToolsSection } from "../ToolsSection";
 import { PrettyMessagesView } from "./PrettyMessagesView";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -54,6 +55,7 @@ export interface LogDetailContentProps {
  * be reused for both single-log and session-mode views.
  */
 export function LogDetailContent({ logEntry, isLoadingDetails = false, accessToken }: LogDetailContentProps) {
+  const { t } = useTranslation("logs");
   const metadata = logEntry.metadata || {};
   const hasError = metadata.status === "failure";
   const errorInfo = hasError ? metadata.error_information : null;
@@ -85,7 +87,7 @@ export function LogDetailContent({ logEntry, isLoadingDetails = false, accessTok
     if (hasError && errorInfo) {
       return {
         error: {
-          message: errorInfo.error_message || "An error occurred",
+          message: errorInfo.error_message || t("details.genericError"),
           type: errorInfo.error_class || "error",
           code: errorInfo.error_code || "unknown",
           param: null,
@@ -102,7 +104,7 @@ export function LogDetailContent({ logEntry, isLoadingDetails = false, accessTok
         <Alert
           type="error"
           showIcon
-          message="Request Failed"
+          message={t("details.requestFailed")}
           description={<ErrorDescription errorInfo={errorInfo} />}
           className="mb-6"
         />
@@ -115,22 +117,22 @@ export function LogDetailContent({ logEntry, isLoadingDetails = false, accessTok
 
       {/* Request Details */}
       <div className="bg-white rounded-lg shadow-sm w-full max-w-full overflow-hidden mb-6">
-        <Card title="Request Details" size="small" bordered={false} style={{ marginBottom: 0 }}>
+        <Card title={t("details.requestDetails")} size="small" bordered={false} style={{ marginBottom: 0 }}>
           <Descriptions column={2} size="small">
-            <Descriptions.Item label="Model">{logEntry.model}</Descriptions.Item>
-            <Descriptions.Item label="Provider">{logEntry.custom_llm_provider || "-"}</Descriptions.Item>
-            <Descriptions.Item label="Call Type">{logEntry.call_type}</Descriptions.Item>
-            <Descriptions.Item label="Model ID">
+            <Descriptions.Item label={t("details.model")}>{logEntry.model}</Descriptions.Item>
+            <Descriptions.Item label={t("details.provider")}>{logEntry.custom_llm_provider || "-"}</Descriptions.Item>
+            <Descriptions.Item label={t("details.callType")}>{logEntry.call_type}</Descriptions.Item>
+            <Descriptions.Item label={t("details.modelId")}>
               <TruncatedValue value={logEntry.model_id} />
             </Descriptions.Item>
-            <Descriptions.Item label="API Base">
+            <Descriptions.Item label={t("details.apiBase")}>
               <TruncatedValue value={logEntry.api_base} maxWidth={API_BASE_MAX_WIDTH} />
             </Descriptions.Item>
             {logEntry.requester_ip_address && (
-              <Descriptions.Item label="IP Address">{logEntry.requester_ip_address}</Descriptions.Item>
+              <Descriptions.Item label={t("details.ipAddress")}>{logEntry.requester_ip_address}</Descriptions.Item>
             )}
             {hasGuardrailData && (
-              <Descriptions.Item label="Guardrail">
+              <Descriptions.Item label={t("details.guardrail")}>
                 <GuardrailLabel label={primaryGuardrailLabel} maskedCount={totalMaskedEntities} />
               </Descriptions.Item>
             )}
@@ -170,7 +172,7 @@ export function LogDetailContent({ logEntry, isLoadingDetails = false, accessTok
       {isLoadingDetails ? (
         <div className="bg-white rounded-lg shadow-sm w-full max-w-full overflow-hidden mb-6 p-8 text-center">
           <Spin size="default" />
-          <div style={{ marginTop: 8, color: "#999" }}>Loading request &amp; response data...</div>
+          <div style={{ marginTop: 8, color: "#999" }}>{t("details.loadingData")}</div>
         </div>
       ) : (
         <RequestResponseSection
@@ -221,16 +223,17 @@ export function LogDetailContent({ logEntry, isLoadingDetails = false, accessTok
 // ============================================================================
 
 function ErrorDescription({ errorInfo }: { errorInfo: any }) {
+  const { t } = useTranslation("logs");
   return (
     <div>
       {errorInfo.error_code && (
         <div>
-          <Text strong>Error Code:</Text> {errorInfo.error_code}
+          <Text strong>{t("details.errorCode")}:</Text> {errorInfo.error_code}
         </div>
       )}
       {errorInfo.error_message && (
         <div>
-          <Text strong>Message:</Text> {errorInfo.error_message}
+          <Text strong>{t("details.message")}:</Text> {errorInfo.error_message}
         </div>
       )}
     </div>
@@ -238,10 +241,11 @@ function ErrorDescription({ errorInfo }: { errorInfo: any }) {
 }
 
 function TagsSection({ tags }: { tags: Record<string, any> }) {
+  const { t } = useTranslation("logs");
   return (
     <div className="bg-white rounded-lg shadow-sm w-full max-w-full overflow-hidden p-4 mb-6">
       <Text strong style={{ display: "block", marginBottom: 8, fontSize: 16 }}>
-        Tags
+        {t("details.tags")}
       </Text>
       <Space size={SPACING_MEDIUM} wrap>
         {Object.entries(tags).map(([key, value]) => (
@@ -255,6 +259,7 @@ function TagsSection({ tags }: { tags: Record<string, any> }) {
 }
 
 function GuardrailLabel({ label, maskedCount }: { label: string; maskedCount: number }) {
+  const { t } = useTranslation("logs");
   const handleClick = () => {
     const el = document.getElementById("guardrail-section");
     if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -265,7 +270,11 @@ function GuardrailLabel({ label, maskedCount }: { label: string; maskedCount: nu
       <a onClick={handleClick} style={{ cursor: "pointer" }}>
         {label}
       </a>
-      {maskedCount > 0 && <Tag color="blue">{maskedCount} masked</Tag>}
+      {maskedCount > 0 && (
+        <Tag color="blue">
+          {maskedCount} {t("details.masked")}
+        </Tag>
+      )}
     </Space>
   );
 }
@@ -283,16 +292,11 @@ function getUncachedInputTextTokens(metadata: Record<string, any>): number | und
   return Number.isFinite(n) ? n : undefined;
 }
 
-const RESPONSE_CACHE_TOOLTIP =
-  "Whether this request was served from LiteLLM's response cache (e.g. Redis / in-memory), skipping the LLM provider call entirely. This is separate from provider prompt caching; a Miss here does not mean prompt caching failed.";
-const PROMPT_CACHE_READ_TOOLTIP =
-  "Input tokens read from the LLM provider's prompt cache (e.g. Anthropic / OpenAI), billed at a discounted rate. Reported by the provider.";
-const PROMPT_CACHE_CREATION_TOOLTIP =
-  "Input tokens written to the LLM provider's prompt cache for reuse by later requests.";
 const RESPONSE_CACHE_DOCS_URL = "https://docs.litellm.ai/docs/proxy/caching";
 const PROMPT_CACHE_DOCS_URL = "https://docs.litellm.ai/docs/completion/prompt_caching";
 
 function MetricLabel({ label, tooltip, docsUrl }: { label: string; tooltip: string; docsUrl: string }) {
+  const { t } = useTranslation("logs");
   return (
     <Space size={4}>
       {label}
@@ -306,7 +310,7 @@ function MetricLabel({ label, tooltip, docsUrl }: { label: string; tooltip: stri
               rel="noreferrer"
               style={{ color: "#91caff", textDecoration: "underline" }}
             >
-              Docs
+              {t("details.docs")}
             </a>
           </>
         }
@@ -318,6 +322,7 @@ function MetricLabel({ label, tooltip, docsUrl }: { label: string; tooltip: stri
 }
 
 function MetricsSection({ logEntry, metadata }: { logEntry: LogEntry; metadata: Record<string, any> }) {
+  const { t } = useTranslation("logs");
   const completionStartTime = logEntry.completionStartTime;
   const ttftMs =
     completionStartTime && completionStartTime !== logEntry.endTime
@@ -336,17 +341,19 @@ function MetricsSection({ logEntry, metadata }: { logEntry: LogEntry; metadata: 
 
   return (
     <div className="bg-white rounded-lg shadow-sm w-full max-w-full overflow-hidden mb-6">
-      <Card title="Metrics" size="small" style={{ marginBottom: 0 }}>
+      <Card title={t("details.metrics")} size="small" style={{ marginBottom: 0 }}>
         <Descriptions column={2} size="small">
           {showAnthropicMessagesInputOutput ? (
             <>
-              <Descriptions.Item label="Input Tokens">{formatNumberWithCommas(uncachedInputTokens)}</Descriptions.Item>
-              <Descriptions.Item label="Output Tokens">
+              <Descriptions.Item label={t("details.inputTokens")}>
+                {formatNumberWithCommas(uncachedInputTokens)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t("details.outputTokens")}>
                 {formatNumberWithCommas(logEntry.completion_tokens)}
               </Descriptions.Item>
             </>
           ) : (
-            <Descriptions.Item label="Tokens">
+            <Descriptions.Item label={t("details.tokens")}>
               <TokenFlow
                 prompt={logEntry.prompt_tokens}
                 completion={logEntry.completion_tokens}
@@ -354,33 +361,35 @@ function MetricsSection({ logEntry, metadata }: { logEntry: LogEntry; metadata: 
               />
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Cost">${formatNumberWithCommas(logEntry.spend || 0, 8)}</Descriptions.Item>
-          <Descriptions.Item label="Duration">
+          <Descriptions.Item label={t("details.cost")}>${formatNumberWithCommas(logEntry.spend || 0, 8)}</Descriptions.Item>
+          <Descriptions.Item label={t("details.duration")}>
             {logEntry.request_duration_ms != null ? (logEntry.request_duration_ms / 1000).toFixed(3) : "-"} s
           </Descriptions.Item>
           {ttftMs != null && ttftMs > 0 && (
-            <Descriptions.Item label="Time to First Token">{(ttftMs / 1000).toFixed(3)} s</Descriptions.Item>
+            <Descriptions.Item label={t("details.timeToFirstToken")}>{(ttftMs / 1000).toFixed(3)} s</Descriptions.Item>
           )}
 
           {showResponseCache && (
             <Descriptions.Item
               label={
                 <MetricLabel
-                  label="Response Cache"
-                  tooltip={RESPONSE_CACHE_TOOLTIP}
+                  label={t("details.responseCache")}
+                  tooltip={t("details.responseCacheTooltip")}
                   docsUrl={RESPONSE_CACHE_DOCS_URL}
                 />
               }
             >
-              <Tag color={isResponseCacheHit ? "green" : "default"}>{isResponseCacheHit ? "Hit" : "Miss"}</Tag>
+              <Tag color={isResponseCacheHit ? "green" : "default"}>
+                {isResponseCacheHit ? t("details.hit") : t("details.miss")}
+              </Tag>
             </Descriptions.Item>
           )}
           {promptCacheReadTokens > 0 && (
             <Descriptions.Item
               label={
                 <MetricLabel
-                  label="Prompt Cache Read Tokens"
-                  tooltip={PROMPT_CACHE_READ_TOOLTIP}
+                  label={t("details.promptCacheReadTokens")}
+                  tooltip={t("details.promptCacheReadTooltip")}
                   docsUrl={PROMPT_CACHE_DOCS_URL}
                 />
               }
@@ -392,8 +401,8 @@ function MetricsSection({ logEntry, metadata }: { logEntry: LogEntry; metadata: 
             <Descriptions.Item
               label={
                 <MetricLabel
-                  label="Prompt Cache Creation Tokens"
-                  tooltip={PROMPT_CACHE_CREATION_TOOLTIP}
+                  label={t("details.promptCacheCreationTokens")}
+                  tooltip={t("details.promptCacheCreationTooltip")}
                   docsUrl={PROMPT_CACHE_DOCS_URL}
                 />
               }
@@ -403,12 +412,12 @@ function MetricsSection({ logEntry, metadata }: { logEntry: LogEntry; metadata: 
           )}
 
           {metadata?.litellm_overhead_time_ms !== undefined && metadata.litellm_overhead_time_ms !== null && (
-            <Descriptions.Item label="LiteLLM Overhead">
+            <Descriptions.Item label={t("details.litellmOverhead")}>
               {metadata.litellm_overhead_time_ms.toFixed(2)} ms
             </Descriptions.Item>
           )}
 
-          <Descriptions.Item label="Retries">
+          <Descriptions.Item label={t("details.retries")}>
             {metadata?.attempted_retries !== undefined && metadata?.attempted_retries !== null ? (
               metadata.attempted_retries > 0 ? (
                 <>
@@ -418,17 +427,17 @@ function MetricsSection({ logEntry, metadata }: { logEntry: LogEntry; metadata: 
                     : ""}
                 </>
               ) : (
-                <Tag color="green">None</Tag>
+                <Tag color="green">{t("details.none")}</Tag>
               )
             ) : (
               "-"
             )}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Start Time">
+          <Descriptions.Item label={t("details.startTime")}>
             {moment(logEntry.startTime).format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")}
           </Descriptions.Item>
-          <Descriptions.Item label="End Time">
+          <Descriptions.Item label={t("details.endTime")}>
             {moment(logEntry.endTime).format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")}
           </Descriptions.Item>
         </Descriptions>
@@ -452,6 +461,7 @@ function RequestResponseSection({
   getFormattedResponse,
   logEntry,
 }: RequestResponseSectionProps) {
+  const { t } = useTranslation("logs");
   const [activeTab, setActiveTab] = useState<typeof TAB_REQUEST | typeof TAB_RESPONSE>(TAB_REQUEST);
   const [viewMode, setViewMode] = useState<"pretty" | "json">("pretty");
 
@@ -496,10 +506,10 @@ function RequestResponseSection({
                 }}
               >
                 <h3 className="text-lg font-medium text-gray-900" style={{ margin: 0 }}>
-                  Request & Response
+                  {t("details.requestAndResponse")}
                 </h3>
                 <Radio.Group size="small" value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
-                  <Radio.Button value="pretty">Pretty</Radio.Button>
+                  <Radio.Button value="pretty">{t("details.pretty")}</Radio.Button>
                   <Radio.Button value="json">JSON</Radio.Button>
                 </Radio.Group>
               </div>
@@ -525,7 +535,7 @@ function RequestResponseSection({
                       <Text
                         copyable={{
                           text: getCopyText(),
-                          tooltips: ["Copy JSON", "Copied!"],
+                          tooltips: [t("details.copyJson"), t("details.copied")],
                         }}
                         disabled={activeTab === TAB_RESPONSE && !hasResponse && !hasError}
                       />
@@ -533,7 +543,7 @@ function RequestResponseSection({
                     items={[
                       {
                         key: TAB_REQUEST,
-                        label: "Request",
+                        label: t("details.request"),
                         children: (
                           <div style={{ paddingTop: SPACING_XLARGE, paddingBottom: SPACING_XLARGE }}>
                             <JsonViewer data={getRawRequest()} mode="formatted" />
@@ -542,14 +552,14 @@ function RequestResponseSection({
                       },
                       {
                         key: TAB_RESPONSE,
-                        label: "Response",
+                        label: t("details.response"),
                         children: (
                           <div style={{ paddingTop: SPACING_XLARGE, paddingBottom: SPACING_XLARGE }}>
                             {hasResponse || hasError ? (
                               <JsonViewer data={getFormattedResponse()} mode="formatted" />
                             ) : (
                               <div style={{ textAlign: "center", padding: 20, color: "#999", fontStyle: "italic" }}>
-                                Response data not available
+                                {t("details.responseUnavailable")}
                               </div>
                             )}
                           </div>
@@ -568,6 +578,7 @@ function RequestResponseSection({
 }
 
 export function GuardrailJumpLink({ guardrailEntries }: { guardrailEntries: any[] }) {
+  const { t } = useTranslation("logs");
   const allPassed = guardrailEntries.every((e) => {
     const status = e?.guardrail_status || e?.status;
     return status === "pass" || status === "passed" || status === "success";
@@ -596,8 +607,7 @@ export function GuardrailJumpLink({ guardrailEntries }: { guardrailEntries: any[
           border: `1px solid ${allPassed ? "#bbf7d0" : "#fecaca"}`,
         }}
       >
-        {allPassed ? "\u2713" : "\u2717"} {guardrailEntries.length} guardrail{guardrailEntries.length !== 1 ? "s" : ""}{" "}
-        evaluated
+        {allPassed ? "\u2713" : "\u2717"} {t("details.evaluatedGuardrails", { count: guardrailEntries.length })}
         <span style={{ fontSize: 11, opacity: 0.7 }}>{"\u2193"}</span>
       </div>
     </div>
@@ -605,6 +615,7 @@ export function GuardrailJumpLink({ guardrailEntries }: { guardrailEntries: any[
 }
 
 function MetadataSection({ metadata }: { metadata: Record<string, any> }) {
+  const { t } = useTranslation("logs");
   return (
     <div className="bg-white rounded-lg shadow-sm w-full max-w-full overflow-hidden mb-6">
       <Collapse
@@ -613,14 +624,14 @@ function MetadataSection({ metadata }: { metadata: Record<string, any> }) {
         items={[
           {
             key: "1",
-            label: <h3 className="text-lg font-medium text-gray-900">Metadata</h3>,
+            label: <h3 className="text-lg font-medium text-gray-900">{t("details.metadata")}</h3>,
             children: (
               <div>
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
                   <Text
                     copyable={{
                       text: JSON.stringify(metadata, null, 2),
-                      tooltips: ["Copy Metadata", "Copied!"],
+                      tooltips: [t("details.copyMetadata"), t("details.copied")],
                     }}
                   />
                 </div>

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import moment from "moment";
 import { AuditLogEntry } from "../AuditLogsTableColumns";
 import DefaultProxyAdminTag from "../../common_components/DefaultProxyAdminTag";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -13,14 +14,6 @@ interface AuditLogDrawerProps {
   log: AuditLogEntry | null;
 }
 
-const TABLE_NAME_DISPLAY: Record<string, string> = {
-  LiteLLM_VerificationToken: "Keys",
-  LiteLLM_TeamTable: "Teams",
-  LiteLLM_UserTable: "Users",
-  LiteLLM_OrganizationTable: "Organizations",
-  LiteLLM_ProxyModelTable: "Models",
-};
-
 const ACTION_COLOR: Record<string, string> = {
   created: "green",
   updated: "blue",
@@ -29,6 +22,7 @@ const ACTION_COLOR: Record<string, string> = {
 };
 
 function CopyableJsonBlock({ label, value }: { label: string; value: Record<string, any> }) {
+  const { t } = useTranslation("logs");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -61,7 +55,7 @@ function CopyableJsonBlock({ label, value }: { label: string; value: Record<stri
         <button
           onClick={handleCopy}
           className="p-1 hover:bg-gray-200 rounded-sm text-gray-500 hover:text-gray-700 transition-colors"
-          title="Copy JSON"
+          title={t("auditDrawer.copyJson")}
         >
           {copied ? <CheckOutlined className="text-green-600" /> : <CopyOutlined />}
         </button>
@@ -83,6 +77,7 @@ function MetadataRow({ label, value }: { label: string; value: React.ReactNode }
 }
 
 function DiffSection({ log }: { log: AuditLogEntry }) {
+  const { t } = useTranslation("logs");
   const { action, table_name, before_value, updated_values } = log;
   const isKeyTable = table_name === "LiteLLM_VerificationToken";
   const isUpdateAction = action === "updated" || action === "rotated";
@@ -120,8 +115,8 @@ function DiffSection({ log }: { log: AuditLogEntry }) {
       }
     });
 
-    displayBefore = Object.keys(changedBefore).length > 0 ? changedBefore : { note: "No differing fields detected" };
-    displayAfter = Object.keys(changedAfter).length > 0 ? changedAfter : { note: "No differing fields detected" };
+    displayBefore = Object.keys(changedBefore).length > 0 ? changedBefore : { note: t("auditDrawer.noDifferences") };
+    displayAfter = Object.keys(changedAfter).length > 0 ? changedAfter : { note: t("auditDrawer.noDifferences") };
   }
 
   const renderValue = (label: string, value: Record<string, any> | null | undefined) => {
@@ -131,7 +126,7 @@ function DiffSection({ log }: { log: AuditLogEntry }) {
           <div className="flex items-center px-3 py-2 border-b bg-gray-50">
             <span className="text-xs font-semibold text-gray-600">{label}</span>
           </div>
-          <p className="px-3 py-3 text-xs text-gray-400 italic m-0">N/A</p>
+          <p className="px-3 py-3 text-xs text-gray-400 italic m-0">{t("auditDrawer.notAvailable")}</p>
         </div>
       );
     }
@@ -149,17 +144,19 @@ function DiffSection({ log }: { log: AuditLogEntry }) {
             <div className="px-3 py-3 space-y-1 text-xs">
               {value.token !== undefined && (
                 <p>
-                  <span className="text-gray-500">Token:</span> {value.token ?? "N/A"}
+                  <span className="text-gray-500">{t("auditDrawer.token")}:</span>{" "}
+                  {value.token ?? t("auditDrawer.notAvailable")}
                 </p>
               )}
               {value.spend !== undefined && (
                 <p>
-                  <span className="text-gray-500">Spend:</span> ${Number(value.spend).toFixed(6)}
+                  <span className="text-gray-500">{t("auditDrawer.spend")}:</span> ${Number(value.spend).toFixed(6)}
                 </p>
               )}
               {value.max_budget !== undefined && (
                 <p>
-                  <span className="text-gray-500">Max Budget:</span> ${Number(value.max_budget).toFixed(6)}
+                  <span className="text-gray-500">{t("auditDrawer.maxBudget")}:</span>{" "}
+                  ${Number(value.max_budget).toFixed(6)}
                 </p>
               )}
             </div>
@@ -173,16 +170,24 @@ function DiffSection({ log }: { log: AuditLogEntry }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      {renderValue("Before", displayBefore)}
-      {renderValue("After", displayAfter)}
+      {renderValue(t("auditDrawer.before"), displayBefore)}
+      {renderValue(t("auditDrawer.after"), displayAfter)}
     </div>
   );
 }
 
 export function AuditLogDrawer({ open, onClose, log }: AuditLogDrawerProps) {
+  const { t, i18n } = useTranslation("logs");
   if (!log) return null;
 
-  const tableDisplay = TABLE_NAME_DISPLAY[log.table_name] ?? log.table_name;
+  const tableNames: Record<string, string> = {
+    LiteLLM_VerificationToken: t("audit.tables.keys"),
+    LiteLLM_TeamTable: t("audit.tables.teams"),
+    LiteLLM_UserTable: t("audit.tables.users"),
+    LiteLLM_OrganizationTable: t("audit.tables.organizations"),
+    LiteLLM_ProxyModelTable: t("audit.tables.models"),
+  };
+  const tableDisplay = tableNames[log.table_name] ?? log.table_name;
   const actionColor = ACTION_COLOR[log.action] ?? "default";
 
   return (
@@ -200,16 +205,20 @@ export function AuditLogDrawer({ open, onClose, log }: AuditLogDrawerProps) {
       <div className="flex items-center justify-between px-6 py-4 border-b bg-white shrink-0">
         <div className="flex items-center gap-3">
           <Tag color={actionColor} className="capitalize m-0">
-            {log.action}
+            {t(`audit.actions.${log.action}`, { defaultValue: log.action })}
           </Tag>
           <span className="text-sm text-gray-500">
-            {moment.utc(log.updated_at).local().format("MMM D, YYYY HH:mm:ss")}
+            {moment
+              .utc(log.updated_at)
+              .local()
+              .locale(i18n.resolvedLanguage === "ru" ? "ru" : "en")
+              .format("LL LTS")}
           </span>
         </div>
         <button
           onClick={onClose}
           className="w-8 h-8 flex items-center justify-center rounded-sm hover:bg-gray-100 text-gray-500"
-          aria-label="Close"
+          aria-label={t("auditDrawer.close")}
         >
           <CloseOutlined />
         </button>
@@ -219,19 +228,19 @@ export function AuditLogDrawer({ open, onClose, log }: AuditLogDrawerProps) {
       <div className="px-6 py-5">
         {/* Metadata */}
         <div className="bg-gray-50 border rounded-lg p-4 mb-5">
-          <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Details</p>
-          <MetadataRow label="Table" value={tableDisplay} />
+          <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">{t("auditDrawer.details")}</p>
+          <MetadataRow label={t("auditDrawer.table")} value={tableDisplay} />
           <MetadataRow
-            label="Object ID"
+            label={t("auditDrawer.objectId")}
             value={
               <Text copyable className="font-mono text-xs">
                 {log.object_id}
               </Text>
             }
           />
-          <MetadataRow label="Changed By" value={<DefaultProxyAdminTag userId={log.changed_by} />} />
+          <MetadataRow label={t("auditDrawer.changedBy")} value={<DefaultProxyAdminTag userId={log.changed_by} />} />
           <MetadataRow
-            label="API Key (Hash)"
+            label={t("auditDrawer.apiKeyHash")}
             value={
               log.changed_by_api_key ? (
                 <Text copyable className="font-mono text-xs break-all">

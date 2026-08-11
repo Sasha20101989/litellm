@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Tag, Table, Typography, Space, Tooltip } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined, ExperimentOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -29,6 +30,7 @@ interface EvalViewerProps {
 }
 
 export default function EvalViewer({ data }: EvalViewerProps) {
+  const { t } = useTranslation("logs");
   const entries: EvalInformation[] = Array.isArray(data) ? data : [data];
 
   if (!entries.length) return null;
@@ -38,7 +40,7 @@ export default function EvalViewer({ data }: EvalViewerProps) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <ExperimentOutlined style={{ fontSize: 16, color: "#6366f1" }} />
         <Text strong style={{ fontSize: 15 }}>
-          LLM Judge Results
+          {t("evaluation.title")}
         </Text>
       </div>
 
@@ -50,6 +52,7 @@ export default function EvalViewer({ data }: EvalViewerProps) {
 }
 
 function EvalEntryCard({ entry }: { entry: EvalInformation }) {
+  const { t } = useTranslation("logs");
   const passed = entry.passed;
   const scoreColor = passed ? "#52c41a" : "#ff4d4f";
 
@@ -58,7 +61,7 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
 
   const columns = [
     {
-      title: "Criterion",
+      title: t("evaluation.criterion"),
       dataIndex: "criterion_name",
       key: "criterion_name",
       width: 160,
@@ -69,7 +72,7 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
       ),
     },
     {
-      title: "Weight",
+      title: t("evaluation.weight"),
       dataIndex: "weight",
       key: "weight",
       width: 65,
@@ -81,7 +84,7 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
         ) : null,
     },
     {
-      title: "Score",
+      title: t("evaluation.score"),
       dataIndex: "score",
       key: "score",
       width: 65,
@@ -91,8 +94,8 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
     },
     {
       title: (
-        <Tooltip title="Score × Weight — how much each criterion contributes to the final score">
-          <span style={{ borderBottom: "1px dashed #aaa", cursor: "help" }}>Weighted</span>
+        <Tooltip title={t("evaluation.weightedTooltip")}>
+          <span style={{ borderBottom: "1px dashed #aaa", cursor: "help" }}>{t("evaluation.weighted")}</span>
         </Tooltip>
       ),
       key: "weighted",
@@ -108,7 +111,7 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
       },
     },
     {
-      title: "Comment",
+      title: t("evaluation.comment"),
       dataIndex: "reasoning",
       key: "reasoning",
       ellipsis: { showTitle: false },
@@ -133,13 +136,15 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
             <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
           )}
           <Text strong>{entry.eval_name}</Text>
-          <Tag color={passed ? "success" : "error"}>{passed ? "PASSED" : "FAILED"}</Tag>
+          <Tag color={passed ? "success" : "error"}>
+            {passed ? t("evaluation.passed") : t("evaluation.failed")}
+          </Tag>
           <Tooltip
-            title={`Weighted average of all criterion scores. Each criterion has a weight (%) set when the eval was created — higher-weight criteria count more toward the final score.`}
+            title={t("evaluation.overallTooltip")}
           >
             <Text type="secondary" style={{ fontSize: 12, cursor: "help", borderBottom: "1px dashed #aaa" }}>
               {entry.overall_score?.toFixed(0)} / 100
-              {entry.threshold != null && ` (threshold: ${entry.threshold})`}
+              {entry.threshold != null && ` (${t("evaluation.threshold")}: ${entry.threshold})`}
             </Text>
           </Tooltip>
         </Space>
@@ -148,12 +153,12 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
         <Space size="small">
           {entry.judge_model && (
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Judge: {entry.judge_model}
+              {t("evaluation.judge")}: {entry.judge_model}
             </Text>
           )}
           {entry.iteration != null && (
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Iter: {entry.iteration + 1}
+              {t("evaluation.iteration")}: {entry.iteration + 1}
             </Text>
           )}
         </Space>
@@ -161,7 +166,7 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
     >
       {entry.eval_error && (
         <Text type="warning" style={{ display: "block", marginBottom: 8, fontSize: 12 }}>
-          Judge error: {entry.eval_error}
+          {t("evaluation.judgeError")}: {entry.eval_error}
         </Text>
       )}
 
@@ -181,7 +186,7 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0}>
                   <Text strong style={{ fontSize: 12 }}>
-                    Total
+                    {t("evaluation.total")}
                   </Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} />
@@ -198,7 +203,7 @@ function EvalEntryCard({ entry }: { entry: EvalInformation }) {
         />
       ) : (
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Score: {entry.overall_score?.toFixed(1)} — no per-criterion breakdown available.
+          {t("evaluation.noBreakdown", { score: entry.overall_score?.toFixed(1) })}
         </Text>
       )}
     </Card>
