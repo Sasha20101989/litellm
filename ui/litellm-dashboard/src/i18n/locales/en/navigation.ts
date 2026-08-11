@@ -10,10 +10,10 @@ export const enNavigation = {
   },
   navbar: {
     documentation: "Product documentation",
-    brandAlt: "LiteLLM Brand",
+    brandAlt: "Nexoplane brand",
     expandSidebar: "Expand sidebar",
     collapseSidebar: "Collapse sidebar",
-    thanks: "Thanks for using LiteLLM!",
+    thanks: "Thanks for using Nexoplane!",
   },
   breadcrumbs: {
     home: "Home",

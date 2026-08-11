@@ -1,13 +1,13 @@
 export const ruAuth = {
   login: {
     title: "Вход",
-    description: "Войдите в панель администратора LiteLLM.",
+    description: "Войдите в панель администратора Nexoplane.",
     adminDisabledTitle: "Панель администратора отключена",
     adminDisabledDescription: "Администратор отключил панель управления.",
     adminDisabledInstruction: "Чтобы включить её снова, измените переменную окружения:",
     defaultCredentialsTitle: "Учётные данные по умолчанию",
     defaultCredentialsBeforeUsername: "По умолчанию имя пользователя —",
-    defaultCredentialsBetween: "а пароль — настроенный ключ прокси LiteLLM",
+    defaultCredentialsBetween: "а пароль — настроенный ключ прокси Nexoplane",
     credentialsHelp: "Нужно настроить данные для входа или SSO?",
     documentation: "Открыть документацию",
     worker: "Воркер",
@@ -23,7 +23,7 @@ export const ruAuth = {
     sso: "Войти через SSO",
     ssoConfigure: "Настройте SSO, чтобы использовать вход через SSO.",
     ssoEnabledBefore:
-      "Единый вход (SSO) включён. LiteLLM больше не перенаправляет на SSO автоматически при открытии этой страницы. Чтобы снова включить автоматическое перенаправление, задайте",
+      "Единый вход (SSO) включён. Nexoplane больше не перенаправляет на SSO автоматически при открытии этой страницы. Чтобы снова включить автоматическое перенаправление, задайте",
     ssoEnabledAfter: "в конфигурации окружения.",
   },
   onboarding: {
@@ -47,10 +47,10 @@ export const ruAuth = {
     submitError: "Не удалось отправить данные. Повторите попытку.",
   },
   public: {
-    oauthTitle: "LiteLLM MCP OAuth",
+    oauthTitle: "Nexoplane MCP OAuth",
     oauthCompleting: "Завершаем авторизацию...",
     oauthComplete: "Авторизация завершена",
-    oauthDescription: "Авторизация завершена. Можно закрыть это окно и вернуться в панель LiteLLM.",
+    oauthDescription: "Авторизация завершена. Можно закрыть это окно и вернуться в панель Nexoplane.",
     oauthManualClose: "Если окно не закрылось автоматически, результат уже сохранён — закройте его вручную.",
   },
 } as const;

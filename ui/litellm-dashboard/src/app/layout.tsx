@@ -12,8 +12,8 @@ import { I18nProvider } from "@/i18n/I18nProvider";
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {
-  title: "LiteLLM Dashboard",
-  description: "LiteLLM Proxy Admin UI",
+  title: "Nexoplane",
+  description: "Nexoplane AI Gateway and Control Plane",
   icons: { icon: "/get_favicon" },
 };
 

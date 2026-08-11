@@ -620,7 +620,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
             <Link href={migratedHref("")} className="flex min-w-0 items-center" aria-label={sidebarText.controls.home}>
               <img
                 src={logoSrc}
-                alt="LiteLLM"
+                alt="Nexoplane"
                 className="h-7 w-auto max-w-[150px] object-contain group-data-[collapsed=true]/sidebar:w-7"
               />
             </Link>

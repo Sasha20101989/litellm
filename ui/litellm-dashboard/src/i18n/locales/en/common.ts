@@ -66,7 +66,7 @@ export const enCommon = {
       githubAria: "LiteLLM on GitHub",
     },
     notifications: {
-      title: "LiteLLM Agent Platform",
+      title: "Nexoplane Agent Platform",
       description: "Open-source agent infra — sandboxes, durable sessions, and workers on AWS Fargate.",
       markAsRead: "Mark as read",
       aria: "Notifications",

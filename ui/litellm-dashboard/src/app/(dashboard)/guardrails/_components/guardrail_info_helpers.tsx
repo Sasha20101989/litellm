@@ -11,7 +11,7 @@ import guardrailsAiLogo from "../../../../../public/assets/logos/guardrails_ai.j
 import javelinLogo from "../../../../../public/assets/logos/javelin.png";
 import lakeraAiLogo from "../../../../../public/assets/logos/lakeraai.jpeg";
 import lassoLogo from "../../../../../public/assets/logos/lasso.png";
-import litellmLogo from "../../../../../public/assets/logos/litellm_logo.jpg";
+import nexoplaneLogo from "../../../../../public/assets/logos/nexoplane_logo.jpg";
 import microsoftAzureLogo from "../../../../../public/assets/logos/microsoft_azure.svg";
 import nomaSecurityLogo from "../../../../../public/assets/logos/noma_security.png";
 import openaiSmallLogo from "../../../../../public/assets/logos/openai_small.svg";
@@ -186,8 +186,8 @@ export const guardrailLogoMap = {
   "Prompt Security": promptSecurityLogo.src,
   PromptGuard: promptguardLogo.src,
   XecGuard: xecguardLogo.src,
-  "LiteLLM Content Filter": litellmLogo.src,
-  "LiteLLM LLM as a Judge": litellmLogo.src,
+  "LiteLLM Content Filter": nexoplaneLogo.src,
+  "LiteLLM LLM as a Judge": nexoplaneLogo.src,
   Akto: aktoLogo.src,
   "DeepKeep AI Firewall": deepkeepLogo.src,
   "Qostodian Nexus": qohashLogo.src,

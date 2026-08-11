@@ -1,13 +1,13 @@
 export const enAuth = {
   login: {
     title: "Login",
-    description: "Access your LiteLLM Admin UI.",
+    description: "Access your Nexoplane Admin UI.",
     adminDisabledTitle: "Admin UI Disabled",
     adminDisabledDescription: "The Admin UI has been disabled by the administrator.",
     adminDisabledInstruction: "To re-enable it, update this environment variable:",
     defaultCredentialsTitle: "Default Credentials",
     defaultCredentialsBeforeUsername: "By default, Username is",
-    defaultCredentialsBetween: "and Password is your configured LiteLLM Proxy",
+    defaultCredentialsBetween: "and Password is your configured Nexoplane Proxy",
     credentialsHelp: "Need to set UI credentials or SSO?",
     documentation: "Check the documentation",
     worker: "Worker",
@@ -23,7 +23,7 @@ export const enAuth = {
     sso: "Login with SSO",
     ssoConfigure: "Please configure SSO to log in with SSO.",
     ssoEnabledBefore:
-      "Single Sign-On (SSO) is enabled. LiteLLM no longer automatically redirects to the SSO login flow when this page loads. To enable automatic SSO redirect again, set",
+      "Single Sign-On (SSO) is enabled. Nexoplane no longer automatically redirects to the SSO login flow when this page loads. To enable automatic SSO redirect again, set",
     ssoEnabledAfter: "in your environment configuration.",
   },
   onboarding: {
@@ -47,10 +47,10 @@ export const enAuth = {
     submitError: "Failed to submit. Please try again.",
   },
   public: {
-    oauthTitle: "LiteLLM MCP OAuth",
+    oauthTitle: "Nexoplane MCP OAuth",
     oauthCompleting: "Completing authorization...",
     oauthComplete: "Authorization complete",
-    oauthDescription: "Authorization complete. You may close this window and return to the LiteLLM dashboard.",
+    oauthDescription: "Authorization complete. You may close this window and return to the Nexoplane dashboard.",
     oauthManualClose:
       "If this window does not close automatically, your result is saved and you can close it manually.",
   },

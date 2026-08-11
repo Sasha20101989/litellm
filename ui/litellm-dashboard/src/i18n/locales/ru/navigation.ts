@@ -10,10 +10,10 @@ export const ruNavigation = {
   },
   navbar: {
     documentation: "Документация продукта",
-    brandAlt: "Логотип LiteLLM",
+    brandAlt: "Логотип Nexoplane",
     expandSidebar: "Развернуть сайдбар",
     collapseSidebar: "Свернуть сайдбар",
-    thanks: "Спасибо, что используете LiteLLM!",
+    thanks: "Спасибо, что используете Nexoplane!",
   },
   breadcrumbs: {
     home: "Главная",

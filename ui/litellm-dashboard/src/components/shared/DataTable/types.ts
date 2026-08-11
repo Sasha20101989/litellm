@@ -54,7 +54,6 @@ export interface DataTableResolvedProps<TData extends RowData, TValue> {
   rowCount?: number;
   pageSizeOptions?: number[];
   paginationLabels?: DataTablePaginationLabels;
-  paginationLabels?: DataTablePaginationLabels;
 
   filterMode?: FilterMode;
   columnFilters?: ColumnFiltersState;

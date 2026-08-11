@@ -84,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   <div className="flex h-10 max-w-48 items-center justify-center overflow-hidden">
                     <img
                       src={imageUrl}
-                      alt="LiteLLM Brand"
+                      alt="Nexoplane"
                       className="h-auto max-h-full w-auto max-w-full object-contain"
                     />
                   </div>

@@ -66,7 +66,7 @@ export const ruCommon = {
       githubAria: "LiteLLM на GitHub",
     },
     notifications: {
-      title: "Платформа агентов LiteLLM",
+      title: "Платформа агентов Nexoplane",
       description: "Открытая инфраструктура для агентов: песочницы, долгоживущие сессии и воркеры в AWS Fargate.",
       markAsRead: "Отметить прочитанным",
       aria: "Уведомления",
