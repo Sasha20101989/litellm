@@ -24,6 +24,7 @@ describe("translation catalog", () => {
       "management",
       "settings",
       "prompts",
+      "guardrails",
     ]);
   });
 

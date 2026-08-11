@@ -8,6 +8,7 @@ import { type PerformanceRow } from "@/components/GuardrailsMonitor/mockData";
 import { EvaluationSettingsModal } from "./EvaluationSettingsModal";
 import { MetricCard } from "@/components/GuardrailsMonitor/MetricCard";
 import { ScoreChart } from "./ScoreChart";
+import { useTranslation } from "react-i18next";
 
 interface GuardrailsOverviewProps {
   accessToken?: string | null;
@@ -41,6 +42,7 @@ export function GuardrailsOverview({
   endDate,
   onSelectGuardrail,
 }: GuardrailsOverviewProps) {
+  const { t, i18n } = useTranslation("guardrails");
   const [sortBy, setSortBy] = useState<SortKey>("failRate");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
@@ -84,7 +86,7 @@ export function GuardrailsOverview({
 
   const columns: ColumnsType<PerformanceRow> = [
     {
-      title: "Guardrail",
+      title: t("monitor.guardrail"),
       dataIndex: "name",
       key: "name",
       render: (name: string, row) => (
@@ -98,7 +100,7 @@ export function GuardrailsOverview({
       ),
     },
     {
-      title: "Provider",
+      title: t("monitor.provider"),
       dataIndex: "provider",
       key: "provider",
       render: (provider: string) => (
@@ -112,16 +114,16 @@ export function GuardrailsOverview({
       ),
     },
     {
-      title: "Requests",
+      title: t("monitor.requests"),
       dataIndex: "requestsEvaluated",
       key: "requestsEvaluated",
       align: "right",
       sorter: true,
       sortOrder: sortBy === "requestsEvaluated" ? (sortDir === "desc" ? "descend" : "ascend") : null,
-      render: (v: number) => v.toLocaleString(),
+      render: (v: number) => v.toLocaleString(i18n.language === "ru" ? "ru-RU" : "en-US"),
     },
     {
-      title: "Fail Rate",
+      title: t("monitor.failRate"),
       dataIndex: "failRate",
       key: "failRate",
       align: "right",
@@ -135,7 +137,7 @@ export function GuardrailsOverview({
       ),
     },
     {
-      title: "Avg. latency added",
+      title: t("monitor.latency"),
       dataIndex: "avgLatency",
       key: "avgLatency",
       align: "right",
@@ -152,7 +154,7 @@ export function GuardrailsOverview({
       ),
     },
     {
-      title: "Status",
+      title: t("monitor.status"),
       dataIndex: "status",
       key: "status",
       align: "center",
@@ -163,7 +165,9 @@ export function GuardrailsOverview({
               status === "healthy" ? "bg-green-500" : status === "warning" ? "bg-amber-500" : "bg-red-500"
             }`}
           />
-          <span className="text-xs text-gray-600 capitalize">{status}</span>
+          <span className="text-xs text-gray-600 capitalize">
+            {t(`monitor.statuses.${status}`, { defaultValue: status })}
+          </span>
         </span>
       ),
     },
@@ -184,24 +188,24 @@ export function GuardrailsOverview({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <SafetyOutlined className="text-lg text-indigo-500" />
-            <h1 className="text-xl font-semibold text-gray-900">Guardrails Monitor</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{t("monitor.title")}</h1>
           </div>
-          <p className="text-sm text-gray-500">Monitor guardrail performance across all requests</p>
+          <p className="text-sm text-gray-500">{t("monitor.description")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button type="default" icon={<DownloadOutlined />} title="Coming soon">
-            Export Data
+          <Button type="default" icon={<DownloadOutlined />} title={t("monitor.comingSoon")}>
+            {t("monitor.export")}
           </Button>
         </div>
       </div>
 
       <Row gutter={[16, 16]} className="mb-6">
         <Col xs={12} sm={12} md={8} flex="1 0 20%">
-          <MetricCard label="Total Evaluations" value={metrics.totalRequests.toLocaleString()} />
+          <MetricCard label={t("monitor.totalEvaluations")} value={metrics.totalRequests.toLocaleString()} />
         </Col>
         <Col xs={12} sm={12} md={8} flex="1 0 20%">
           <MetricCard
-            label="Blocked Requests"
+            label={t("monitor.blockedRequests")}
             value={metrics.totalBlocked.toLocaleString()}
             valueColor="text-red-600"
             icon={<WarningOutlined className="text-red-400" />}
@@ -209,7 +213,7 @@ export function GuardrailsOverview({
         </Col>
         <Col xs={12} sm={12} md={8} flex="1 0 20%">
           <MetricCard
-            label="Pass Rate"
+            label={t("monitor.passRate")}
             value={`${metrics.passRate}%`}
             valueColor="text-green-600"
             icon={<RiseOutlined className="text-green-400" />}
@@ -217,7 +221,7 @@ export function GuardrailsOverview({
         </Col>
         <Col xs={12} sm={12} md={8} flex="1 0 20%">
           <MetricCard
-            label="Avg. latency added"
+            label={t("monitor.latency")}
             value={`${metrics.avgLatency}ms`}
             valueColor={
               metrics.avgLatency > 150 ? "text-red-600" : metrics.avgLatency > 50 ? "text-amber-600" : "text-green-600"
@@ -225,7 +229,7 @@ export function GuardrailsOverview({
           />
         </Col>
         <Col xs={12} sm={12} md={8} flex="1 0 20%">
-          <MetricCard label="Active Guardrails" value={metrics.count} />
+          <MetricCard label={t("monitor.active")} value={metrics.count} />
         </Col>
       </Row>
 
@@ -237,22 +241,22 @@ export function GuardrailsOverview({
         {(isLoading || error) && (
           <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
             {isLoading && <Spin size="small" />}
-            {error && <span className="text-sm text-red-600">Failed to load data. Try again.</span>}
+            {error && <span className="text-sm text-red-600">{t("monitor.loadFailed")}</span>}
           </div>
         )}
         <div className="px-6 py-4 border-b border-gray-200 flex items-start justify-between gap-4">
           <div>
             <Typography.Title level={5} className="mb-0! text-gray-900">
-              Guardrail Performance
+              {t("monitor.performance")}
             </Typography.Title>
-            <p className="text-xs text-gray-500 mt-0.5">Click a guardrail to view details, logs, and configuration</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t("monitor.performanceHelp")}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
               type="default"
               icon={<SettingOutlined />}
               onClick={() => setEvaluationModalOpen(true)}
-              title="Evaluation settings"
+              title={t("monitor.settings")}
             />
           </div>
         </div>
@@ -263,7 +267,7 @@ export function GuardrailsOverview({
           pagination={false}
           loading={isLoading}
           onChange={handleTableChange}
-          locale={activeData.length === 0 && !isLoading ? { emptyText: "No data for this period" } : undefined}
+          locale={activeData.length === 0 && !isLoading ? { emptyText: t("monitor.emptyPeriod") } : undefined}
           onRow={(row) => ({
             onClick: () => onSelectGuardrail(row.id),
             style: { cursor: "pointer" },

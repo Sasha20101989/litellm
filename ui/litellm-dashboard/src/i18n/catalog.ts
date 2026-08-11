@@ -9,6 +9,7 @@ import { enLogs } from "./locales/en/logs";
 import { enManagement } from "./locales/en/management";
 import { enSettings } from "./locales/en/settings";
 import { enPrompts } from "./locales/en/prompts";
+import { enGuardrails } from "./locales/en/guardrails";
 import { ruAuth } from "./locales/ru/auth";
 import { ruCommon } from "./locales/ru/common";
 import { ruChat } from "./locales/ru/chat";
@@ -20,6 +21,7 @@ import { ruLogs } from "./locales/ru/logs";
 import { ruManagement } from "./locales/ru/management";
 import { ruSettings } from "./locales/ru/settings";
 import { ruPrompts } from "./locales/ru/prompts";
+import { ruGuardrails } from "./locales/ru/guardrails";
 
 export const TRANSLATION_NAMESPACES = [
   "common",
@@ -33,6 +35,7 @@ export const TRANSLATION_NAMESPACES = [
   "management",
   "settings",
   "prompts",
+  "guardrails",
 ] as const;
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
@@ -50,6 +53,7 @@ export const resources = {
     management: enManagement,
     settings: enSettings,
     prompts: enPrompts,
+    guardrails: enGuardrails,
   },
   ru: {
     common: ruCommon,
@@ -63,5 +67,6 @@ export const resources = {
     management: ruManagement,
     settings: ruSettings,
     prompts: ruPrompts,
+    guardrails: ruGuardrails,
   },
 } as const;
