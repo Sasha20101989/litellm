@@ -6,6 +6,29 @@ import { vectorStoreSearchCall } from "@/components/networking";
 
 import { VectorStoreTester } from "./VectorStoreTester";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 vi.mock("@/components/networking", () => ({
   vectorStoreSearchCall: vi.fn(),
 }));
@@ -51,8 +74,18 @@ const searchButton = () => screen.getByRole("button", { name: /search/i });
 
 describe("VectorStoreTester", () => {
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
     mockSearch.mockResolvedValue(searchResponse);
+  });
+
+  it("renders the vector store tester in Russian", () => {
+    localization.language = "ru";
+    renderTester();
+
+    expect(screen.getByText("Проверка векторного хранилища")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Введите поисковый запрос/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Искать" })).toBeInTheDocument();
   });
 
   it("shows the empty state before any search has run", () => {
