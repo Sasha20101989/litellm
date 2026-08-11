@@ -19,6 +19,7 @@ import { Tooltip } from "antd";
 import React, { useState } from "react";
 import { ProviderLogo } from "@/components/molecules/models/ProviderLogo";
 import { ChartLoader } from "@/components/shared/chart_loader";
+import { useTranslation } from "react-i18next";
 
 type ProviderSpendData = {
   provider: string;
@@ -36,6 +37,7 @@ interface SpendByProviderProps {
 }
 
 const SpendByProvider: React.FC<SpendByProviderProps> = ({ loading, isDateChanging, providerSpend }) => {
+  const { t } = useTranslation("usage");
   const [includeZeroSpend, setIncludeZeroSpend] = useState(false);
   const [includeUnknown, setIncludeUnknown] = useState(false);
 
@@ -59,20 +61,28 @@ const SpendByProvider: React.FC<SpendByProviderProps> = ({ loading, isDateChangi
   return (
     <Card className="h-full">
       <div className="flex justify-between items-center mb-4">
-        <Title>Spend by Provider</Title>
+        <Title>{t("provider.title")}</Title>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-700">Show Zero Spend</label>
-            <Switch checked={includeZeroSpend} onChange={setIncludeZeroSpend} />
+            <label className="text-sm text-gray-700">{t("provider.showZeroSpend")}</label>
+            <Switch
+              checked={includeZeroSpend}
+              onChange={setIncludeZeroSpend}
+              aria-label={t("provider.showZeroSpend")}
+            />
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
-              <label className="text-sm text-gray-700">Show Unknown</label>
-              <Tooltip title="Requests that failed to route to a provider">
+              <label className="text-sm text-gray-700">{t("provider.showUnknown")}</label>
+              <Tooltip title={t("provider.unknownTooltip")}>
                 <InfoCircleOutlined className="text-gray-400 hover:text-gray-600" />
               </Tooltip>
             </div>
-            <Switch checked={includeUnknown} onChange={setIncludeUnknown} />
+            <Switch
+              checked={includeUnknown}
+              onChange={setIncludeUnknown}
+              aria-label={t("provider.showUnknown")}
+            />
           </div>
         </div>
       </div>
@@ -97,11 +107,11 @@ const SpendByProvider: React.FC<SpendByProviderProps> = ({ loading, isDateChangi
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Provider</TableHeaderCell>
-                  <TableHeaderCell>Spend</TableHeaderCell>
-                  <TableHeaderCell className="text-green-600">Successful</TableHeaderCell>
-                  <TableHeaderCell className="text-red-600">Failed</TableHeaderCell>
-                  <TableHeaderCell>Tokens</TableHeaderCell>
+                  <TableHeaderCell>{t("common.provider")}</TableHeaderCell>
+                  <TableHeaderCell>{t("common.spend")}</TableHeaderCell>
+                  <TableHeaderCell className="text-green-600">{t("common.successful")}</TableHeaderCell>
+                  <TableHeaderCell className="text-red-600">{t("common.failed")}</TableHeaderCell>
+                  <TableHeaderCell>{t("common.tokens")}</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>

@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import EntityUsageExportModal from "./EntityUsageExportModal";
 import type { EntitySpendData, EntityType } from "./types";
 import type { Team } from "@/components/key_team_helpers/key_list";
+import { useTranslation } from "react-i18next";
 
 interface UsageExportHeaderProps {
   dateValue: DateRangePickerValue;
@@ -38,6 +39,7 @@ const UsageExportHeader: React.FC<UsageExportHeaderProps> = ({
   compactLayout = false,
   teams = [],
 }) => {
+  const { t } = useTranslation("usage");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Determine grid layout based on what's visible
@@ -92,7 +94,7 @@ const UsageExportHeader: React.FC<UsageExportHeaderProps> = ({
                 </svg>
               )}
             >
-              Export Data
+              {t("page.exportData")}
             </Button>
           </div>
         </div>

@@ -24,6 +24,7 @@ import {
 } from "@tremor/react";
 import { Alert, Button, Segmented, Select, Tooltip, Typography } from "antd";
 import React, { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from "react";
+import { useTranslation } from "react-i18next";
 
 import { BarChart } from "@/components/shared/charts";
 import { Card as ShadcnCard, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +79,7 @@ interface UsagePageProps {
 }
 
 const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
+  const { t, i18n } = useTranslation("usage");
   const { accessToken, userRole, userId: userID, premiumUser } = useAuthorized();
   // Aggregated endpoint: try first, fall back to paginated if unavailable
   const [aggregatedData, setAggregatedData] = useState<FetchedForRange<{
@@ -530,16 +532,17 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                 <div className="flex items-center justify-between">
                   <span>
                     <LoadingOutlined spin className="mr-2" />
-                    Currently fetching spend data: fetched {paginatedResult.progress.currentPage} /{" "}
-                    {paginatedResult.progress.totalPages} pages. Charts will update periodically as data loads. Moving
-                    off of this page will stop and reset this. To continue using the UI in the meantime,{" "}
+                    {t("page.fetchingSpend", {
+                      current: paginatedResult.progress.currentPage,
+                      total: paginatedResult.progress.totalPages,
+                    })}{" "}
                     <a href={window.location.href} target="_blank" rel="noopener noreferrer">
-                      open a new tab <ExportOutlined />
+                      {t("common.openNewTab")} <ExportOutlined />
                     </a>
                     .
                   </span>
                   <Button type="primary" danger onClick={paginatedResult.cancel}>
-                    Stop
+                    {t("common.stop")}
                   </Button>
                 </div>
               }
@@ -552,8 +555,10 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
               className="mb-2"
               message={
                 <span>
-                  Showing partial data ({paginatedResult.progress.currentPage}/{paginatedResult.progress.totalPages}{" "}
-                  pages loaded)
+                  {t("page.partialData", {
+                    current: paginatedResult.progress.currentPage,
+                    total: paginatedResult.progress.totalPages,
+                  })}
                 </span>
               }
             />
@@ -563,12 +568,12 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
             <>
               {isAdmin && usageView === "global" && (
                 <div className="mb-4">
-                  <Text className="mb-2">Filter by user</Text>
+                  <Text className="mb-2">{t("page.filterByUser")}</Text>
                   <Select
                     showSearch
                     allowClear
                     style={{ width: "100%" }}
-                    placeholder="Select user to filter..."
+                    placeholder={t("page.selectUser")}
                     value={selectedUserId}
                     onChange={(value) => setSelectedUserId(value ?? null)}
                     filterOption={false}
@@ -576,7 +581,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                     searchValue={userSearchInput}
                     onPopupScroll={handleUserPopupScroll}
                     loading={isLoadingUsers}
-                    notFoundContent={isLoadingUsers ? <LoadingOutlined spin /> : "No users found"}
+                    notFoundContent={isLoadingUsers ? <LoadingOutlined spin /> : t("page.noUsersFound")}
                     options={userOptions}
                     popupRender={(menu) => (
                       <>
@@ -594,11 +599,11 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
               <TabGroup>
                 <div className="flex justify-between items-center">
                   <TabList variant="solid" className="mt-1">
-                    <Tab>Cost</Tab>
-                    <Tab>Model Activity</Tab>
-                    <Tab>Key Activity</Tab>
-                    <Tab>MCP Server Activity</Tab>
-                    <Tab>Endpoint Activity</Tab>
+                    <Tab>{t("common.cost")}</Tab>
+                    <Tab>{t("common.modelActivity")}</Tab>
+                    <Tab>{t("common.keyActivity")}</Tab>
+                    <Tab>{t("common.mcpServerActivity")}</Tab>
+                    <Tab>{t("common.endpointActivity")}</Tab>
                   </TabList>
                   <div className="flex items-center gap-2">
                     <Button
@@ -609,7 +614,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                         </svg>
                       }
                     >
-                      Ask AI
+                      {t("page.askAi")}
                     </Button>
                     <Button
                       onClick={() => setIsGlobalExportModalOpen(true)}
@@ -624,7 +629,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                         </svg>
                       }
                     >
-                      Export Data
+                      {t("page.exportData")}
                     </Button>
                   </div>
                 </div>
@@ -636,17 +641,17 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                       <Col numColSpan={2}>
                         <div className="flex items-center gap-4 mt-2 mb-2">
                           <Text className="text-tremor-default text-tremor-content dark:text-dark-tremor-content text-lg">
-                            Project Spend{" "}
+                            {t("page.projectSpend")} {" "}
                             {dateValue.from && dateValue.to && (
                               <>
-                                {dateValue.from.toLocaleDateString("en-US", {
+                                {dateValue.from.toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "en-US", {
                                   month: "short",
                                   day: "numeric",
                                   year:
                                     dateValue.from.getFullYear() !== dateValue.to.getFullYear() ? "numeric" : undefined,
                                 })}
                                 {" - "}
-                                {dateValue.to.toLocaleDateString("en-US", {
+                                {dateValue.to.toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "en-US", {
                                   month: "short",
                                   day: "numeric",
                                   year: "numeric",
@@ -665,19 +670,19 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
 
                       <Col numColSpan={2}>
                         <Card>
-                          <Title>Usage Metrics</Title>
+                          <Title>{t("page.usageMetrics")}</Title>
                           <Grid numItems={5} className="gap-4 mt-4">
                             <Card>
-                              <Title>Total Requests</Title>
+                              <Title>{t("common.totalRequests")}</Title>
                               <Text className="text-2xl font-bold mt-2">
                                 {userSpendData.metadata?.total_api_requests?.toLocaleString() || 0}
                               </Text>
                             </Card>
                             <Card>
                               <div className="flex items-center gap-2">
-                                <Title>Successful Requests</Title>
+                                <Title>{t("common.successfulRequests")}</Title>
                                 {gatewayActivity && (
-                                  <Tooltip title="Counted by the gateway when it answers a request, independent of spend logging. Deployment-wide, so it will not match the per-key or per-model breakdowns below.">
+                                  <Tooltip title={t("page.gatewayCountTooltip")}>
                                     <InfoCircleOutlined className="text-gray-400 hover:text-gray-600" />
                                   </Tooltip>
                                 )}
@@ -697,12 +702,12 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                             </Card>
                             <Card>
                               <div className="flex items-center gap-2">
-                                <Title>Failed Requests</Title>
+                                <Title>{t("common.failedRequests")}</Title>
                                 <Tooltip
                                   title={
                                     gatewayActivity
-                                      ? "Counted by the gateway when it answers a request, independent of spend logging. Deployment-wide, so it will not match the per-key or per-model breakdowns below."
-                                      : "Includes requests that failed to route to a provider, tool usage failures, and other request errors where the provider cannot be determined."
+                                      ? t("page.gatewayCountTooltip")
+                                      : t("page.failedCountTooltip")
                                   }
                                 >
                                   <InfoCircleOutlined className="text-gray-400 hover:text-gray-600" />
@@ -718,7 +723,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                               </Text>
                             </Card>
                             <Card>
-                              <Title>Average Cost per Request</Title>
+                              <Title>{t("common.averageCostPerRequest")}</Title>
                               <Text className="text-2xl font-bold mt-2">
                                 $
                                 {formatNumberWithCommas(
@@ -732,7 +737,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                               onClick={() => setShowTokenBreakdown(!showTokenBreakdown)}
                             >
                               <div className="flex items-center gap-2">
-                                <Title>Total Tokens</Title>
+                                <Title>{t("common.totalTokens")}</Title>
                                 {showTokenBreakdown ? (
                                   <DownOutlined className="text-gray-400 text-xs" />
                                 ) : (
@@ -747,25 +752,25 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                           {showTokenBreakdown && (
                             <Grid numItems={4} className="gap-4 mt-4">
                               <Card>
-                                <Title>Input Tokens</Title>
+                                <Title>{t("common.inputTokens")}</Title>
                                 <Text className="text-2xl font-bold mt-2 text-blue-600">
                                   {(userSpendData.metadata?.total_prompt_tokens || 0).toLocaleString()}
                                 </Text>
                               </Card>
                               <Card>
-                                <Title>Output Tokens</Title>
+                                <Title>{t("common.outputTokens")}</Title>
                                 <Text className="text-2xl font-bold mt-2 text-cyan-600">
                                   {userSpendData.metadata?.total_completion_tokens?.toLocaleString() || 0}
                                 </Text>
                               </Card>
                               <Card>
-                                <Title>Cache Read Tokens</Title>
+                                <Title>{t("common.cacheReadTokens")}</Title>
                                 <Text className="text-2xl font-bold mt-2 text-green-600">
                                   {userSpendData.metadata?.total_cache_read_input_tokens?.toLocaleString() || 0}
                                 </Text>
                               </Card>
                               <Card>
-                                <Title>Cache Write Tokens</Title>
+                                <Title>{t("common.cacheWriteTokens")}</Title>
                                 <Text className="text-2xl font-bold mt-2 text-purple-600">
                                   {userSpendData.metadata?.total_cache_creation_input_tokens?.toLocaleString() || 0}
                                 </Text>
@@ -779,7 +784,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                       <Col numColSpan={2}>
                         <ShadcnCard>
                           <CardHeader>
-                            <CardTitle className="text-base font-semibold">Daily Spend</CardTitle>
+                            <CardTitle className="text-base font-semibold">{t("common.dailySpend")}</CardTitle>
                           </CardHeader>
                           <CardContent>
                             {loading ? (
@@ -800,12 +805,20 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                                     <div className="bg-white p-4 shadow-lg rounded-lg border">
                                       <p className="font-bold">{data.date}</p>
                                       <p className="text-cyan-500">
-                                        Spend: ${formatNumberWithCommas(data.metrics.spend, 2)}
+                                        {t("page.spendTooltip", { value: formatNumberWithCommas(data.metrics.spend, 2) })}
                                       </p>
-                                      <p className="text-gray-600">Requests: {data.metrics.api_requests}</p>
-                                      <p className="text-gray-600">Successful: {data.metrics.successful_requests}</p>
-                                      <p className="text-gray-600">Failed: {data.metrics.failed_requests}</p>
-                                      <p className="text-gray-600">Tokens: {data.metrics.total_tokens}</p>
+                                      <p className="text-gray-600">
+                                        {t("page.requestsTooltip", { value: data.metrics.api_requests })}
+                                      </p>
+                                      <p className="text-gray-600">
+                                        {t("page.successfulTooltip", { value: data.metrics.successful_requests })}
+                                      </p>
+                                      <p className="text-gray-600">
+                                        {t("page.failedTooltip", { value: data.metrics.failed_requests })}
+                                      </p>
+                                      <p className="text-gray-600">
+                                        {t("page.tokensTooltip", { value: data.metrics.total_tokens })}
+                                      </p>
                                     </div>
                                   );
                                 }}
@@ -820,8 +833,8 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                           <ShadcnCard data-testid="gateway-requests-by-endpoint">
                             <CardHeader>
                               <CardTitle className="text-base font-semibold">
-                                Gateway Requests by Endpoint
-                                <Tooltip title="Counted by the gateway middleware as each request is answered. Covers LLM, MCP and A2A endpoints across the whole deployment.">
+                                {t("page.gatewayRequestsByEndpoint")}
+                                <Tooltip title={t("page.gatewayRequestsTooltip")}>
                                   <InfoCircleOutlined className="ml-2 text-gray-400 hover:text-gray-600" />
                                 </Tooltip>
                               </CardTitle>
@@ -843,7 +856,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                       {/* Top API Keys */}
                       <Col numColSpan={1}>
                         <Card className="h-full">
-                          <Title>Top Virtual Keys</Title>
+                          <Title>{t("common.topVirtualKeys")}</Title>
                           <TopKeyView
                             topKeys={topKeys}
                             teams={null}
@@ -856,7 +869,9 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                       {/* Top Models */}
                       <Col numColSpan={1}>
                         <Card className="h-full">
-                          <Title>{modelViewType === "groups" ? "Top Public Model Names" : "Top Litellm Models"}</Title>
+                          <Title>
+                            {modelViewType === "groups" ? t("common.topPublicModels") : t("common.topLiteLLMModels")}
+                          </Title>
                           <div className="flex justify-between items-center mb-4">
                             <Segmented
                               options={[
@@ -895,18 +910,22 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                                         <div className="bg-white p-4 shadow-lg rounded-lg border">
                                           <p className="font-bold">{data.key}</p>
                                           <p className="text-cyan-500">
-                                            Spend: ${formatNumberWithCommas(data.spend, 2)}
+                                            {t("page.spendTooltip", { value: formatNumberWithCommas(data.spend, 2) })}
                                           </p>
                                           <p className="text-gray-600">
-                                            Total Requests: {data.requests.toLocaleString()}
+                                            {t("page.requestsTooltip", { value: data.requests.toLocaleString() })}
                                           </p>
                                           <p className="text-green-600">
-                                            Successful: {data.successful_requests.toLocaleString()}
+                                            {t("page.successfulTooltip", {
+                                              value: data.successful_requests.toLocaleString(),
+                                            })}
                                           </p>
                                           <p className="text-red-600">
-                                            Failed: {data.failed_requests.toLocaleString()}
+                                            {t("page.failedTooltip", { value: data.failed_requests.toLocaleString() })}
                                           </p>
-                                          <p className="text-gray-600">Tokens: {data.tokens.toLocaleString()}</p>
+                                          <p className="text-gray-600">
+                                            {t("page.tokensTooltip", { value: data.tokens.toLocaleString() })}
+                                          </p>
                                         </div>
                                       );
                                     }}
@@ -1012,12 +1031,10 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                 <Alert
                   banner
                   type="info"
-                  message="Reusable credentials are automatically tracked as tags"
+                  message={t("page.credentialBannerTitle")}
                   description={
                     <Typography.Text>
-                      When a reusable credential is used, it will appear as a tag prefixed with{" "}
-                      <Typography.Text code>Credential: </Typography.Text>
-                      in this view.
+                      {t("page.credentialBannerDescription", { prefix: "Credential:" })}
                     </Typography.Text>
                   }
                   closable
@@ -1086,7 +1103,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
         }}
         dateRange={dateValue}
         selectedFilters={[]}
-        customTitle="Export Usage Data"
+        customTitle={t("page.exportTitle")}
       />
 
       {/* AI Chat Panel */}

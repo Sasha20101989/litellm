@@ -5,6 +5,7 @@ import { formatNumberWithCommas } from "@/utils/dataUtils";
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { TopModelData } from "../types";
 
 interface KeyModelUsageViewProps {
@@ -15,41 +16,41 @@ const VISIBLE_ROWS = 5;
 // antd Table with size="small" has a row height of ~39px
 const ANTD_SMALL_TABLE_ROW_HEIGHT = 39;
 
-const columns: ColumnsType<TopModelData> = [
-  {
-    title: "Model",
-    dataIndex: "model",
-    key: "model",
-    render: (value) => value || "-",
-  },
-  {
-    title: "Spend (USD)",
-    dataIndex: "spend",
-    key: "spend",
-    render: (value) => <MoneyCell value={value} decimals={2} />,
-  },
-  {
-    title: "Successful",
-    dataIndex: "successful_requests",
-    key: "successful_requests",
-    render: (value) => <span className="text-green-600">{value?.toLocaleString() || 0}</span>,
-  },
-  {
-    title: "Failed",
-    dataIndex: "failed_requests",
-    key: "failed_requests",
-    render: (value) => <span className="text-red-600">{value?.toLocaleString() || 0}</span>,
-  },
-  {
-    title: "Tokens",
-    dataIndex: "tokens",
-    key: "tokens",
-    render: (value) => value?.toLocaleString() || 0,
-  },
-];
-
 const KeyModelUsageView: React.FC<KeyModelUsageViewProps> = ({ topModels }) => {
+  const { t } = useTranslation("usage");
   const [viewMode, setViewMode] = useState<"chart" | "table">("table");
+  const columns: ColumnsType<TopModelData> = [
+    {
+      title: t("common.model"),
+      dataIndex: "model",
+      key: "model",
+      render: (value) => value || "-",
+    },
+    {
+      title: t("common.spendUsd"),
+      dataIndex: "spend",
+      key: "spend",
+      render: (value) => <MoneyCell value={value} decimals={2} />,
+    },
+    {
+      title: t("common.successful"),
+      dataIndex: "successful_requests",
+      key: "successful_requests",
+      render: (value) => <span className="text-green-600">{value?.toLocaleString() || 0}</span>,
+    },
+    {
+      title: t("common.failed"),
+      dataIndex: "failed_requests",
+      key: "failed_requests",
+      render: (value) => <span className="text-red-600">{value?.toLocaleString() || 0}</span>,
+    },
+    {
+      title: t("common.tokens"),
+      dataIndex: "tokens",
+      key: "tokens",
+      render: (value) => value?.toLocaleString() || 0,
+    },
+  ];
 
   if (topModels.length === 0) {
     return null;
@@ -58,20 +59,20 @@ const KeyModelUsageView: React.FC<KeyModelUsageViewProps> = ({ topModels }) => {
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle className="text-base font-semibold">Model Usage</CardTitle>
+        <CardTitle className="text-base font-semibold">{t("activity.modelUsage")}</CardTitle>
         <CardAction>
           <div className="flex space-x-2">
             <button
               onClick={() => setViewMode("table")}
               className={`px-3 py-1 text-sm rounded-md ${viewMode === "table" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}
             >
-              Table
+              {t("common.tableView")}
             </button>
             <button
               onClick={() => setViewMode("chart")}
               className={`px-3 py-1 text-sm rounded-md ${viewMode === "chart" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}
             >
-              Chart
+              {t("common.chartView")}
             </button>
           </div>
         </CardAction>

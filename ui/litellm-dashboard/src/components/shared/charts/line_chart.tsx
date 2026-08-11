@@ -4,7 +4,7 @@ import * as React from "react";
 import { CartesianGrid, Line, LineChart as RechartsLineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { cn } from "@/lib/cva.config";
-import { ValueTooltip, type ChartTooltipComponent } from "./chart_tooltip";
+import { ValueTooltip, useLocalizedCategoryName, type ChartTooltipComponent } from "./chart_tooltip";
 import { categoryFills, type ChartColor } from "./colors";
 
 export type LineChartCurveType = "linear" | "natural" | "monotone" | "step";
@@ -46,8 +46,11 @@ export function LineChart<TDatum extends Record<string, unknown>>({
   className,
   style,
 }: LineChartProps<TDatum>) {
+  const localizeCategoryName = useLocalizedCategoryName();
   const fills = categoryFills(categories.length, colors);
-  const config: ChartConfig = Object.fromEntries(categories.map((category) => [category, { label: category }]));
+  const config: ChartConfig = Object.fromEntries(
+    categories.map((category) => [category, { label: localizeCategoryName(category) }]),
+  );
   const TooltipContent = customTooltip ?? ValueTooltip;
 
   return (

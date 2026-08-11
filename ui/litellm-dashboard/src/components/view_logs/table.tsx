@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-table";
 
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { useTranslation } from "react-i18next";
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging requires the type parameters to match the upstream ColumnMeta signature exactly (TS2428)
@@ -43,10 +44,13 @@ export function DataTable<TData, TValue>({
   renderSubComponent,
   getRowCanExpand,
   isLoading = false,
-  loadingMessage = "Loading...",
-  noDataMessage = "No results",
+  loadingMessage,
+  noDataMessage,
   enableSorting = false,
 }: DataTableProps<TData, TValue>) {
+  const { t } = useTranslation("common");
+  const resolvedLoadingMessage = loadingMessage ?? t("states.loading");
+  const resolvedNoDataMessage = noDataMessage ?? t("table.noResults");
   const supportsExpansion = !!renderSubComponent && !!getRowCanExpand;
   const hasExplicitColumnSizes = columns.some((column) => column.size !== undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -112,7 +116,7 @@ export function DataTable<TData, TValue>({
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="h-8 text-center">
                 <div className="text-center text-muted-foreground">
-                  <p>{loadingMessage}</p>
+                  <p>{resolvedLoadingMessage}</p>
                 </div>
               </TableCell>
             </TableRow>
@@ -148,7 +152,7 @@ export function DataTable<TData, TValue>({
           ) : (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="h-24 text-center align-middle">
-                <p className="text-sm text-muted-foreground">{noDataMessage}</p>
+                <p className="text-sm text-muted-foreground">{resolvedNoDataMessage}</p>
               </TableCell>
             </TableRow>
           )}

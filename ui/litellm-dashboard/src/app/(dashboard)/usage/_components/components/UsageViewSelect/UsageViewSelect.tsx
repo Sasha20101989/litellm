@@ -11,6 +11,7 @@ import {
 } from "@ant-design/icons";
 import { Badge, Select } from "antd";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { hasCapability, type Capability } from "@/utils/capabilities";
 import { all_admin_roles } from "@/utils/roles";
 export type UsageOption =
@@ -117,11 +118,23 @@ export const UsageViewSelect: React.FC<UsageViewSelectProps> = ({
   onChange,
   userRole,
   canViewTagUsage = false,
-  title = "Usage View",
-  description = "Select the usage data you want to view",
+  title,
+  description,
   "data-id": dataId,
 }) => {
+  const { t } = useTranslation("usage");
   const isAdmin = all_admin_roles.includes(userRole ?? "");
+  const optionKeys: Record<UsageOption, string> = {
+    global: "global",
+    "my-usage": "personal",
+    organization: "organization",
+    team: "team",
+    customer: "customer",
+    tag: "tag",
+    agent: "agent",
+    user: "user",
+    "user-agent-activity": "userAgent",
+  };
   const getFilteredOptions = () => {
     return OPTIONS.filter((option) => {
       if (option.capability) {
@@ -135,13 +148,18 @@ export const UsageViewSelect: React.FC<UsageViewSelectProps> = ({
       }
       return true;
     }).map((option) => {
-      let label = option.label;
-      let desc = option.description;
+      const optionKey = optionKeys[option.value];
+      let label = t(`selector.options.${optionKey}.label`, { defaultValue: option.label });
+      let desc = t(`selector.options.${optionKey}.description`, { defaultValue: option.description });
       if (option.showForAdmin && option.showForNonAdmin) {
-        label = isAdmin ? option.showForAdmin : option.showForNonAdmin;
+        label = isAdmin
+          ? t("selector.options.global.label", { defaultValue: option.showForAdmin })
+          : t("selector.options.personal.label", { defaultValue: option.showForNonAdmin });
       }
       if (option.descriptionForAdmin && option.descriptionForNonAdmin) {
-        desc = isAdmin ? option.descriptionForAdmin : option.descriptionForNonAdmin;
+        desc = isAdmin
+          ? t("selector.options.global.description", { defaultValue: option.descriptionForAdmin })
+          : t("selector.options.personal.description", { defaultValue: option.descriptionForNonAdmin });
       }
       return {
         value: option.value,
@@ -161,8 +179,10 @@ export const UsageViewSelect: React.FC<UsageViewSelectProps> = ({
             <BarChartOutlined style={{ fontSize: "32px" }} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">{title}</h3>
-            <p className="text-xs text-gray-600 leading-tight">{description}</p>
+            <h3 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">
+              {title ?? t("selector.title")}
+            </h3>
+            <p className="text-xs text-gray-600 leading-tight">{description ?? t("selector.description")}</p>
           </div>
         </div>
         <div className="shrink-0">

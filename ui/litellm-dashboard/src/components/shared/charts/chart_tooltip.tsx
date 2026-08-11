@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import type { TooltipContentProps, TooltipValueType } from "recharts";
+import { useTranslation } from "react-i18next";
 
 export type ChartTooltipProps = Pick<
   TooltipContentProps<TooltipValueType, string | number>,
@@ -17,6 +18,30 @@ export const formatCategoryName = (name: string): string =>
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+
+const metricTranslationKeys: Record<string, string> = {
+  "metrics.spend": "common.spend",
+  "metrics.prompt_tokens": "common.inputTokens",
+  "metrics.completion_tokens": "common.outputTokens",
+  "metrics.total_tokens": "common.totalTokens",
+  "metrics.api_requests": "common.requests",
+  "metrics.successful_requests": "common.successfulRequests",
+  "metrics.failed_requests": "common.failedRequests",
+  "metrics.cache_read_input_tokens": "common.cacheReadTokens",
+  "metrics.cache_creation_input_tokens": "common.cacheWriteTokens",
+};
+
+export const useLocalizedCategoryName = () => {
+  const { t } = useTranslation("usage");
+
+  return React.useCallback(
+    (name: string): string => {
+      const translationKey = metricTranslationKeys[name];
+      return translationKey ? t(translationKey) : formatCategoryName(name);
+    },
+    [t],
+  );
+};
 
 export const ValueTooltip = ({
   active,
@@ -68,6 +93,8 @@ const formatMetricValue = (rawValue: number | undefined, isSpend: boolean): stri
 };
 
 export const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
+  const localizeCategoryName = useLocalizedCategoryName();
+
   if (!active || !payload || payload.length === 0) return null;
 
   return (
@@ -86,7 +113,7 @@ export const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => 
                 className="h-2 w-2 shrink-0 rounded-full ring-2 ring-white drop-shadow-md"
                 style={{ backgroundColor: item.color }}
               />
-              <p className="font-medium text-muted-foreground">{formatCategoryName(dataKey)}</p>
+              <p className="font-medium text-muted-foreground">{localizeCategoryName(dataKey)}</p>
             </div>
             <p className="font-medium text-foreground">{formattedValue}</p>
           </div>
