@@ -29,6 +29,7 @@ const config: ViteUserConfig = {
       exclude: [
         "**/*.d.ts",
         "**/*.test.*",
+        "**/*.test-d.*",
         "**/*.spec.*",
 
         "tests/**",
@@ -51,6 +52,10 @@ const config: ViteUserConfig = {
       "tests/**/*.test.tsx",
       "scripts/**/*.test.ts",
     ],
+    typecheck: {
+      include: ["src/**/*.test-d.ts", "src/**/*.test-d.tsx"],
+      ignoreSourceErrors: true,
+    },
   },
   resolve: {
     alias: {

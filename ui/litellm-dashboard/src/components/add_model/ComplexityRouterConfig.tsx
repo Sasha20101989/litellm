@@ -16,6 +16,7 @@ export const DEFAULT_TIER_DISTANCE_PENALTY = 0.5;
 export const DEFAULT_CLASSIFIER_CONTEXT_WINDOW_SIZE = 3;
 export const DEFAULT_CLASSIFIER_CONTEXT_PER_TURN_CHARS = 200;
 export const DEFAULT_SESSION_AFFINITY = false;
+export const DEFAULT_DEPLOYMENT_AFFINITY = true;
 
 export interface ComplexityTiers {
   SIMPLE: string[];
@@ -57,6 +58,7 @@ export interface ComplexityRouterConfigValue {
   classifier_context_include_assistant_turns?: boolean;
   classifier_fallback?: ClassifierFallback;
   session_affinity?: boolean;
+  deployment_affinity?: boolean;
   adaptive?: boolean;
   adaptive_weights?: AdaptiveRouterWeights;
   tier_distance_penalty?: number;
@@ -289,7 +291,7 @@ const ComplexityRouterConfig: React.FC<ComplexityRouterConfigProps> = ({
             children: <AdaptiveRoutingConfig value={value} onChange={onChange} />,
           },
           {
-            key: "session-affinity",
+            key: "affinity",
             label: (
               <Text strong style={{ color: "#374151" }}>
                 {t("models.autoRouters.details.sections.sessionAffinity")}
@@ -297,6 +299,18 @@ const ComplexityRouterConfig: React.FC<ComplexityRouterConfigProps> = ({
             ),
             children: (
               <>
+                <div className="flex items-center gap-2 mb-2">
+                  <Switch
+                    checked={value.deployment_affinity ?? DEFAULT_DEPLOYMENT_AFFINITY}
+                    onChange={(deploymentAffinity) => onChange({ ...value, deployment_affinity: deploymentAffinity })}
+                    aria-label="Pin a session to one deployment per model group"
+                  />
+                  <Text strong>Pin a session to one deployment per model group</Text>
+                </div>
+                <Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 12 }}>
+                  Keeps a session on the same deployment within a group, so provider prompt caches stay warm. Turn off
+                  to load-balance every turn.
+                </Text>
                 <div className="flex items-center gap-2 mb-2">
                   <Switch
                     checked={value.session_affinity ?? DEFAULT_SESSION_AFFINITY}

@@ -1,4 +1,5 @@
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
+import useCan from "@/app/(dashboard)/hooks/useCan";
 import { organizationKeys, useOrganizations } from "@/app/(dashboard)/hooks/organizations/useOrganizations";
 import { useQueryClient } from "@tanstack/react-query";
 import UserSearchModal from "@/components/common_components/user_search_modal";
@@ -59,6 +60,7 @@ import MCPServerSelector from "../mcp_server_management/MCPServerSelector";
 import MCPToolPermissions from "../mcp_server_management/MCPToolPermissions";
 import { ModelSelect } from "../ModelSelect/ModelSelect";
 import NotificationsManager from "../molecules/notifications_manager";
+import { estimateRules, estimateTooltips } from "../templates/estimatedOutputTokens";
 import ObjectPermissionsView from "../object_permissions_view";
 import NumericalInput from "../shared/numerical_input";
 import VectorStoreSelector from "../vector_store_management/VectorStoreSelector";
@@ -78,6 +80,8 @@ const UI_MANAGED_METADATA_KEYS: ReadonlySet<string> = new Set([
   "soft_budget_alerting_emails",
   "model_tpm_limit",
   "model_rpm_limit",
+  "default_estimated_output_tokens",
+  "default_estimated_output_tokens_per_model",
   "allowed_passthrough_routes",
   "guardrails",
   "opted_out_global_guardrails",
@@ -192,6 +196,7 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const { data: guardrailsData, isLoading: isGuardrailsLoading } = useGuardrails();
   const globalGuardrailNames = guardrailsData?.globalGuardrailNames ?? new Set<string>();
+  const canViewPolicies = useCan("viewPolicies");
   const [policiesList, setPoliciesList] = useState<string[]>([]);
   const [policyGuardrails, setPolicyGuardrails] = useState<Record<string, string[]>>({});
   const [loadingPolicies, setLoadingPolicies] = useState(false);
@@ -203,6 +208,8 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
   const routerSettingsRef = React.useRef<RouterSettingsAccordionRef>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const { userRole, userId } = useAuthorized();
+  const canEditTeamEstimates = isProxyAdminRole(userRole);
+  const teamEstimateTooltip = estimateTooltips(canEditTeamEstimates, "team");
   const { data: userOrganizations = [] } = useOrganizations();
   const { data: teamMetadataSchemaFields = [], isLoading: isTeamMetadataSchemaLoading } = useTeamMetadataSchema();
   const queryClient = useQueryClient();
@@ -290,8 +297,8 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
       }
     };
 
-    fetchPolicies();
-  }, [accessToken]);
+    if (canViewPolicies) fetchPolicies();
+  }, [accessToken, canViewPolicies]);
 
   // Fetch resolved guardrails for all policies
   useEffect(() => {
@@ -469,6 +476,21 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
         return v;
       };
 
+      const estimatedOutputTokens = sanitizeNumeric(values.default_estimated_output_tokens);
+
+      let estimatedOutputTokensPerModel: Record<string, number> | undefined;
+      if (typeof values.default_estimated_output_tokens_per_model === "string") {
+        const trimmedEstimates = values.default_estimated_output_tokens_per_model.trim();
+        if (trimmedEstimates.length > 0) {
+          try {
+            estimatedOutputTokensPerModel = JSON.parse(trimmedEstimates);
+          } catch (e) {
+            NotificationsManager.fromBackend("Invalid JSON in estimated output tokens per model");
+            return;
+          }
+        }
+      }
+
       const modelTpmLimit: Record<string, number> = {};
       const modelRpmLimit: Record<string, number> = {};
       for (const entry of (values.modelLimits ?? []) as { model?: string; tpm?: number; rpm?: number }[]) {
@@ -509,6 +531,10 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
           opted_out_global_guardrails: optedOutGlobalGuardrails,
           ...(values.logging_settings?.length > 0 ? { logging: values.logging_settings } : {}),
           disable_global_guardrails: killSwitchOnAtSave,
+          ...(estimatedOutputTokens !== null ? { default_estimated_output_tokens: Number(estimatedOutputTokens) } : {}),
+          ...(estimatedOutputTokensPerModel !== undefined
+            ? { default_estimated_output_tokens_per_model: estimatedOutputTokensPerModel }
+            : {}),
           soft_budget_alerting_emails:
             typeof values.soft_budget_alerting_emails === "string"
               ? values.soft_budget_alerting_emails
@@ -781,6 +807,13 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
                         </div>
                       );
                     })()}
+                    <Text>Estimated Output Tokens: {info.metadata?.default_estimated_output_tokens ?? "Default"}</Text>
+                    <Text>
+                      Estimated Output Tokens Per Model:{" "}
+                      {info.metadata?.default_estimated_output_tokens_per_model
+                        ? JSON.stringify(info.metadata.default_estimated_output_tokens_per_model)
+                        : "Default"}
+                    </Text>
                   </div>
                 </Card>
 
@@ -983,6 +1016,11 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
                       disable_global_guardrails: info.metadata?.disable_global_guardrails || false,
                       soft_budget_alerting_emails: Array.isArray(info.metadata?.soft_budget_alerting_emails)
                         ? info.metadata.soft_budget_alerting_emails.join(", ")
+                        : "",
+                      default_estimated_output_tokens: info.metadata?.default_estimated_output_tokens,
+                      default_estimated_output_tokens_per_model: info.metadata
+                        ?.default_estimated_output_tokens_per_model
+                        ? JSON.stringify(info.metadata.default_estimated_output_tokens_per_model)
                         : "",
                       metadata: metadataObjectToPairs(info.metadata, UI_MANAGED_METADATA_KEYS),
                       logging_settings: info.metadata?.logging || [],
@@ -1243,6 +1281,24 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
                       </Form.List>
                     </Form.Item>
 
+                    <Form.Item
+                      label="Estimated Output Tokens"
+                      name="default_estimated_output_tokens"
+                      tooltip={teamEstimateTooltip.estimate}
+                      rules={[estimateRules.positive]}
+                    >
+                      <NumericalInput min={1} step={1} style={{ width: "100%" }} disabled={!canEditTeamEstimates} />
+                    </Form.Item>
+
+                    <Form.Item
+                      label="Estimated Output Tokens Per Model"
+                      name="default_estimated_output_tokens_per_model"
+                      tooltip={teamEstimateTooltip.perModel}
+                      rules={[estimateRules.perModel]}
+                    >
+                      <Input.TextArea rows={4} placeholder='{"gpt-4": 4096}' disabled={!canEditTeamEstimates} />
+                    </Form.Item>
+
                     <Form.Item label={t("teams.create.routerSettings")}>
                       <RouterSettingsAccordion
                         ref={routerSettingsRef}
@@ -1316,30 +1372,32 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
                       <Switch checkedChildren={t("teams.create.yes")} unCheckedChildren={t("teams.create.no")} />
                     </Form.Item>
 
-                    <Form.Item
-                      label={
-                        <span>
-                          {t("teams.create.policies")}{" "}
-                          <Tooltip title={t("teams.create.policiesTooltip")}>
-                            <a
-                              href="https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                            </a>
-                          </Tooltip>
-                        </span>
-                      }
-                      name="policies"
-                    >
-                      <Select
-                        mode="tags"
-                        placeholder={t("teams.create.policiesPlaceholder")}
-                        options={policiesList.map((name) => ({ value: name, label: name }))}
-                      />
-                    </Form.Item>
+                    {canViewPolicies && (
+                      <Form.Item
+                        label={
+                          <span>
+                            {t("teams.create.policies")}{" "}
+                            <Tooltip title={t("teams.create.policiesTooltip")}>
+                              <a
+                                href="https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <InfoCircleOutlined style={{ marginLeft: "4px" }} />
+                              </a>
+                            </Tooltip>
+                          </span>
+                        }
+                        name="policies"
+                      >
+                        <Select
+                          mode="tags"
+                          placeholder={t("teams.create.policiesPlaceholder")}
+                          options={policiesList.map((name) => ({ value: name, label: name }))}
+                        />
+                      </Form.Item>
+                    )}
 
                     <Form.Item
                       label={
@@ -1590,6 +1648,13 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
                           </div>
                         );
                       })()}
+                      <div>Estimated Output Tokens: {info.metadata?.default_estimated_output_tokens ?? "Default"}</div>
+                      <div>
+                        Estimated Output Tokens Per Model:{" "}
+                        {info.metadata?.default_estimated_output_tokens_per_model
+                          ? JSON.stringify(info.metadata.default_estimated_output_tokens_per_model)
+                          : "Default"}
+                      </div>
                     </div>
                     <div>
                       <Text className="font-medium">{t("teams.details.settings.teamBudget")}</Text>

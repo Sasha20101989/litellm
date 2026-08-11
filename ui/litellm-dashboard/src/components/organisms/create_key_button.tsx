@@ -5,6 +5,7 @@ import { useProjects } from "@/app/(dashboard)/hooks/projects/useProjects";
 import { useTags } from "@/app/(dashboard)/hooks/tags/useTags";
 import { useUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUISettings";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
+import useCan from "@/app/(dashboard)/hooks/useCan";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
@@ -158,6 +159,8 @@ const CreateKey: React.FC<CreateKeyProps> = ({
   const { t } = useTranslation("gateway");
   const { accessToken, userId: userID, userRole, premiumUser } = useAuthorized();
   const canEditGuardrails = premiumUser || (userRole != null && rolesWithWriteAccess.includes(userRole));
+  const canViewPolicies = useCan("viewPolicies");
+  const canViewPrompts = useCan("viewPrompts");
   const { data: organizations, isLoading: isOrganizationsLoading } = useOrganizations();
   const { data: projects, isLoading: isProjectsLoading } = useProjects();
   const { data: uiSettingsData } = useUISettings();
@@ -286,9 +289,9 @@ const CreateKey: React.FC<CreateKeyProps> = ({
     };
 
     fetchGuardrails();
-    fetchPolicies();
-    fetchPrompts();
-  }, [accessToken]);
+    if (canViewPolicies) fetchPolicies();
+    if (canViewPrompts) fetchPrompts();
+  }, [accessToken, canViewPolicies, canViewPrompts]);
 
   // Fetch possible user roles when component mounts
   useEffect(() => {
@@ -1360,78 +1363,82 @@ const CreateKey: React.FC<CreateKeyProps> = ({
                       unCheckedChildren={t("virtualKeys.createKey.optional.no")}
                     />
                   </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.policies")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.policiesTooltip")}>
-                          <a
-                            href="https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
-                          >
-                            <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                          </a>
-                        </Tooltip>
-                      </span>
-                    }
-                    name="policies"
-                    className="mt-4"
-                    help={
-                      premiumUser
-                        ? t("virtualKeys.createKey.optional.policiesHelp")
-                        : t("virtualKeys.createKey.optional.policiesPremium")
-                    }
-                  >
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      disabled={!premiumUser}
-                      placeholder={
-                        !premiumUser
-                          ? t("virtualKeys.createKey.optional.policiesPremium")
-                          : t("virtualKeys.createKey.optional.selectPolicies")
+                  {canViewPolicies && (
+                    <Form.Item
+                      label={
+                        <span>
+                          {t("virtualKeys.createKey.optional.policies")}{" "}
+                          <Tooltip title={t("virtualKeys.createKey.optional.policiesTooltip")}>
+                            <a
+                              href="https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
+                            >
+                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
+                            </a>
+                          </Tooltip>
+                        </span>
                       }
-                      options={policiesList.map((name) => ({ value: name, label: name }))}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.prompts")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.promptsTooltip")}>
-                          <a
-                            href="https://docs.litellm.ai/docs/proxy/prompt_management"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
-                          >
-                            <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                          </a>
-                        </Tooltip>
-                      </span>
-                    }
-                    name="prompts"
-                    className="mt-4"
-                    help={
-                      premiumUser
-                        ? t("virtualKeys.createKey.optional.promptsHelp")
-                        : t("virtualKeys.createKey.optional.promptsPremium")
-                    }
-                  >
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      disabled={!premiumUser}
-                      placeholder={
-                        !premiumUser
-                          ? t("virtualKeys.createKey.optional.promptsPremium")
-                          : t("virtualKeys.createKey.optional.selectPrompts")
+                      name="policies"
+                      className="mt-4"
+                      help={
+                        premiumUser
+                          ? t("virtualKeys.createKey.optional.policiesHelp")
+                          : t("virtualKeys.createKey.optional.policiesPremium")
                       }
-                      options={promptsList.map((name) => ({ value: name, label: name }))}
-                    />
-                  </Form.Item>
+                    >
+                      <Select
+                        mode="tags"
+                        style={{ width: "100%" }}
+                        disabled={!premiumUser}
+                        placeholder={
+                          !premiumUser
+                            ? t("virtualKeys.createKey.optional.policiesPremium")
+                            : t("virtualKeys.createKey.optional.selectPolicies")
+                        }
+                        options={policiesList.map((name) => ({ value: name, label: name }))}
+                      />
+                    </Form.Item>
+                  )}
+                  {canViewPrompts && (
+                    <Form.Item
+                      label={
+                        <span>
+                          {t("virtualKeys.createKey.optional.prompts")}{" "}
+                          <Tooltip title={t("virtualKeys.createKey.optional.promptsTooltip")}>
+                            <a
+                              href="https://docs.litellm.ai/docs/proxy/prompt_management"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
+                            >
+                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
+                            </a>
+                          </Tooltip>
+                        </span>
+                      }
+                      name="prompts"
+                      className="mt-4"
+                      help={
+                        premiumUser
+                          ? t("virtualKeys.createKey.optional.promptsHelp")
+                          : t("virtualKeys.createKey.optional.promptsPremium")
+                      }
+                    >
+                      <Select
+                        mode="tags"
+                        style={{ width: "100%" }}
+                        disabled={!premiumUser}
+                        placeholder={
+                          !premiumUser
+                            ? t("virtualKeys.createKey.optional.promptsPremium")
+                            : t("virtualKeys.createKey.optional.selectPrompts")
+                        }
+                        options={promptsList.map((name) => ({ value: name, label: name }))}
+                      />
+                    </Form.Item>
+                  )}
                   <Form.Item
                     label={
                       <span>

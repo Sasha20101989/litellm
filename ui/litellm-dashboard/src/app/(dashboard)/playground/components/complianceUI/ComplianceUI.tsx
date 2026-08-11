@@ -6,6 +6,7 @@ import {
   type ComplianceFramework,
   type CompliancePrompt,
 } from "@/data/compliancePrompts";
+import useCan from "@/app/(dashboard)/hooks/useCan";
 import { getGuardrailsList, testPoliciesAndGuardrails } from "@/components/networking";
 import PolicySelector, { getPolicyOptionEntries } from "@/components/policies/PolicySelector";
 import { Policy } from "@/components/policies/types";
@@ -194,6 +195,7 @@ export default function ComplianceUI({
     const key = TAXONOMY_KEY_MAP[name];
     return key ? t(`playground.compliance.taxonomy.${key}`) : name;
   };
+  const canViewPolicies = useCan("viewPolicies");
   const frameworks = getFrameworks();
 
   const [policyValueToLabel, setPolicyValueToLabel] = useState<Map<string, string>>(new Map());
@@ -791,26 +793,30 @@ export default function ComplianceUI({
           </div>
 
           <div className="flex items-start gap-3 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5 block">
-                {t("playground.compliance.policies")}
-              </label>
-              {accessToken && (
-                <PolicySelector
-                  value={selectedPolicies}
-                  onChange={setSelectedPolicies}
-                  accessToken={accessToken}
-                  onPoliciesLoaded={handlePoliciesLoaded}
-                  placeholder={t("playground.selectPolicies")}
-                />
-              )}
-            </div>
+            {canViewPolicies && (
+              <>
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5 block">
+                    {t("playground.compliance.policies")}
+                  </label>
+                  {accessToken && (
+                    <PolicySelector
+                      value={selectedPolicies}
+                      onChange={setSelectedPolicies}
+                      accessToken={accessToken}
+                      onPoliciesLoaded={handlePoliciesLoaded}
+                      placeholder={t("playground.selectPolicies")}
+                    />
+                  )}
+                </div>
 
-            <div className="flex flex-col items-center pt-6 shrink-0">
-              <div className="w-px h-4 bg-gray-200" />
-              <span className="text-[10px] font-medium text-gray-400 my-1">{t("playground.compliance.or")}</span>
-              <div className="w-px h-4 bg-gray-200" />
-            </div>
+                <div className="flex flex-col items-center pt-6 shrink-0">
+                  <div className="w-px h-4 bg-gray-200" />
+                  <span className="text-[10px] font-medium text-gray-400 my-1">{t("playground.compliance.or")}</span>
+                  <div className="w-px h-4 bg-gray-200" />
+                </div>
+              </>
+            )}
 
             <div className="flex-1 min-w-[200px]">
               <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5 block">

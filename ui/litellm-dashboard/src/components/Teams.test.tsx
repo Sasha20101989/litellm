@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useTeamMetadataSchema } from "@/app/(dashboard)/hooks/teams/useTeamMetadataSchema";
 import NotificationsManager from "./molecules/notifications_manager";
 import { fetchAvailableModelsForTeamOrKey } from "./key_team_helpers/fetch_available_models_team_key";
-import { fetchMCPAccessGroups, getGuardrailsList, teamCreateCall } from "./networking";
+import { fetchMCPAccessGroups, getGuardrailsList, getPoliciesList, teamCreateCall } from "./networking";
 import Teams from "./Teams";
 
 const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
@@ -29,6 +29,10 @@ vi.mock("react-i18next", async () => {
     }),
   };
 });
+const can = vi.fn();
+vi.mock("@/app/(dashboard)/hooks/useCan", () => ({
+  default: (...args: unknown[]) => can(...args),
+}));
 
 const mockTeamInfoView = vi.fn();
 const mockUseOrganizations = vi.fn();
@@ -195,6 +199,7 @@ const renderWithQueryClient = (
 beforeEach(() => {
   mockTeamsTableProps = null;
   localization.language = "en";
+  can.mockReturnValue(true);
 });
 
 describe("Teams - handleCreate organization handling", () => {
@@ -988,5 +993,52 @@ describe("Teams - LIT-2530 organization stays optional for proxy admin with a si
         expect.objectContaining({ team_alias: "No Org Team", organization_id: null }),
       );
     });
+  });
+});
+
+describe("Teams - policies field is gated on the viewPolicies capability", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTeamInfoView.mockClear();
+    vi.mocked(fetchAvailableModelsForTeamOrKey).mockResolvedValue(["gpt-4"]);
+    vi.mocked(fetchMCPAccessGroups).mockResolvedValue([]);
+    vi.mocked(getGuardrailsList).mockResolvedValue({ guardrails: [] });
+    vi.mocked(getPoliciesList).mockResolvedValue({ policies: [] });
+    mockUseOrganizations.mockReturnValue({ data: null });
+  });
+
+  const openAdditionalSettings = async () => {
+    renderWithQueryClient(<Teams accessToken="test-token" userID="user-123" userRole="Admin" />);
+
+    act(() => {
+      fireEvent.click(screen.getAllByRole("button", { name: /create team/i })[0]);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/team name/i)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Additional Settings"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("access-group-selector")).toBeInTheDocument();
+    });
+  };
+
+  it("should render the policies field and load it when the capability is present", async () => {
+    await openAdditionalSettings();
+
+    expect(can).toHaveBeenCalledWith("viewPolicies");
+    expect(getPoliciesList).toHaveBeenCalledWith("test-token");
+    expect(screen.getByText("Policies")).toBeInTheDocument();
+  });
+
+  it("should omit the policies field and skip the admin-only list without the capability", async () => {
+    can.mockReturnValue(false);
+
+    await openAdditionalSettings();
+
+    expect(getPoliciesList).not.toHaveBeenCalled();
+    expect(screen.queryByText("Policies")).not.toBeInTheDocument();
   });
 });
