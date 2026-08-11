@@ -1,9 +1,32 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { VectorStoreIndex } from "./IndexesTab";
 import IndexesTable from "./IndexesTable";
+
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
 
 vi.mock("next/navigation", async () => ({
   ...(await vi.importActual("next/navigation")),
@@ -37,6 +60,19 @@ const undatedIndex: VectorStoreIndex = {
 const noResolve = () => undefined;
 
 describe("IndexesTable", () => {
+  beforeEach(() => {
+    localization.language = "en";
+  });
+
+  it("renders index columns in Russian", () => {
+    localization.language = "ru";
+    render(<IndexesTable data={[newerIndex]} resolveVectorStoreId={noResolve} onViewVectorStore={vi.fn()} />);
+
+    expect(screen.getByText("Название индекса")).toBeInTheDocument();
+    expect(screen.getByText("Векторное хранилище")).toBeInTheDocument();
+    expect(screen.getByText("Индекс провайдера")).toBeInTheDocument();
+  });
+
   it("should display the empty state when no indexes are registered", () => {
     render(<IndexesTable data={[]} resolveVectorStoreId={noResolve} onViewVectorStore={vi.fn()} />);
     expect(screen.getByText("No indexes registered yet")).toBeInTheDocument();

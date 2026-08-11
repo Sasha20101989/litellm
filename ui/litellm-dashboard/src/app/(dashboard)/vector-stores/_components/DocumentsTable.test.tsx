@@ -6,6 +6,29 @@ import { DocumentUpload } from "@/components/vector_store_management/types";
 
 import DocumentsTable from "./DocumentsTable";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources[localization.language].gateway);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return {
+    useTranslation: () => ({
+      t,
+      i18n: { language: localization.language, resolvedLanguage: localization.language },
+    }),
+  };
+});
+
 describe("DocumentsTable", () => {
   const mockDocuments: DocumentUpload[] = [
     {
@@ -32,7 +55,18 @@ describe("DocumentsTable", () => {
   ];
 
   beforeEach(() => {
+    localization.language = "en";
     vi.clearAllMocks();
+  });
+
+  it("renders document columns and statuses in Russian", () => {
+    localization.language = "ru";
+    render(<DocumentsTable documents={mockDocuments} onRemove={vi.fn()} />);
+
+    expect(screen.getByText("Название")).toBeInTheDocument();
+    expect(screen.getByText("Статус")).toBeInTheDocument();
+    expect(screen.getByText("Готов")).toBeInTheDocument();
+    expect(screen.getByText("Загружается")).toBeInTheDocument();
   });
 
   it("should render every document row", () => {

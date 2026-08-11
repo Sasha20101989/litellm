@@ -1254,6 +1254,46 @@ export const enGateway = {
       cancel: "Cancel",
       save: "Save Changes",
     },
+    documents: {
+      empty: "No documents uploaded yet",
+      emptyDescription: "Upload documents above to get started.",
+      statuses: {
+        uploading: "Uploading",
+        done: "Ready",
+        error: "Error",
+        removed: "Removed",
+      },
+      columns: {
+        name: "Name",
+        status: "Status",
+        actions: "Actions",
+      },
+      actions: {
+        open: "Open document actions",
+        copy: "Copy document ID",
+        copied: "Document ID copied to clipboard",
+        remove: "Remove",
+      },
+    },
+    indexes: {
+      fetchFailed: "Error fetching indexes: {{error}}",
+      descriptionStart: "Vector store indexes registered on this proxy via the /v1/indexes API. See the",
+      documentation: "vector store index docs",
+      descriptionSupport:
+        "for how this works. Index passthrough is supported for Azure AI Search and Milvus today; support for more providers can be added, so please",
+      issue: "file a GitHub issue",
+      descriptionEnd: "if you want your provider supported.",
+      loading: "Loading indexes…",
+      empty: "No indexes registered yet",
+      emptyDescription: "Indexes registered on this proxy will appear here.",
+      columns: {
+        name: "Index Name",
+        vectorStore: "Vector Store",
+        providerIndex: "Provider Index",
+        createdBy: "Created By",
+        createdAt: "Created At",
+      },
+    },
   },
   workflows: {
     title: "Workflow Runs",
