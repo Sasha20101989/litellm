@@ -4,10 +4,14 @@ import * as React from "react";
 import type { TooltipContentProps, TooltipValueType } from "recharts";
 import { useTranslation } from "react-i18next";
 
+export type CategoryLabels = Readonly<Record<string, string>>;
+
 export type ChartTooltipProps = Pick<
   TooltipContentProps<TooltipValueType, string | number>,
   "active" | "payload" | "label"
->;
+> & {
+  categoryLabels?: CategoryLabels;
+};
 
 export type ChartTooltipComponent = React.ComponentType<ChartTooltipProps>;
 
@@ -48,6 +52,7 @@ export const ValueTooltip = ({
   payload,
   label,
   valueFormatter,
+  categoryLabels,
 }: ChartTooltipProps & { valueFormatter?: (value: number) => string }) => {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -67,7 +72,9 @@ export const ValueTooltip = ({
           >
             <div className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: item.color }} />
-              <span className="text-muted-foreground">{String(item.name ?? item.dataKey ?? "")}</span>
+              <span className="text-muted-foreground">
+                {categoryLabels?.[String(item.dataKey ?? item.name ?? "")] ?? String(item.name ?? item.dataKey ?? "")}
+              </span>
             </div>
             <span className="font-mono font-medium tabular-nums text-foreground">{formatValue(item.value)}</span>
           </div>
@@ -92,7 +99,7 @@ const formatMetricValue = (rawValue: number | undefined, isSpend: boolean): stri
   return rawValue.toLocaleString();
 };
 
-export const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
+export const CustomTooltip = ({ active, payload, label, categoryLabels }: ChartTooltipProps) => {
   const localizeCategoryName = useLocalizedCategoryName();
 
   if (!active || !payload || payload.length === 0) return null;
@@ -113,7 +120,9 @@ export const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => 
                 className="h-2 w-2 shrink-0 rounded-full ring-2 ring-white drop-shadow-md"
                 style={{ backgroundColor: item.color }}
               />
-              <p className="font-medium text-muted-foreground">{localizeCategoryName(dataKey)}</p>
+              <p className="font-medium text-muted-foreground">
+                {categoryLabels?.[dataKey] ?? localizeCategoryName(dataKey)}
+              </p>
             </div>
             <p className="font-medium text-foreground">{formattedValue}</p>
           </div>

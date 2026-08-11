@@ -18,6 +18,7 @@ import { getGeneralSettingsCall, updateConfigFieldSetting, deleteConfigFieldSett
 import { InputNumber, Select as AntdSelect } from "antd";
 import { TrashIcon } from "@heroicons/react/outline";
 import { StatusBadge } from "@/components/shared/table_cells";
+import { useTranslation } from "react-i18next";
 
 import RouterSettings from "@/components/router_settings";
 import Fallbacks from "@/components/Settings/RouterSettings/Fallbacks/Fallbacks";
@@ -107,6 +108,7 @@ export const PromptCachingPanel: React.FC<{
   settings: generalSettingsItem[];
   onChange: (fieldName: string, newValue: any) => void;
 }> = ({ accessToken, settings, onChange }) => {
+  const { t } = useTranslation("costOptimization");
   const enableSetting = settings.find((s) => s.field_name === ENABLE_ANTHROPIC_PROMPT_CACHING);
   const ttlSetting = settings.find((s) => s.field_name === ANTHROPIC_PROMPT_CACHING_TTL);
 
@@ -131,12 +133,12 @@ export const PromptCachingPanel: React.FC<{
 
   return (
     <Card>
-      <Title>Prompt Caching</Title>
+      <Title>{t("caching.title")}</Title>
 
       <div className="mt-6 flex items-start justify-between gap-8">
         <div className="max-w-2xl">
-          <Text className="font-medium">Automatic Anthropic prompt caching</Text>
-          <p className="mt-1 text-xs text-gray-500">{enableSetting.field_description}</p>
+          <Text className="font-medium">{t("caching.automatic")}</Text>
+          <p className="mt-1 text-xs text-gray-500">{t("caching.automaticDescription")}</p>
         </div>
         <Switch checked={enabled} onChange={(checked) => persist(ENABLE_ANTHROPIC_PROMPT_CACHING, checked)} />
       </div>
@@ -144,14 +146,14 @@ export const PromptCachingPanel: React.FC<{
       {ttlSetting && (
         <div className="mt-6 flex items-start justify-between gap-8">
           <div className="max-w-2xl">
-            <Text className={`font-medium ${enabled ? "" : "text-gray-400"}`}>Cache lifetime (TTL)</Text>
-            <p className="mt-1 text-xs text-gray-500">{ttlSetting.field_description}</p>
+            <Text className={`font-medium ${enabled ? "" : "text-gray-400"}`}>{t("caching.lifetime")}</Text>
+            <p className="mt-1 text-xs text-gray-500">{t("caching.lifetimeDescription")}</p>
           </div>
           <AntdSelect
             allowClear
             disabled={!enabled}
             style={{ minWidth: "10rem" }}
-            placeholder="5m (default)"
+            placeholder={t("caching.defaultLifetime")}
             value={ttlSetting.field_value || undefined}
             options={(ttlSetting.field_options ?? []).map((option) => ({ label: option, value: option }))}
             onChange={(newValue) => persist(ANTHROPIC_PROMPT_CACHING_TTL, newValue ?? "")}

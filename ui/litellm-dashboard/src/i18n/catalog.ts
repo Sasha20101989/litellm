@@ -4,18 +4,44 @@ import { enChat } from "./locales/en/chat";
 import { enNavigation } from "./locales/en/navigation";
 import { enGateway } from "./locales/en/gateway";
 import { enUsage } from "./locales/en/usage";
+import { enCostOptimization } from "./locales/en/costOptimization";
 import { ruAuth } from "./locales/ru/auth";
 import { ruCommon } from "./locales/ru/common";
 import { ruChat } from "./locales/ru/chat";
 import { ruNavigation } from "./locales/ru/navigation";
 import { ruGateway } from "./locales/ru/gateway";
 import { ruUsage } from "./locales/ru/usage";
+import { ruCostOptimization } from "./locales/ru/costOptimization";
 
-export const TRANSLATION_NAMESPACES = ["common", "auth", "navigation", "gateway", "chat", "usage"] as const;
+export const TRANSLATION_NAMESPACES = [
+  "common",
+  "auth",
+  "navigation",
+  "gateway",
+  "chat",
+  "usage",
+  "costOptimization",
+] as const;
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
 
 export const resources = {
-  en: { common: enCommon, auth: enAuth, navigation: enNavigation, gateway: enGateway, chat: enChat, usage: enUsage },
-  ru: { common: ruCommon, auth: ruAuth, navigation: ruNavigation, gateway: ruGateway, chat: ruChat, usage: ruUsage },
+  en: {
+    common: enCommon,
+    auth: enAuth,
+    navigation: enNavigation,
+    gateway: enGateway,
+    chat: enChat,
+    usage: enUsage,
+    costOptimization: enCostOptimization,
+  },
+  ru: {
+    common: ruCommon,
+    auth: ruAuth,
+    navigation: ruNavigation,
+    gateway: ruGateway,
+    chat: ruChat,
+    usage: ruUsage,
+    costOptimization: ruCostOptimization,
+  },
 } as const;

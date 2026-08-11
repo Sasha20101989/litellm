@@ -224,9 +224,9 @@ export const withStartAnchor = (cumulative: readonly SavingsPoint[], startLabel:
     : [{ date: startLabel, Compression: 0, "Prompt caching": 0, "Auto-router": 0 }, ...cumulative];
 
 /** "Jul 16 – Jul 23", collapsing to a single date when the range is one day. */
-export const formatRangeLabel = (from: Date | undefined, to: Date | undefined): string => {
+export const formatRangeLabel = (from: Date | undefined, to: Date | undefined, locale = "en-US"): string => {
   if (!from || !to) return "";
-  const short = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const short = (d: Date) => d.toLocaleDateString(locale, { month: "short", day: "numeric" });
   const start = short(from);
   const end = short(to);
   return start === end ? start : `${start} – ${end}`;

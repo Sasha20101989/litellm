@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { ConfigProvider, notification, message } from "antd";
 import { StyleProvider } from "@ant-design/cssinjs";
-import { setNotificationInstance } from "@/components/molecules/notifications_manager";
+import { setNotificationInstance, setNotificationLanguage } from "@/components/molecules/notifications_manager";
 import { setMessageInstance } from "@/components/molecules/message_manager";
 import { useDashboardLanguage } from "@/i18n/I18nProvider";
 // eslint-disable-next-line no-restricted-imports -- locale data is required while the existing antd UI remains in service
@@ -16,6 +16,10 @@ export default function AntdGlobalProvider({ children }: { children: React.React
   const [notificationApi, notificationContextHolder] = notification.useNotification();
   const [messageApi, messageContextHolder] = message.useMessage();
   const initialized = useRef(false);
+
+  useEffect(() => {
+    setNotificationLanguage(language);
+  }, [language]);
 
   useEffect(() => {
     if (!initialized.current) {

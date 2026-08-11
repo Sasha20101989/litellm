@@ -12,7 +12,15 @@ const leafPaths = (value: object, prefix = ""): string[] =>
 
 describe("translation catalog", () => {
   it("registers the localized product namespaces", () => {
-    expect(TRANSLATION_NAMESPACES).toEqual(["common", "auth", "navigation", "gateway", "chat", "usage"]);
+    expect(TRANSLATION_NAMESPACES).toEqual([
+      "common",
+      "auth",
+      "navigation",
+      "gateway",
+      "chat",
+      "usage",
+      "costOptimization",
+    ]);
   });
 
   it.each(TRANSLATION_NAMESPACES)("keeps Russian %s keys in parity with English", (namespace) => {

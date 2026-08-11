@@ -4,7 +4,12 @@ import * as React from "react";
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { cn } from "@/lib/cva.config";
-import { ValueTooltip, useLocalizedCategoryName, type ChartTooltipComponent } from "./chart_tooltip";
+import {
+  ValueTooltip,
+  useLocalizedCategoryName,
+  type CategoryLabels,
+  type ChartTooltipComponent,
+} from "./chart_tooltip";
 import { categoryFills, type ChartColor } from "./colors";
 import { useTranslation } from "react-i18next";
 
@@ -12,6 +17,7 @@ export type BarChartProps<TDatum extends Record<string, unknown>> = {
   data: readonly TDatum[];
   index: string;
   categories: readonly string[];
+  categoryLabels?: CategoryLabels;
   colors?: readonly ChartColor[];
   colorByDatum?: boolean;
   maxBarSize?: number;
@@ -34,6 +40,7 @@ export function BarChart<TDatum extends Record<string, unknown>>({
   data,
   index,
   categories,
+  categoryLabels,
   colors,
   colorByDatum = false,
   maxBarSize,
@@ -66,7 +73,7 @@ export function BarChart<TDatum extends Record<string, unknown>>({
 
   const fills = categoryFills(colorByDatum ? data.length : categories.length, colors);
   const config: ChartConfig = Object.fromEntries(
-    categories.map((category) => [category, { label: localizeCategoryName(category) }]),
+    categories.map((category) => [category, { label: categoryLabels?.[category] ?? localizeCategoryName(category) }]),
   );
   const vertical = layout === "vertical";
   const TooltipContent = customTooltip ?? ValueTooltip;
@@ -106,6 +113,7 @@ export function BarChart<TDatum extends Record<string, unknown>>({
                 active={active}
                 payload={payload}
                 label={label}
+                categoryLabels={categoryLabels}
                 {...(customTooltip ? {} : { valueFormatter })}
               />
             )}

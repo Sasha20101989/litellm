@@ -4,7 +4,12 @@ import * as React from "react";
 import { CartesianGrid, Line, LineChart as RechartsLineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { cn } from "@/lib/cva.config";
-import { ValueTooltip, useLocalizedCategoryName, type ChartTooltipComponent } from "./chart_tooltip";
+import {
+  ValueTooltip,
+  useLocalizedCategoryName,
+  type CategoryLabels,
+  type ChartTooltipComponent,
+} from "./chart_tooltip";
 import { categoryFills, type ChartColor } from "./colors";
 
 export type LineChartCurveType = "linear" | "natural" | "monotone" | "step";
@@ -13,6 +18,7 @@ export type LineChartProps<TDatum extends Record<string, unknown>> = {
   data: readonly TDatum[];
   index: string;
   categories: readonly string[];
+  categoryLabels?: CategoryLabels;
   colors?: readonly ChartColor[];
   valueFormatter?: (value: number) => string;
   yAxisWidth?: number;
@@ -32,6 +38,7 @@ export function LineChart<TDatum extends Record<string, unknown>>({
   data,
   index,
   categories,
+  categoryLabels,
   colors,
   valueFormatter,
   yAxisWidth = 56,
@@ -49,7 +56,7 @@ export function LineChart<TDatum extends Record<string, unknown>>({
   const localizeCategoryName = useLocalizedCategoryName();
   const fills = categoryFills(categories.length, colors);
   const config: ChartConfig = Object.fromEntries(
-    categories.map((category) => [category, { label: localizeCategoryName(category) }]),
+    categories.map((category) => [category, { label: categoryLabels?.[category] ?? localizeCategoryName(category) }]),
   );
   const TooltipContent = customTooltip ?? ValueTooltip;
 
@@ -73,6 +80,7 @@ export function LineChart<TDatum extends Record<string, unknown>>({
                 active={active}
                 payload={payload}
                 label={label}
+                categoryLabels={categoryLabels}
                 {...(customTooltip ? {} : { valueFormatter })}
               />
             )}
