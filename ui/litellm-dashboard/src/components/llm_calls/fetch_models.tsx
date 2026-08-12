@@ -25,10 +25,12 @@ export const fetchAvailableModels = async (accessToken: string): Promise<ModelGr
     const fetchedModels = await modelHubCall(accessToken);
 
     if (fetchedModels?.data.length > 0) {
-      const models: ModelGroup[] = fetchedModels.data.map((item: any) => ({
-        model_group: item.model_group, // Display the model_group to the user
-        mode: item?.mode, // Save the mode for auto-selection of endpoint type
-      }));
+      const models: ModelGroup[] = fetchedModels.data
+        .filter((item: ModelGroup) => typeof item?.model_group === "string" && !item.model_group.includes("*"))
+        .map((item: ModelGroup) => ({
+          model_group: item.model_group, // Display the model_group to the user
+          mode: item?.mode, // Save the mode for auto-selection of endpoint type
+        }));
 
       // Sort models alphabetically by label
       models.sort((a, b) => a.model_group.localeCompare(b.model_group));

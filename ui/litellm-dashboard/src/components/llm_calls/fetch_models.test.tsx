@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { modelAvailableCall } from "@/components/networking";
-import { fetchAvailableModelsForTeam } from "./fetch_models";
+import { modelAvailableCall, modelHubCall } from "@/components/networking";
+import { fetchAvailableModels, fetchAvailableModelsForTeam } from "./fetch_models";
 
 vi.mock("@/components/networking", () => ({
   modelAvailableCall: vi.fn(),
@@ -8,6 +8,28 @@ vi.mock("@/components/networking", () => ({
 }));
 
 const modelAvailableCallMock = vi.mocked(modelAvailableCall);
+const modelHubCallMock = vi.mocked(modelHubCall);
+
+describe("fetchAvailableModels", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("hides routing wildcards that cannot be selected as chat model IDs", async () => {
+    modelHubCallMock.mockResolvedValue({
+      data: [
+        { model_group: "openrouter/*", mode: "chat" },
+        { model_group: "openrouter/openrouter/free", mode: "chat" },
+        { model_group: "openrouter/openai/gpt-5", mode: "chat" },
+      ],
+    });
+
+    await expect(fetchAvailableModels("token")).resolves.toEqual([
+      { model_group: "openrouter/openai/gpt-5", mode: "chat" },
+      { model_group: "openrouter/openrouter/free", mode: "chat" },
+    ]);
+  });
+});
 
 describe("fetchAvailableModelsForTeam", () => {
   beforeEach(() => {
