@@ -15,20 +15,19 @@ import CreateVectorStore from "./CreateVectorStore";
 import TestVectorStoreTab from "./TestVectorStoreTab";
 import IndexesTab from "./IndexesTab";
 import { isAdminRole, isProxyAdminRole } from "@/utils/roles";
-import NotificationsManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useVisitedTabs } from "@/hooks/useVisitedTabs";
-import { useTranslation } from "react-i18next";
 
 interface VectorStoreProps {
   accessToken: string | null;
   userID: string | null;
   userRole: string | null;
+  isViewOnly: boolean;
 }
 
-const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID, userRole }) => {
-  const { t, i18n } = useTranslation("gateway");
+const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID, userRole, isViewOnly }) => {
   const [vectorStores, setVectorStores] = useState<VectorStore[]>([]);
   const [isLoadingVectorStores, setIsLoadingVectorStores] = useState(true);
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
@@ -39,7 +38,9 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
   const [selectedVectorStoreId, setSelectedVectorStoreId] = useState<string | null>(null);
   const [editVectorStore, setEditVectorStore] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { onTabChange, hasVisited } = useVisitedTabs("create");
+  const canCreateVectorStores = isProxyAdminRole(userRole || "") && !isViewOnly;
+  const defaultTab = canCreateVectorStores ? "create" : "manage";
+  const { onTabChange, hasVisited } = useVisitedTabs(defaultTab);
 
   const fetchVectorStores = async () => {
     if (!accessToken) {
@@ -51,20 +52,20 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
       setVectorStores(response.data || []);
     } catch (error) {
       console.error("Error fetching vector stores:", error);
-      NotificationsManager.fromBackend(t("vectorStores.fetchFailed", { error: String(error) }));
+      toast.fromError("Error fetching vector stores: " + error);
     } finally {
       setIsLoadingVectorStores(false);
     }
   };
 
   const fetchCredentials = async () => {
-    if (!accessToken) return;
+    if (!accessToken || !canCreateVectorStores) return;
     try {
       const response = await credentialListCall(accessToken);
       setCredentials(response.credentials || []);
     } catch (error) {
       console.error("Error fetching credentials:", error);
-      NotificationsManager.fromBackend(t("vectorStores.credentialsFetchFailed", { error: String(error) }));
+      toast.fromError("Error fetching credentials: " + error);
     }
   };
 
@@ -72,7 +73,7 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
     fetchVectorStores();
     fetchCredentials();
     const currentDate = new Date();
-    setLastRefreshed(currentDate.toLocaleString(i18n.language));
+    setLastRefreshed(currentDate.toLocaleString());
   };
 
   const handleDelete = async (vectorStoreId: string) => {
@@ -101,11 +102,11 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
     setIsDeleting(true);
     try {
       await vectorStoreDeleteCall(accessToken, vectorStoreToDelete);
-      NotificationsManager.success(t("vectorStores.deleted"));
+      toast.success("Vector store deleted successfully");
       fetchVectorStores();
     } catch (error) {
       console.error("Error deleting vector store:", error);
-      NotificationsManager.fromBackend(t("vectorStores.deleteFailed", { error: String(error) }));
+      toast.fromError("Error deleting vector store: " + error);
     } finally {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
@@ -139,55 +140,54 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
       />
     </div>
   ) : (
-    <div className="mx-4 h-[75vh]">
-      <div className="gap-2 p-8 h-[75vh] w-full mt-2">
+    <div className="mx-4">
+      <div className="gap-2 p-8 w-full mt-2">
         <div className="flex justify-between mt-2 w-full items-center mb-4">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("vectorStores.title")}</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">Vector Store Management</h1>
           <div className="flex items-center space-x-2">
-            {lastRefreshed && (
-              <p className="text-sm text-muted-foreground">
-                {t("vectorStores.lastRefreshed", { time: lastRefreshed })}
-              </p>
-            )}
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label={t("vectorStores.refresh")}
-              onClick={handleRefreshClick}
-            >
+            {lastRefreshed && <p className="text-sm text-muted-foreground">Last Refreshed: {lastRefreshed}</p>}
+            <Button variant="outline" size="icon-sm" aria-label="Refresh" onClick={handleRefreshClick}>
               <RefreshCw className="size-4" />
             </Button>
           </div>
         </div>
 
-        <p className="mb-4 text-sm text-muted-foreground">{t("vectorStores.subtitle")}</p>
+        <p className="mb-4 text-sm text-muted-foreground">
+          You can use vector stores to store and retrieve LLM embeddings.
+        </p>
 
-        <Tabs defaultValue="create" onValueChange={onTabChange}>
-          <TabsList variant="line" className="mb-6 h-auto w-full justify-start rounded-none border-b p-0">
-            <TabsTrigger value="create" className="flex-none rounded-none px-4 py-2">
-              {t("vectorStores.tabs.create")}
-            </TabsTrigger>
+        <Tabs defaultValue={defaultTab} onValueChange={onTabChange}>
+          <TabsList variant="line" className="mb-6 h-auto w-full justify-start rounded-none p-0">
+            {canCreateVectorStores && (
+              <TabsTrigger value="create" className="flex-none rounded-none px-4 py-2">
+                Create Vector Store
+              </TabsTrigger>
+            )}
             <TabsTrigger value="manage" className="flex-none rounded-none px-4 py-2">
-              {t("vectorStores.tabs.manage")}
+              Manage Vector Stores
             </TabsTrigger>
             <TabsTrigger value="test" className="flex-none rounded-none px-4 py-2">
-              {t("vectorStores.tabs.test")}
+              Test Vector Store
             </TabsTrigger>
             {isProxyAdminRole(userRole || "") && (
               <TabsTrigger value="indexes" className="flex-none rounded-none px-4 py-2">
-                {t("vectorStores.tabs.indexes")}
+                Indexes
               </TabsTrigger>
             )}
           </TabsList>
 
-          <TabsContent keepMounted={hasVisited("create")} value="create">
-            <CreateVectorStore accessToken={accessToken} onSuccess={handleVectorStoreCreated} />
-          </TabsContent>
+          {canCreateVectorStores && (
+            <TabsContent keepMounted={hasVisited("create")} value="create">
+              <CreateVectorStore accessToken={accessToken} onSuccess={handleVectorStoreCreated} />
+            </TabsContent>
+          )}
 
           <TabsContent keepMounted={hasVisited("manage")} value="manage">
-            <Button className="mb-4" onClick={() => setIsCreateModalVisible(true)}>
-              {t("vectorStores.add")}
-            </Button>
+            {canCreateVectorStores && (
+              <Button className="mb-4" onClick={() => setIsCreateModalVisible(true)}>
+                + Add Vector Store
+              </Button>
+            )}
 
             <div className="grid grid-cols-1 gap-2 pt-2 pb-2 w-full mt-2">
               <VectorStoreTable
@@ -223,10 +223,10 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
         {/* Delete Confirmation Modal */}
         <DeleteResourceModal
           isOpen={isDeleteModalOpen}
-          title={t("vectorStores.deleteModal.title")}
-          message={t("vectorStores.deleteModal.message")}
-          resourceInformationTitle={t("vectorStores.deleteModal.information")}
-          resourceInformation={[{ label: t("vectorStores.deleteModal.id"), value: vectorStoreToDelete, code: true }]}
+          title="Delete Vector Store"
+          message="Are you sure you want to delete this vector store? This action cannot be undone."
+          resourceInformationTitle="Vector Store Information"
+          resourceInformation={[{ label: "Vector Store ID", value: vectorStoreToDelete, code: true }]}
           onCancel={() => setIsDeleteModalOpen(false)}
           onOk={confirmDelete}
           confirmLoading={isDeleting}

@@ -1,18 +1,17 @@
 import { AccessGroupResponse, useAccessGroups } from "@/app/(dashboard)/hooks/accessGroups/useAccessGroups";
 import { useDeleteAccessGroup } from "@/app/(dashboard)/hooks/accessGroups/useDeleteAccessGroup";
-import { Plus, SearchIcon, X } from "lucide-react";
+import { Boxes, Plus, SearchIcon, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import DeleteResourceModal from "@/components/common_components/DeleteResourceModal";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 import { AccessGroupDetail } from "./AccessGroupsDetailsPage";
-import { AccessGroupCreateModal } from "./AccessGroupsModal/AccessGroupCreateModal";
+import { AccessGroupCreateDialog } from "./access-group-create/AccessGroupCreateDialog";
 import { AccessGroupsTable } from "./AccessGroupsTable";
 import { AccessGroup } from "./types";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { isProxyAdminRole } from "@/utils/roles";
-import { useTranslation } from "react-i18next";
 
 function mapResponseToAccessGroup(r: AccessGroupResponse): AccessGroup {
   return {
@@ -32,7 +31,6 @@ function mapResponseToAccessGroup(r: AccessGroupResponse): AccessGroup {
 }
 
 export function AccessGroupsPage() {
-  const { t } = useTranslation("gateway");
   const { userRole } = useAuthorized();
   // Admin Viewer follows the read-parity rule: see access groups, no writes.
   const canModify = isProxyAdminRole(userRole ?? "");
@@ -61,39 +59,34 @@ export function AccessGroupsPage() {
   }
 
   return (
-    <div className="p-6 px-12">
-      <div className="mb-4">
-        <PageHeader
-          title={t("accessGroups.title")}
-          subtitle={t("accessGroups.subtitle")}
-          actions={
-            canModify ? (
-              <Button onClick={() => setIsCreateModalVisible(true)}>
-                <Plus className="size-4" />
-                {t("accessGroups.create")}
-              </Button>
-            ) : undefined
-          }
-        />
-      </div>
+    <div className="p-8">
+      <PageHeader
+        icon={<Boxes />}
+        title="Access Groups"
+        subtitle="Manage resource permissions for your organization"
+        primaryAction={
+          canModify ? (
+            <Button onClick={() => setIsCreateModalVisible(true)}>
+              <Plus className="size-4" />
+              Create Access Group
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <div className="mb-3 flex items-center">
+      <div className="mt-6 mb-3 flex items-center">
         <InputGroup className="max-w-[400px]">
           <InputGroupAddon>
             <SearchIcon className="size-4 text-muted-foreground" />
           </InputGroupAddon>
           <InputGroupInput
-            placeholder={t("accessGroups.searchPlaceholder")}
+            placeholder="Search groups by name, ID, or description..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
           />
           {searchText && (
             <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                size="icon-xs"
-                aria-label={t("accessGroups.clearSearch")}
-                onClick={() => setSearchText("")}
-              >
+              <InputGroupButton size="icon-xs" aria-label="Clear search" onClick={() => setSearchText("")}>
                 <X />
               </InputGroupButton>
             </InputGroupAddon>
@@ -110,17 +103,17 @@ export function AccessGroupsPage() {
         onDeleteClick={setGroupToDelete}
       />
 
-      <AccessGroupCreateModal visible={isCreateModalVisible} onCancel={() => setIsCreateModalVisible(false)} />
+      <AccessGroupCreateDialog open={isCreateModalVisible} onOpenChange={setIsCreateModalVisible} />
 
       <DeleteResourceModal
         isOpen={!!groupToDelete}
-        title={t("accessGroups.delete.title")}
-        message={t("accessGroups.delete.message")}
-        resourceInformationTitle={t("accessGroups.delete.information")}
+        title="Delete Access Group"
+        message="Are you sure you want to delete this access group? This action cannot be undone."
+        resourceInformationTitle="Access Group Information"
         resourceInformation={[
           { label: "ID", value: groupToDelete?.id, code: true },
-          { label: t("accessGroups.fields.name"), value: groupToDelete?.name },
-          { label: t("accessGroups.fields.description"), value: groupToDelete?.description || "—" },
+          { label: "Name", value: groupToDelete?.name },
+          { label: "Description", value: groupToDelete?.description || "—" },
         ]}
         onCancel={() => setGroupToDelete(null)}
         onOk={() => {

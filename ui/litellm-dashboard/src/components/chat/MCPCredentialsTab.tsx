@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash2, Link } from "lucide-react";
@@ -18,9 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import MessageManager from "@/components/molecules/message_manager";
+import { toast } from "@/lib/toast";
 import { deleteMCPOAuthUserCredential, listMCPUserCredentials, MCPUserCredentialListItem } from "../networking";
-import { useTranslation } from "react-i18next";
 
 const MCP_CREDENTIALS_QUERY_KEY = "mcp-user-credentials";
 
@@ -28,45 +28,39 @@ interface Props {
   accessToken: string;
 }
 
-function relativeTime(
-  isoString: string | null | undefined,
-  t: (key: string, values?: Record<string, number>) => string,
-): string {
+function relativeTime(isoString: string | null | undefined): string {
   if (!isoString) return "";
   try {
     const date = new Date(isoString);
     const diffMs = Date.now() - date.getTime();
     const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 60) return t("keys.justNow");
+    if (diffSec < 60) return "just now";
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return t("keys.minutesAgo", { count: diffMin });
+    if (diffMin < 60) return `${diffMin}m ago`;
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return t("keys.hoursAgo", { count: diffHr });
-    return t("keys.daysAgo", { count: Math.floor(diffHr / 24) });
+    if (diffHr < 24) return `${diffHr}h ago`;
+    return `${Math.floor(diffHr / 24)}d ago`;
   } catch {
     return "";
   }
 }
 
-function expiryLabel(
-  isoString: string | null | undefined,
-  t: (key: string, values?: Record<string, number>) => string,
-): {
+function expiryLabel(isoString: string | null | undefined): {
   text: string;
   variant: "secondary" | "destructive" | "outline";
 } {
-  if (!isoString) return { text: t("integrations.credentials.doesNotExpire"), variant: "secondary" };
+  if (!isoString) return { text: "Does not expire", variant: "secondary" };
   try {
     const exp = new Date(isoString);
     const diffMs = exp.getTime() - Date.now();
-    if (diffMs <= 0) return { text: t("integrations.credentials.expired"), variant: "destructive" };
+    if (diffMs <= 0) return { text: "Expired", variant: "destructive" };
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
     const diffHr = Math.floor(diffMin / 60);
     const diffDay = Math.floor(diffHr / 24);
-    if (diffDay > 0) return { text: t("integrations.credentials.expiresDays", { count: diffDay }), variant: "outline" };
-    if (diffHr > 0) return { text: t("integrations.credentials.expiresHours", { count: diffHr }), variant: "outline" };
-    return { text: t("integrations.credentials.expiresMinutes", { count: diffMin }), variant: "outline" };
+    if (diffDay > 0) return { text: `Expires in ${diffDay}d`, variant: "outline" };
+    if (diffHr > 0) return { text: `Expires in ${diffHr}h`, variant: "outline" };
+    return { text: `Expires in ${diffMin}m`, variant: "outline" };
   } catch {
     return { text: "", variant: "outline" };
   }
@@ -91,7 +85,7 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
         (prev ?? []).filter((c) => c.server_id !== serverId),
       );
     } catch {
-      MessageManager.error(t("integrations.credentials.revokeError"));
+      toast.error("Failed to revoke connection. Please try again.");
     } finally {
       setRevoking((prev) => {
         const n = new Set(prev);
@@ -119,10 +113,10 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
                   {t("integrations.credentials.columns.app")}
                 </TableHead>
                 <TableHead className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("integrations.credentials.columns.connected")}
+                  {t("playground.connected")}
                 </TableHead>
                 <TableHead className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("integrations.credentials.columns.status")}
+                  {t("logs.columns.status")}
                 </TableHead>
                 <TableHead className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">
                   {t("integrations.credentials.columns.actions")}
@@ -153,7 +147,10 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
         <div className="text-center text-muted-foreground text-sm py-12 border border-dashed rounded-lg">
           <Link className="h-6 w-6 mb-3 mx-auto text-muted-foreground/50" />
           <p className="m-0">{t("integrations.credentials.empty")}</p>
-          <p className="m-0 mt-1 text-xs">{t("integrations.credentials.emptyHint")}</p>
+          <p className="m-0 mt-1 text-xs">
+            {t("common:merge.goTo")} <span className="font-medium">{t("navigation.integrations")}</span> {t("common:merge.andClick")}{" "}
+            <span className="font-medium">{t("playground.connect")}</span> {t("common:merge.authorizeMcp")}
+          </p>
         </div>
       ) : (
         <div className="rounded-lg border overflow-hidden">
@@ -164,10 +161,10 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
                   {t("integrations.credentials.columns.app")}
                 </TableHead>
                 <TableHead className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("integrations.credentials.columns.connected")}
+                  {t("playground.connected")}
                 </TableHead>
                 <TableHead className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("integrations.credentials.columns.status")}
+                  {t("logs.columns.status")}
                 </TableHead>
                 <TableHead className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">
                   {t("integrations.credentials.columns.actions")}
@@ -177,12 +174,12 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
             <TableBody>
               {credentials.map((cred) => {
                 const isRevoking = revoking.has(cred.server_id);
-                const exp = expiryLabel(cred.expires_at, t);
+                const exp = expiryLabel(cred.expires_at);
                 return (
                   <TableRow key={cred.server_id}>
                     <TableCell className="text-sm font-medium">{displayName(cred)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {relativeTime(cred.connected_at, t) || "\u2014"}
+                      {relativeTime(cred.connected_at) || "\u2014"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={exp.variant}>{exp.text}</Badge>
@@ -210,11 +207,12 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
                           <AlertDialogHeader>
                             <AlertDialogTitle>{t("integrations.credentials.revokeTitle")}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              {t("integrations.credentials.revokeDescription", { name: displayName(cred) })}
+                              {t("common:merge.revokeBefore")} {displayName(cred)}. {" "}
+                              {t("common:merge.revokeAfter")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>{t("integrations.credentials.cancel")}</AlertDialogCancel>
+                            <AlertDialogCancel>{t("playground.cancel")}</AlertDialogCancel>
                             <AlertDialogAction variant="destructive" onClick={() => handleRevoke(cred.server_id)}>
                               {t("integrations.credentials.revoke")}
                             </AlertDialogAction>

@@ -133,6 +133,14 @@ export const getBudgetTableColumns = ({
     cell: ({ row }) => <RateLimitCell value={row.original.rpm_limit} t={t} />,
   },
   {
+    id: "tpd_limit",
+    accessorKey: "tpd_limit",
+    meta: { title: "TPD (batch)", numeric: true },
+    header: ({ column }) => <DataTableSortHeader column={column} title="TPD (batch)" />,
+    size: 110,
+    cell: ({ row }) => <RateLimitCell value={row.original.tpd_limit} />,
+  },
+  {
     id: "budget_duration",
     accessorKey: "budget_duration",
     filterFn: serverFilter,

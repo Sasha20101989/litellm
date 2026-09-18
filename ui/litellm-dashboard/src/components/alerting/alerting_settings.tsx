@@ -2,11 +2,11 @@
  * UI for controlling slack alerting settings
  */
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 
 import { alertingSettingsCall, updateConfigFieldSetting } from "../networking";
 import DynamicForm from "./dynamic_form";
-import NotificationsManager from "../molecules/notifications_manager";
+import { extractProxyErrorMessage } from "@/lib/http/client";
+import { toast } from "@/lib/toast";
 interface alertingSettingsItem {
   field_name: string;
   field_type: string;
@@ -23,7 +23,6 @@ interface AlertingSettingsProps {
 }
 
 const AlertingSettings: React.FC<AlertingSettingsProps> = ({ accessToken, premiumUser }) => {
-  const { t } = useTranslation("settings");
   const [alertingSettings, setAlertingSettings] = useState<alertingSettingsItem[]>([]);
 
   useEffect(() => {
@@ -45,7 +44,7 @@ const AlertingSettings: React.FC<AlertingSettingsProps> = ({ accessToken, premiu
     setAlertingSettings(updatedSettings);
   };
 
-  const handleSubmit = (formValues: Record<string, any>) => {
+  const handleSubmit = async (formValues: Record<string, any>) => {
     if (!accessToken) {
       return;
     }
@@ -66,18 +65,18 @@ const AlertingSettings: React.FC<AlertingSettingsProps> = ({ accessToken, premiu
     const mergedFormValues = { ...formValues, ...initialFormValues };
     const { slack_alerting, ...alertingArgs } = mergedFormValues;
     try {
-      updateConfigFieldSetting(accessToken, "alerting_args", alertingArgs);
+      await updateConfigFieldSetting(accessToken, "alerting_args", alertingArgs);
       if (typeof slack_alerting === "boolean") {
         if (slack_alerting == true) {
-          updateConfigFieldSetting(accessToken, "alerting", ["slack"]);
+          await updateConfigFieldSetting(accessToken, "alerting", ["slack"]);
         } else {
-          updateConfigFieldSetting(accessToken, "alerting", []);
+          await updateConfigFieldSetting(accessToken, "alerting", []);
         }
       }
       // update value in state
-      NotificationsManager.success(t("logging.alerts.dynamic.saved"));
+      toast.success("Wait 10s for proxy to update.");
     } catch (error) {
-      // do something
+      toast.error(extractProxyErrorMessage(error));
     }
   };
 

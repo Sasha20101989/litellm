@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 
 interface RecognitionMetadata {
   recognizer_name: string;
@@ -20,12 +19,11 @@ interface PresidioDetectedEntitiesProps {
 }
 
 const getScoreColor = (score: number): string => {
-  if (score >= 0.8) return "text-green-600";
-  return "text-yellow-600";
+  if (score >= 0.8) return "text-success";
+  return "text-warning";
 };
 
 const PresidioDetectedEntities = ({ entities }: PresidioDetectedEntitiesProps) => {
-  const { t } = useTranslation("logs");
   const [entityListExpanded, setEntityListExpanded] = useState(true);
   const [expandedEntities, setExpandedEntities] = useState<Record<number, boolean>>({});
 
@@ -49,7 +47,7 @@ const PresidioDetectedEntities = ({ entities }: PresidioDetectedEntitiesProps) =
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-        <h4 className="font-medium">{t("guardrails.detectedEntities", { count: entities.length })}</h4>
+        <h4 className="font-medium">Detected Entities ({entities.length})</h4>
       </div>
 
       {entityListExpanded && (
@@ -60,7 +58,7 @@ const PresidioDetectedEntities = ({ entities }: PresidioDetectedEntitiesProps) =
             return (
               <div key={index} className="border rounded-lg overflow-hidden">
                 <div
-                  className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                  className="flex items-center justify-between p-3 bg-muted cursor-pointer hover:bg-accent"
                   onClick={() => toggleEntity(index)}
                 >
                   <div className="flex items-center">
@@ -73,29 +71,29 @@ const PresidioDetectedEntities = ({ entities }: PresidioDetectedEntitiesProps) =
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                     <span className="font-medium mr-2">{entity.entity_type}</span>
-                    <span className={`font-mono ${getScoreColor(entity.score)}`}>
-                      {t("guardrails.score")}: {entity.score.toFixed(2)}
-                    </span>
+                    <span className={`font-mono ${getScoreColor(entity.score)}`}>Score: {entity.score.toFixed(2)}</span>
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {t("guardrails.position")}: {entity.start}-{entity.end}
+                  <span className="text-xs text-muted-foreground">
+                    Position: {entity.start}-{entity.end}
                   </span>
                 </div>
 
                 {isExpanded && (
-                  <div className="p-3 border-t bg-white">
+                  <div className="p-3 border-t bg-card">
                     <div className="grid grid-cols-2 gap-4 mb-2">
                       <div className="space-y-2">
                         <div className="flex">
-                          <span className="font-medium w-1/3">{t("guardrails.entityType")}:</span>
+                          <span className="font-medium w-1/3">Entity Type:</span>
                           <span>{entity.entity_type}</span>
                         </div>
                         <div className="flex">
-                          <span className="font-medium w-1/3">{t("guardrails.position")}:</span>
-                          <span>{t("guardrails.characters", { start: entity.start, end: entity.end })}</span>
+                          <span className="font-medium w-1/3">Position:</span>
+                          <span>
+                            Characters {entity.start}-{entity.end}
+                          </span>
                         </div>
                         <div className="flex">
-                          <span className="font-medium w-1/3">{t("guardrails.confidence")}:</span>
+                          <span className="font-medium w-1/3">Confidence:</span>
                           <span className={getScoreColor(entity.score)}>{entity.score.toFixed(2)}</span>
                         </div>
                       </div>
@@ -104,11 +102,11 @@ const PresidioDetectedEntities = ({ entities }: PresidioDetectedEntitiesProps) =
                         {entity.recognition_metadata && (
                           <>
                             <div className="flex">
-                              <span className="font-medium w-1/3">{t("guardrails.recognizer")}:</span>
+                              <span className="font-medium w-1/3">Recognizer:</span>
                               <span>{entity.recognition_metadata.recognizer_name}</span>
                             </div>
                             <div className="flex overflow-hidden">
-                              <span className="font-medium w-1/3">{t("guardrails.identifier")}:</span>
+                              <span className="font-medium w-1/3">Identifier:</span>
                               <span className="truncate text-xs font-mono">
                                 {entity.recognition_metadata.recognizer_identifier}
                               </span>
@@ -117,7 +115,7 @@ const PresidioDetectedEntities = ({ entities }: PresidioDetectedEntitiesProps) =
                         )}
                         {entity.analysis_explanation && (
                           <div className="flex">
-                            <span className="font-medium w-1/3">{t("guardrails.explanation")}:</span>
+                            <span className="font-medium w-1/3">Explanation:</span>
                             <span>{entity.analysis_explanation}</span>
                           </div>
                         )}

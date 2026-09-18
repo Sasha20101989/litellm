@@ -3,19 +3,68 @@
 import { useUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUISettings";
 import { useUpdateUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUpdateUISettings";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
-import NotificationManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shared/Alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import PageVisibilitySettings from "./PageVisibilitySettings";
-import { Alert, Card, Divider, Skeleton, Space, Switch, Typography } from "antd";
-import { useTranslation } from "react-i18next";
+
+interface SettingRowProps {
+  ariaLabel: string;
+  checked: boolean;
+  description?: string;
+  disabled: boolean;
+  indented?: boolean;
+  label: string;
+  muted?: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}
+
+function SettingRow({
+  ariaLabel,
+  checked,
+  description,
+  disabled,
+  indented = false,
+  label,
+  muted = false,
+  onCheckedChange,
+}: SettingRowProps) {
+  return (
+    <div className={indented ? "ml-8 flex items-start gap-3" : "flex items-start gap-3"}>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={ariaLabel} />
+      <div className="space-y-1">
+        <p className={muted ? "text-sm font-medium text-muted-foreground" : "text-sm font-medium text-foreground"}>
+          {label}
+        </p>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function UISettings() {
-  const { t } = useTranslation("settings");
   const { accessToken } = useAuthorized();
   const { data, isLoading, isError, error } = useUISettings();
   const { mutate: updateSettings, isPending: isUpdating, error: updateError } = useUpdateUISettings(accessToken);
 
   const schema = data?.field_schema;
+  const property = schema?.properties?.disable_model_add_for_internal_users;
+  const disableTeamAdminDeleteProperty = schema?.properties?.disable_team_admin_delete_team_user;
+  const requireAuthForPublicAIHubProperty = schema?.properties?.require_auth_for_public_ai_hub;
+  const forwardClientHeadersProperty = schema?.properties?.forward_client_headers_to_llm_api;
+  const forwardLLMProviderAuthHeadersProperty = schema?.properties?.forward_llm_provider_auth_headers;
   const enableProjectsUIProperty = schema?.properties?.enable_projects_ui;
+  const enableChatUIProperty = schema?.properties?.enable_chat_ui;
+  const enabledPagesProperty = schema?.properties?.enabled_ui_pages_internal_users;
+  const disableAgentsProperty = schema?.properties?.disable_agents_for_internal_users;
+  const allowAgentsTeamAdminsProperty = schema?.properties?.allow_agents_for_team_admins;
+  const disableVectorStoresProperty = schema?.properties?.disable_vector_stores_for_internal_users;
+  const allowVectorStoresTeamAdminsProperty = schema?.properties?.allow_vector_stores_for_team_admins;
+  const scopeUserSearchProperty = schema?.properties?.scope_user_search_to_org;
+  const disableCustomApiKeysProperty = schema?.properties?.disable_custom_api_keys;
   const values = data?.values ?? {};
   const isDisabledForInternalUsers = Boolean(values.disable_model_add_for_internal_users);
   const isDisabledTeamAdminDeleteTeamUser = Boolean(values.disable_team_admin_delete_team_user);
@@ -27,10 +76,10 @@ export default function UISettings() {
       { disable_model_add_for_internal_users: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -41,10 +90,10 @@ export default function UISettings() {
       { disable_team_admin_delete_team_user: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -53,10 +102,10 @@ export default function UISettings() {
   const handleUpdatePageVisibility = (settings: { enabled_ui_pages_internal_users: string[] | null }) => {
     updateSettings(settings, {
       onSuccess: () => {
-        NotificationManager.success(t("admin.ui.pagesUpdated"));
+        toast.success("Page visibility settings updated successfully");
       },
       onError: (error) => {
-        NotificationManager.fromBackend(error);
+        toast.fromError(error);
       },
     });
   };
@@ -66,10 +115,10 @@ export default function UISettings() {
       { forward_client_headers_to_llm_api: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -80,10 +129,10 @@ export default function UISettings() {
       { forward_llm_provider_auth_headers: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -94,11 +143,11 @@ export default function UISettings() {
       { enable_projects_ui: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updatedReload"));
+          toast.success("UI settings updated successfully. Refreshing page...");
           setTimeout(() => window.location.reload(), 1000);
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -109,11 +158,11 @@ export default function UISettings() {
       { enable_chat_ui: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updatedReload"));
+          toast.success("UI settings updated successfully. Refreshing page...");
           setTimeout(() => window.location.reload(), 1000);
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -124,10 +173,10 @@ export default function UISettings() {
       { require_auth_for_public_ai_hub: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -138,10 +187,10 @@ export default function UISettings() {
       { disable_agents_for_internal_users: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -152,10 +201,10 @@ export default function UISettings() {
       { allow_agents_for_team_admins: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -166,10 +215,10 @@ export default function UISettings() {
       { disable_vector_stores_for_internal_users: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -180,10 +229,10 @@ export default function UISettings() {
       { allow_vector_stores_for_team_admins: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -194,10 +243,10 @@ export default function UISettings() {
       { scope_user_search_to_org: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
@@ -208,245 +257,191 @@ export default function UISettings() {
       { disable_custom_api_keys: checked },
       {
         onSuccess: () => {
-          NotificationManager.success(t("admin.ui.updated"));
+          toast.success("UI settings updated successfully");
         },
         onError: (error) => {
-          NotificationManager.fromBackend(error);
+          toast.fromError(error);
         },
       },
     );
   };
 
   return (
-    <Card title={t("admin.ui.title")}>
-      {isLoading ? (
-        <Skeleton active />
-      ) : isError ? (
-        <Alert
-          type="error"
-          message={t("admin.ui.loadFailed")}
-          description={error instanceof Error ? error.message : undefined}
-        />
-      ) : (
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          {updateError && (
-            <Alert
-              type="error"
-              message={t("admin.ui.updateFailed")}
-              description={updateError instanceof Error ? updateError.message : undefined}
-            />
-          )}
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h3>UI Settings</h3>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div role="status" aria-label="Loading UI settings" className="space-y-3">
+            <Skeleton className="h-5 w-72" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : isError ? (
+          <Alert variant="error">
+            <AlertTitle>Could not load UI settings</AlertTitle>
+            {error instanceof Error && <AlertDescription>{error.message}</AlertDescription>}
+          </Alert>
+        ) : (
+          <div className="space-y-6">
+            {schema?.description && <p className="text-sm text-foreground">{schema.description}</p>}
+            {updateError && (
+              <Alert variant="error">
+                <AlertTitle>Could not update UI settings</AlertTitle>
+                {updateError instanceof Error && <AlertDescription>{updateError.message}</AlertDescription>}
+              </Alert>
+            )}
 
-          <Space align="start" size="middle">
-            <Switch
+            <SettingRow
               checked={isDisabledForInternalUsers}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggle}
-              aria-label={t("admin.ui.disableModelAdd")}
+              onCheckedChange={handleToggle}
+              ariaLabel={property?.description ?? "Disable model add for internal users"}
+              label="Disable model add for internal users"
+              description={property?.description}
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.disableModelAdd")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.disableModelAddDescription")}</Typography.Text>
-            </Space>
-          </Space>
-
-          <Space align="start" size="middle">
-            <Switch
+            <SettingRow
               checked={isDisabledTeamAdminDeleteTeamUser}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleTeamAdminDelete}
-              aria-label={t("admin.ui.disableTeamAdminDelete")}
+              onCheckedChange={handleToggleTeamAdminDelete}
+              ariaLabel={disableTeamAdminDeleteProperty?.description ?? "Disable team admin delete team user"}
+              label="Disable team admin delete team user"
+              description={disableTeamAdminDeleteProperty?.description}
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.disableTeamAdminDelete")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.disableTeamAdminDeleteDescription")}</Typography.Text>
-            </Space>
-          </Space>
-
-          <Space align="start" size="middle">
-            <Switch
-              checked={values.require_auth_for_public_ai_hub}
+            <SettingRow
+              checked={Boolean(values.require_auth_for_public_ai_hub)}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleRequireAuthForPublicAIHub}
-              aria-label={t("admin.ui.requireHubAuth")}
+              onCheckedChange={handleToggleRequireAuthForPublicAIHub}
+              ariaLabel={requireAuthForPublicAIHubProperty?.description ?? "Require authentication for public AI Hub"}
+              label="Require authentication for public AI Hub"
+              description={requireAuthForPublicAIHubProperty?.description}
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.requireHubAuth")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.requireHubAuthDescription")}</Typography.Text>
-            </Space>
-          </Space>
-
-          <Space align="start" size="middle">
-            <Switch
+            <SettingRow
               checked={Boolean(values.forward_client_headers_to_llm_api)}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleForwardClientHeaders}
-              aria-label={t("admin.ui.forwardClientHeaders")}
+              onCheckedChange={handleToggleForwardClientHeaders}
+              ariaLabel={forwardClientHeadersProperty?.description ?? "Forward client headers to LLM API"}
+              label="Forward client headers to LLM API"
+              description={
+                forwardClientHeadersProperty?.description ??
+                "Forwards client headers (Authorization, anthropic-beta, and x-* custom headers) to the upstream LLM. Enable for Claude Code with a Max subscription (forwards the OAuth token) or to pass custom/tracing headers through to the provider. Independent of the BYOK toggle — enable only the one(s) you need."
+              }
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.forwardClientHeaders")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.forwardClientHeadersDescription")}</Typography.Text>
-            </Space>
-          </Space>
-
-          <Space align="start" size="middle">
-            <Switch
+            <SettingRow
               checked={Boolean(values.forward_llm_provider_auth_headers)}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleForwardLLMProviderAuthHeaders}
-              aria-label={t("admin.ui.forwardProviderHeaders")}
+              onCheckedChange={handleToggleForwardLLMProviderAuthHeaders}
+              ariaLabel={forwardLLMProviderAuthHeadersProperty?.description ?? "Forward LLM provider auth headers"}
+              label="Forward LLM provider auth headers"
+              description={
+                forwardLLMProviderAuthHeadersProperty?.description ??
+                "Forwards provider auth headers (x-api-key, x-goog-api-key, api-key, ocp-apim-subscription-key) to the upstream LLM, overriding any deployment-configured key for that request. Enable for Claude Code BYOK (clients bring their own API key). Independent of the client-headers toggle — enable only the one(s) you need."
+              }
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.forwardProviderHeaders")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.forwardProviderHeadersDescription")}</Typography.Text>
-            </Space>
-          </Space>
-
-          {enableProjectsUIProperty && (
-            <Space align="start" size="middle">
-              <Switch
+            {enableProjectsUIProperty && (
+              <SettingRow
                 checked={Boolean(values.enable_projects_ui)}
                 disabled={isUpdating}
-                loading={isUpdating}
-                onChange={handleToggleEnableProjectsUI}
-                aria-label={t("admin.ui.enableProjects")}
+                onCheckedChange={handleToggleEnableProjectsUI}
+                ariaLabel={enableProjectsUIProperty.description ?? "Enable Projects UI"}
+                label="[BETA] Enable Projects (page will refresh)"
+                description={
+                  enableProjectsUIProperty.description ??
+                  "If enabled, shows the Projects feature in the UI sidebar and the project field in key management."
+                }
               />
-              <Space direction="vertical" size={4}>
-                <Typography.Text strong>{t("admin.ui.enableProjects")}</Typography.Text>
-                <Typography.Text type="secondary">{t("admin.ui.enableProjectsDescription")}</Typography.Text>
-              </Space>
-            </Space>
-          )}
-
-          <Space align="start" size="middle">
-            <Switch
+            )}
+            <SettingRow
               checked={Boolean(values.enable_chat_ui)}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleEnableChatUI}
-              aria-label={t("admin.ui.enableChat")}
+              onCheckedChange={handleToggleEnableChatUI}
+              ariaLabel={enableChatUIProperty?.description ?? "Enable Chat page"}
+              label="[BETA] Enable Chat page (page will refresh)"
+              description={
+                enableChatUIProperty?.description ??
+                "If enabled, shows the Chat page in the UI sidebar, letting users chat with an LLM and connect their own MCP server credentials via OAuth."
+              }
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.enableChat")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.enableChatDescription")}</Typography.Text>
-            </Space>
-          </Space>
 
-          <Divider />
-
-          {/* Agents access control */}
-          <Space align="start" size="middle">
-            <Switch
+            <Separator />
+            <SettingRow
               checked={isAgentsDisabled}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleDisableAgents}
-              aria-label={t("admin.ui.disableAgents")}
+              onCheckedChange={handleToggleDisableAgents}
+              ariaLabel={disableAgentsProperty?.description ?? "Disable agents for internal users"}
+              label="Disable agents for internal users"
+              description={disableAgentsProperty?.description}
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.disableAgents")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.disableAgentsDescription")}</Typography.Text>
-            </Space>
-          </Space>
-
-          <Space align="start" size="middle" style={{ marginLeft: 32 }}>
-            <Switch
+            <SettingRow
               checked={Boolean(values.allow_agents_for_team_admins)}
               disabled={isUpdating || !isAgentsDisabled}
-              loading={isUpdating}
-              onChange={handleToggleAllowAgentsTeamAdmins}
-              aria-label={t("admin.ui.allowAgentsAdmins")}
+              onCheckedChange={handleToggleAllowAgentsTeamAdmins}
+              ariaLabel={allowAgentsTeamAdminsProperty?.description ?? "Allow agents for team admins"}
+              label="Allow agents for team admins"
+              description={allowAgentsTeamAdminsProperty?.description}
+              indented
+              muted={!isAgentsDisabled}
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong type={!isAgentsDisabled ? "secondary" : undefined}>
-                {t("admin.ui.allowAgentsAdmins")}
-              </Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.allowAgentsAdminsDescription")}</Typography.Text>
-            </Space>
-          </Space>
 
-          <Divider />
-
-          {/* Vector Stores access control */}
-          <Space align="start" size="middle">
-            <Switch
+            <Separator />
+            <SettingRow
               checked={isVectorStoresDisabled}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleDisableVectorStores}
-              aria-label={t("admin.ui.disableVectorStores")}
+              onCheckedChange={handleToggleDisableVectorStores}
+              ariaLabel={disableVectorStoresProperty?.description ?? "Disable vector stores for internal users"}
+              label="Disable vector stores for internal users"
+              description={disableVectorStoresProperty?.description}
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.disableVectorStores")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.disableVectorStoresDescription")}</Typography.Text>
-            </Space>
-          </Space>
-
-          <Space align="start" size="middle" style={{ marginLeft: 32 }}>
-            <Switch
+            <SettingRow
               checked={Boolean(values.allow_vector_stores_for_team_admins)}
               disabled={isUpdating || !isVectorStoresDisabled}
-              loading={isUpdating}
-              onChange={handleToggleAllowVectorStoresTeamAdmins}
-              aria-label={t("admin.ui.allowVectorStoresAdmins")}
+              onCheckedChange={handleToggleAllowVectorStoresTeamAdmins}
+              ariaLabel={allowVectorStoresTeamAdminsProperty?.description ?? "Allow vector stores for team admins"}
+              label="Allow vector stores for team admins"
+              description={allowVectorStoresTeamAdminsProperty?.description}
+              indented
+              muted={!isVectorStoresDisabled}
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong type={!isVectorStoresDisabled ? "secondary" : undefined}>
-                {t("admin.ui.allowVectorStoresAdmins")}
-              </Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.allowVectorStoresAdminsDescription")}</Typography.Text>
-            </Space>
-          </Space>
 
-          <Divider />
-
-          {/* Scope user search to organization */}
-          <Space align="start" size="middle">
-            <Switch
+            <Separator />
+            <SettingRow
               checked={Boolean(values.scope_user_search_to_org)}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleScopeUserSearch}
-              aria-label={t("admin.ui.scopeUserSearch")}
+              onCheckedChange={handleToggleScopeUserSearch}
+              ariaLabel={scopeUserSearchProperty?.description ?? "Scope user search to organization"}
+              label="Scope user search to organization"
+              description={
+                scopeUserSearchProperty?.description ??
+                "If enabled, the user search endpoint restricts results by organization. When off, any authenticated user can search all users."
+              }
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.scopeUserSearch")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.scopeUserSearchDescription")}</Typography.Text>
-            </Space>
-          </Space>
 
-          <Divider />
-
-          {/* Disable custom Virtual key values */}
-          <Space align="start" size="middle">
-            <Switch
+            <Separator />
+            <SettingRow
               checked={Boolean(values.disable_custom_api_keys)}
               disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleDisableCustomApiKeys}
-              aria-label={t("admin.ui.disableCustomKeys")}
+              onCheckedChange={handleToggleDisableCustomApiKeys}
+              ariaLabel={disableCustomApiKeysProperty?.description ?? "Disable custom Virtual key values"}
+              label="Disable custom Virtual key values"
+              description={
+                disableCustomApiKeysProperty?.description ??
+                "If true, users cannot specify custom key values. All keys must be auto-generated."
+              }
             />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>{t("admin.ui.disableCustomKeys")}</Typography.Text>
-              <Typography.Text type="secondary">{t("admin.ui.disableCustomKeysDescription")}</Typography.Text>
-            </Space>
-          </Space>
 
-          <Divider />
-
-          {/* Page Visibility for Internal Users */}
-          <PageVisibilitySettings
-            enabledPagesInternalUsers={values.enabled_ui_pages_internal_users}
-            isUpdating={isUpdating}
-            onUpdate={handleUpdatePageVisibility}
-          />
-        </Space>
-      )}
+            <Separator />
+            <PageVisibilitySettings
+              enabledPagesInternalUsers={values.enabled_ui_pages_internal_users}
+              enabledPagesPropertyDescription={enabledPagesProperty?.description}
+              isUpdating={isUpdating}
+              onUpdate={handleUpdatePageVisibility}
+            />
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }

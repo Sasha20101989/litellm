@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Form } from "antd";
-import NotificationsManager from "@/components/molecules/notifications_manager";
+import { FormProvider, useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
+import { toast } from "@/lib/toast";
 import { StatusBadge } from "@/components/shared/table_cells/status_badge";
 import {
   useCoordinationRedisSettings,
@@ -9,20 +11,19 @@ import {
 } from "@/app/(dashboard)/hooks/coordinationRedis/useCoordinationRedisSettings";
 import CoordinationRedisFieldSection from "./CoordinationRedisFieldSection";
 import CoordinationRedisTypeSelector from "./CoordinationRedisTypeSelector";
-import { CoordinationRedisType } from "./coordinationRedisFields";
+import { COORDINATION_FIELDS, CoordinationRedisType } from "./coordinationRedisFields";
 import {
   buildCoordinationPayload,
   buildInitialValues,
   configuredSecretFields,
   CoordinationFormValues,
   inferRedisType,
+  isFieldVisible,
   sourceBadge,
 } from "./coordinationRedisUtils";
-import { useTranslation } from "react-i18next";
 
 const CoordinationRedisSettings: React.FC = () => {
-  const { t } = useTranslation("settings");
-  const [form] = Form.useForm<CoordinationFormValues>();
+  const form = useForm<CoordinationFormValues>({ defaultValues: buildInitialValues({}) });
   const [selectedRedisType, setSelectedRedisType] = useState<CoordinationRedisType | null>(null);
 
   const { data, isLoading, isError } = useCoordinationRedisSettings();
@@ -33,26 +34,30 @@ const CoordinationRedisSettings: React.FC = () => {
 
   useEffect(() => {
     if (data) {
-      form.setFieldsValue(buildInitialValues(data.values));
+      form.reset(buildInitialValues(data.values));
     }
   }, [data, form]);
 
   useEffect(() => {
     if (isError) {
-      NotificationsManager.fromBackend(t("caching.coordination.loadFailed"));
+      toast.fromError("Failed to load coordination Redis settings");
     }
   }, [isError]);
 
-  const validate = async (): Promise<CoordinationFormValues | null> => {
-    try {
-      return await form.validateFields();
-    } catch {
-      return null;
-    }
+  const validate = (): CoordinationFormValues | null => {
+    const values = form.getValues();
+    const failures = COORDINATION_FIELDS.filter((field) => isFieldVisible(field, redisType)).flatMap((field) => {
+      const message = field.rules?.map((rule) => rule(values[field.name])).find((result) => result !== null);
+      return message === undefined || message === null ? [] : [[field.name, message] as const];
+    });
+
+    form.clearErrors();
+    failures.forEach(([name, message]) => form.setError(name, { message }));
+    return failures.length > 0 ? null : values;
   };
 
   const handleTestConnection = async () => {
-    const values = await validate();
+    const values = validate();
     if (values === null) {
       return;
     }
@@ -60,112 +65,104 @@ const CoordinationRedisSettings: React.FC = () => {
     try {
       const result = await testConnection.mutateAsync(buildCoordinationPayload(redisType, values));
       if (result.status === "healthy") {
-        NotificationsManager.success(t("caching.coordination.testSuccess"));
+        toast.success("Coordination Redis connection test successful!");
       } else {
-        NotificationsManager.fromBackend(
-          t("caching.settings.testFailed", { error: result.error ?? t("caching.unknownError") }),
-        );
+        toast.fromError(`Connection test failed: ${result.error ?? "Unknown error"}`);
       }
     } catch (error) {
-      NotificationsManager.fromBackend(
-        t("caching.settings.testFailed", {
-          error: error instanceof Error ? error.message : t("caching.unknownError"),
-        }),
-      );
+      toast.fromError(`Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
   const handleSaveChanges = async () => {
-    const values = await validate();
+    const values = validate();
     if (values === null) {
       return;
     }
 
     try {
       await updateSettings.mutateAsync(buildCoordinationPayload(redisType, values));
-      NotificationsManager.success(t("caching.coordination.saved"));
+      toast.success("Coordination Redis settings saved. Restart the proxy to apply them.");
     } catch {
-      NotificationsManager.fromBackend(t("caching.coordination.updateFailed"));
+      toast.fromError("Failed to update coordination Redis settings");
     }
   };
 
   const badge = sourceBadge(data?.source);
-  const sourceKey = ["coordination_redis", "cache_backend", "environment"].includes(data?.source ?? "")
-    ? data!.source!
-    : "none";
   const configuredSecrets = useMemo(() => configuredSecretFields(data?.values ?? {}), [data]);
 
   return (
     <div className="w-full space-y-8 py-2">
-      <Form form={form} layout="vertical" requiredMark={false} className="space-y-6">
-        <div className="max-w-3xl space-y-2">
-          <div className="flex items-center gap-3">
-            <h3 className="text-sm font-medium text-gray-900">{t("caching.coordination.title")}</h3>
-            {!isLoading && (
-              <StatusBadge
-                tone={badge.tone}
-                label={t(`caching.coordination.source.${sourceKey}`, { defaultValue: badge.label })}
-                dataTestId="coordination-redis-source"
+      <FormProvider {...form}>
+        <form onSubmit={(event) => event.preventDefault()} className="space-y-6">
+          <div className="max-w-3xl space-y-2">
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-medium text-foreground">Coordination Redis</h3>
+              {!isLoading && (
+                <StatusBadge tone={badge.tone} label={badge.label} dataTestId="coordination-redis-source" />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Redis used to coordinate work across proxy pods: cross-pod rate limits, spend tracking, and the pod lock
+              manager. It is configured independently of the response cache.
+            </p>
+            <p className="text-xs text-muted-foreground">{badge.tooltip}</p>
+            <p className="text-xs text-warning">Saved changes take effect on proxy restart.</p>
+          </div>
+
+          <CoordinationRedisTypeSelector redisType={redisType} onTypeChange={setSelectedRedisType} />
+
+          <div className="pt-4 border-t border-border">
+            <CoordinationRedisFieldSection
+              title="Connection Settings"
+              section="connection"
+              redisType={redisType}
+              configuredSecrets={configuredSecrets}
+            />
+          </div>
+
+          {redisType === "cluster" && (
+            <div className="pt-4 border-t border-border">
+              <CoordinationRedisFieldSection
+                title="Cluster Configuration"
+                section="cluster"
+                redisType={redisType}
+                configuredSecrets={configuredSecrets}
+                gridCols="grid-cols-1 gap-6"
               />
-            )}
-          </div>
-          <p className="text-xs text-gray-500">{t("caching.coordination.description")}</p>
-          <p className="text-xs text-gray-500">
-            {t(`caching.coordination.sourceTooltip.${sourceKey}`, { defaultValue: badge.tooltip })}
-          </p>
-          <p className="text-xs text-amber-600">{t("caching.coordination.restartNote")}</p>
-        </div>
+            </div>
+          )}
 
-        <CoordinationRedisTypeSelector redisType={redisType} onTypeChange={setSelectedRedisType} />
+          {redisType === "sentinel" && (
+            <div className="pt-4 border-t border-border">
+              <CoordinationRedisFieldSection
+                title="Sentinel Configuration"
+                section="sentinel"
+                redisType={redisType}
+                configuredSecrets={configuredSecrets}
+              />
+            </div>
+          )}
 
-        <div className="pt-4 border-t border-gray-200">
-          <CoordinationRedisFieldSection
-            title={t("caching.settings.connection")}
-            section="connection"
-            redisType={redisType}
-            configuredSecrets={configuredSecrets}
-          />
-        </div>
-
-        {redisType === "cluster" && (
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-border">
             <CoordinationRedisFieldSection
-              title={t("caching.settings.cluster")}
-              section="cluster"
-              redisType={redisType}
-              configuredSecrets={configuredSecrets}
-              gridCols="grid-cols-1 gap-6"
-            />
-          </div>
-        )}
-
-        {redisType === "sentinel" && (
-          <div className="pt-4 border-t border-gray-200">
-            <CoordinationRedisFieldSection
-              title={t("caching.settings.sentinel")}
-              section="sentinel"
+              title="SSL Settings"
+              section="ssl"
               redisType={redisType}
               configuredSecrets={configuredSecrets}
             />
           </div>
-        )}
+        </form>
+      </FormProvider>
 
-        <div className="pt-4 border-t border-gray-200">
-          <CoordinationRedisFieldSection
-            title={t("caching.settings.ssl")}
-            section="ssl"
-            redisType={redisType}
-            configuredSecrets={configuredSecrets}
-          />
-        </div>
-      </Form>
-
-      <div className="border-t border-gray-200 pt-6 flex justify-end gap-3">
-        <Button onClick={handleTestConnection} loading={testConnection.isPending}>
-          {testConnection.isPending ? t("caching.settings.testing") : t("caching.settings.test")}
+      <div className="border-t border-border pt-6 flex justify-end gap-3">
+        <Button variant="outline" onClick={handleTestConnection} disabled={testConnection.isPending}>
+          {testConnection.isPending && <UiLoadingSpinner className="size-4" />}
+          {testConnection.isPending ? "Testing..." : "Test Connection"}
         </Button>
-        <Button type="primary" onClick={handleSaveChanges} loading={updateSettings.isPending}>
-          {updateSettings.isPending ? t("caching.settings.saving") : t("caching.settings.save")}
+        <Button onClick={handleSaveChanges} disabled={updateSettings.isPending}>
+          {updateSettings.isPending && <UiLoadingSpinner className="size-4" />}
+          {updateSettings.isPending ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>

@@ -1,34 +1,24 @@
-import React from "react";
-import { Switch } from "antd";
-import { useTranslation } from "react-i18next";
+import React, { useId } from "react";
+import { Switch } from "@/components/ui/switch";
 
 interface TagFilteringToggleProps {
   enabled: boolean;
   routerFieldsMetadata: { [key: string]: any };
   onToggle: (enabled: boolean) => void;
-  label?: string;
-  description?: string;
-  learnMoreLabel?: string;
 }
 
-const TagFilteringToggle: React.FC<TagFilteringToggleProps> = ({
-  enabled,
-  routerFieldsMetadata,
-  onToggle,
-  label,
-  description,
-  learnMoreLabel,
-}) => {
-  const { t } = useTranslation("settings");
+const TagFilteringToggle: React.FC<TagFilteringToggleProps> = ({ enabled, routerFieldsMetadata, onToggle }) => {
+  const toggleId = useId();
+
   return (
     <div className="space-y-3 max-w-3xl">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
-            {label || routerFieldsMetadata["enable_tag_filtering"]?.ui_field_name || t("router.tagFiltering")}
+          <label htmlFor={toggleId} className="text-xs font-medium text-foreground uppercase tracking-wide">
+            {routerFieldsMetadata["enable_tag_filtering"]?.ui_field_name || "Enable Tag Filtering"}
           </label>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {description || routerFieldsMetadata["enable_tag_filtering"]?.field_description || ""}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {routerFieldsMetadata["enable_tag_filtering"]?.field_description || ""}
             {routerFieldsMetadata["enable_tag_filtering"]?.link && (
               <>
                 {" "}
@@ -36,15 +26,15 @@ const TagFilteringToggle: React.FC<TagFilteringToggleProps> = ({
                   href={routerFieldsMetadata["enable_tag_filtering"].link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
+                  className="text-info hover:text-info/80 underline"
                 >
-                  {learnMoreLabel ?? t("router.learnMore")}
+                  Learn more
                 </a>
               </>
             )}
           </p>
         </div>
-        <Switch checked={enabled} onChange={onToggle} className="ml-4" />
+        <Switch id={toggleId} checked={enabled} onCheckedChange={onToggle} className="ml-4" />
       </div>
     </div>
   );

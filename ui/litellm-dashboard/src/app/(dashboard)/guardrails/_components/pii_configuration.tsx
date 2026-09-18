@@ -1,10 +1,6 @@
-import { Typography } from "antd";
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { CategoryFilter, PiiEntityList, QuickActions } from "./pii_components";
 import { PiiConfigurationProps } from "@/components/guardrails/types";
-
-const { Title, Text } = Typography;
 
 /**
  * A reusable component for rendering PII entity selection and action configuration
@@ -19,7 +15,6 @@ const PiiConfiguration: React.FC<PiiConfigurationProps> = ({
   onActionSelect,
   entityCategories = [],
 }) => {
-  const { t } = useTranslation("gateway");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Create a lookup map to quickly find an entity's category
@@ -59,11 +54,9 @@ const PiiConfiguration: React.FC<PiiConfigurationProps> = ({
     <div className="pii-configuration">
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center">
-          <Title level={4} className="m-0! font-semibold text-gray-800">
-            {t("guardrailsPage.pii.configure")}
-          </Title>
+          <h4 className="m-0 text-lg font-semibold text-foreground">Configure PII Protection</h4>
         </div>
-        <Text className="text-gray-500">{t("guardrailsPage.pii.selected", { count: selectedEntities.length })}</Text>
+        <span className="text-muted-foreground">{selectedEntities.length} items selected</span>
       </div>
 
       <div className="mb-6">

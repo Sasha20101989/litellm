@@ -1,14 +1,13 @@
 "use client";
 import { useState } from "react";
 import { PaginationState } from "@tanstack/react-table";
-import { Alert } from "antd";
+import { Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shared/Alert";
 import { useDeletedKeys } from "@/app/(dashboard)/hooks/keys/useKeys";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { DeletedKeysTable } from "./DeletedKeysTable/DeletedKeysTable";
-import { useTranslation } from "react-i18next";
 
 export default function DeletedKeysPage() {
-  const { t } = useTranslation("logs");
   const { premiumUser } = useAuthorized();
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
 
@@ -17,13 +16,13 @@ export default function DeletedKeysPage() {
   return (
     <div className="flex flex-col gap-4">
       {!premiumUser && (
-        <Alert
-          type="info"
-          banner
-          showIcon
-          message={t("deleted.enterpriseSoon")}
-          description={t("deleted.keysNotice")}
-        />
+        <Alert>
+          <Info />
+          <AlertTitle>Coming soon to Enterprise</AlertTitle>
+          <AlertDescription>
+            Deleted key auditing is graduating from beta into our Enterprise audit &amp; compliance suite.
+          </AlertDescription>
+        </Alert>
       )}
       <DeletedKeysTable
         keys={keysData?.keys || []}

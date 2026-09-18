@@ -1,6 +1,17 @@
-import React from "react";
-import { Alert, Button, Card, Form, Input, Typography } from "antd";
 import { useTranslation } from "react-i18next";
+import React from "react";
+import { CircleAlert, Info } from "lucide-react";
+import { z } from "zod/v4";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shared/Alert";
+import { PasswordInput } from "@/components/shared/PasswordInput";
+import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
+import { FormField } from "@/components/shared/form/FormField";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
+import { cn } from "@/lib/cva.config";
+import { useZodForm } from "@/lib/forms/useZodForm";
 
 type OnboardingFormBodyProps = {
   variant: "signup" | "reset_password";
@@ -10,71 +21,85 @@ type OnboardingFormBodyProps = {
   onSubmit: (values: { password: string }) => void;
 };
 
+const onboardingSchema = z.object({
+  password: z.string().min(1, "password required to sign up"),
+});
+
+type OnboardingFormValues = z.infer<typeof onboardingSchema>;
+
 export function OnboardingFormBody({ variant, userEmail, isPending, claimError, onSubmit }: OnboardingFormBodyProps) {
   const { t } = useTranslation("auth");
-  const [form] = Form.useForm();
+  const form = useZodForm(onboardingSchema, { defaultValues: { password: "" } });
+  const emailFieldId = React.useId();
+  const isResetPassword = variant === "reset_password";
+  const actionLabel = isResetPassword ? "Reset Password" : "Sign Up";
 
-  React.useEffect(() => {
-    if (userEmail) form.setFieldValue("user_email", userEmail);
-  }, [userEmail, form]);
+  const handleSubmit = (values: OnboardingFormValues) => onSubmit({ password: values.password });
 
   return (
     <div className="mx-auto w-full max-w-md mt-10">
       <Card>
-        <Typography.Title level={5} className="text-center mb-5">
-          Nexoplane
-        </Typography.Title>
-        <Typography.Title level={3}>
-          {variant === "reset_password" ? t("onboarding.resetTitle") : t("onboarding.signupTitle")}
-        </Typography.Title>
-        <Typography.Text>
-          {variant === "reset_password" ? t("onboarding.resetDescription") : t("onboarding.signupDescription")}
-        </Typography.Text>
+        <CardContent>
+          <h5 className="text-center mb-5 text-base font-semibold text-foreground">🚅 LiteLLM</h5>
+          <h3 className="text-2xl font-semibold text-foreground">{actionLabel}</h3>
+          <p className="text-sm text-foreground">
+            {isResetPassword
+              ? "Reset your password to access Admin UI."
+              : "Claim your user account to login to Admin UI."}
+          </p>
 
-        {variant === "signup" && (
-          <Alert
-            className="mt-4"
-            type="info"
-            message="SSO"
-            description={
-              <div className="flex justify-between items-center">
-                <span>{t("onboarding.ssoTier")}</span>
-                <Button type="primary" size="small" href="https://forms.gle/W3U4PZpJGFHWtHyA9" target="_blank">
-                  {t("onboarding.freeTrial")}
-                </Button>
-              </div>
-            }
-            showIcon
-          />
-        )}
+          {variant === "signup" && (
+            <Alert className="mt-4" variant="info">
+              <Info />
+              <AlertTitle>SSO</AlertTitle>
+              <AlertDescription>
+                <div className="flex justify-between items-center">
+                  <span>{t("common:merge.enterpriseTier")}</span>
+                  <a
+                    className={cn(buttonVariants({ size: "sm" }))}
+                    href="https://forms.gle/W3U4PZpJGFHWtHyA9"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t("onboarding.freeTrial")}
+                  </a>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
-        <Form
-          className="mt-10 mb-5"
-          layout="vertical"
-          form={form}
-          onFinish={(values) => onSubmit({ password: values.password })}
-        >
-          <Form.Item label={t("onboarding.email")} name="user_email">
-            <Input type="email" disabled />
-          </Form.Item>
+          <form className="mt-10 mb-5" onSubmit={form.handleSubmit(handleSubmit)}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor={emailFieldId}>{t("onboarding.email")}</FieldLabel>
+                <Input id={emailFieldId} type="email" value={userEmail} readOnly disabled />
+              </Field>
 
-          <Form.Item
-            label={t("onboarding.password")}
-            name="password"
-            rules={[{ required: true, message: t("onboarding.passwordRequired") }]}
-            help={variant === "reset_password" ? t("onboarding.newPasswordHelp") : t("onboarding.createPasswordHelp")}
-          >
-            <Input.Password />
-          </Form.Item>
+              <FormField
+                control={form.control}
+                name="password"
+                label="Password"
+                description={isResetPassword ? "Enter your new password" : "Create a password for your account"}
+              >
+                {({ ref, ...field }) => <PasswordInput {...field} ref={ref} />}
+              </FormField>
+            </FieldGroup>
 
-          {claimError && <Alert type="error" message={claimError} showIcon className="mb-4" />}
+            {claimError && (
+              <Alert variant="error" className="mt-6 mb-4">
+                <CircleAlert />
+                <AlertTitle>{claimError}</AlertTitle>
+              </Alert>
+            )}
 
-          <div className="mt-10">
-            <Button htmlType="submit" loading={isPending}>
-              {variant === "reset_password" ? t("onboarding.resetSubmit") : t("onboarding.signupSubmit")}
-            </Button>
-          </div>
-        </Form>
+            <div className="mt-10">
+              <Button type="submit" variant="outline" disabled={isPending}>
+                {isPending && <UiLoadingSpinner className="size-4" role="img" aria-label={t("common:merge.loadingAria")} />}
+                {actionLabel}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );

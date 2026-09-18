@@ -4,13 +4,12 @@
  */
 
 import { useState } from "react";
-import MessageManager from "@/components/molecules/message_manager";
+import { toast } from "@/lib/toast";
 import { ParsedMessage } from "./prettyMessagesTypes";
 import { SectionHeader } from "./SectionHeader";
 import { CollapsibleMessage } from "./CollapsibleMessage";
 import { HistoryTree } from "./HistoryTree";
 import { SimpleMessageBlock } from "./SimpleMessageBlock";
-import { useTranslation } from "react-i18next";
 
 interface InputCardProps {
   messages: ParsedMessage[];
@@ -19,7 +18,6 @@ interface InputCardProps {
 }
 
 export function InputCard({ messages, promptTokens, inputCost }: InputCardProps) {
-  const { t } = useTranslation("logs");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (messages.length === 0) {
@@ -35,13 +33,13 @@ export function InputCard({ messages, promptTokens, inputCost }: InputCardProps)
   const handleCopy = () => {
     const content = lastMessage?.content || "";
     navigator.clipboard.writeText(content);
-    MessageManager.success(t("details.inputCopied"));
+    toast.success("Input copied");
   };
 
   return (
     <div
       style={{
-        border: "1px solid #f0f0f0",
+        border: "1px solid var(--color-border)",
         borderRadius: 6,
         marginBottom: 8,
         overflow: "hidden",
@@ -70,7 +68,7 @@ export function InputCard({ messages, promptTokens, inputCost }: InputCardProps)
           {/* System Message - Collapsible with arrow */}
           {systemMessage && (
             <CollapsibleMessage
-              label={t("details.system")}
+              label="SYSTEM"
               content={systemMessage.content}
               defaultExpanded={!!(systemMessage.content && systemMessage.content.length < 200)}
             />

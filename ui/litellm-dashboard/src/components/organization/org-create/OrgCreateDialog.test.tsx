@@ -2,30 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, type Mock } from "vitest";
 
-vi.mock("react-i18next", async () => {
-  const { resources } = await import("@/i18n/catalog");
-  const t = (key: string, values?: Record<string, unknown>) => {
-    const copy = key.split(".").reduce<unknown>((value, segment) => {
-      if (typeof value !== "object" || value === null) return undefined;
-      return (value as Record<string, unknown>)[segment];
-    }, resources.en.gateway);
-    if (typeof copy !== "string") return key;
-    return Object.entries(values ?? {}).reduce(
-      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
-      copy,
-    );
-  };
-  return {
-    useTranslation: () => ({ t, i18n: { language: "en", resolvedLanguage: "en" } }),
-  };
-});
-
-vi.mock("@/components/molecules/notifications_manager", () => ({
-  __esModule: true,
-  default: { success: vi.fn(), fromBackend: vi.fn() },
-}));
 vi.mock("@/components/ModelSelect/ModelSelect", () => ({
   ModelSelect: ({ onChange }: { onChange: (values: string[]) => void }) => (
     <button type="button" onClick={() => onChange(["gpt-5.2"])}>
@@ -68,7 +46,7 @@ const Harness = ({ createOrganization }: { createOrganization: (body: unknown) =
   );
 };
 
-const renderDialog = (overrides?: { createOrganization?: ReturnType<typeof vi.fn> }) => {
+const renderDialog = (overrides?: { createOrganization?: Mock }) => {
   const createOrganization = overrides?.createOrganization ?? vi.fn().mockResolvedValue({});
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(

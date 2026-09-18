@@ -1,10 +1,9 @@
 import { useMCPAccessGroups } from "@/app/(dashboard)/hooks/mcpServers/useMCPAccessGroups";
 import { useMCPServers } from "@/app/(dashboard)/hooks/mcpServers/useMCPServers";
 import { useMCPToolsets } from "@/app/(dashboard)/hooks/mcpServers/useMCPToolsets";
-import { Select } from "antd";
+import { MultiSelect, type MultiSelectOption } from "@/components/shared/MultiSelect";
 import React from "react";
 import { ALL_PROXY_MCP_SERVERS_SENTINEL, NO_MCP_SERVERS_SENTINEL } from "@/components/mcp_tools/constants";
-import { useTranslation } from "react-i18next";
 
 interface MCPServerSelectorProps {
   onChange: (selected: { servers: string[]; accessGroups: string[]; toolsets: string[] }) => void;
@@ -29,13 +28,12 @@ const MCPServerSelector: React.FC<MCPServerSelectorProps> = ({
   value,
   className,
   accessToken,
-  placeholder,
+  placeholder = "Select MCP servers",
   disabled = false,
   teamId,
   allowNoMcpServers = false,
   allowAllProxyMcpServers = false,
 }) => {
-  const { t } = useTranslation("gateway");
   const { data: mcpServers = [], isLoading: serversLoading } = useMCPServers(teamId);
   const { data: accessGroups = [], isLoading: groupsLoading } = useMCPAccessGroups();
   const { data: toolsets = [], isLoading: toolsetsLoading } = useMCPToolsets();
@@ -44,38 +42,24 @@ const MCPServerSelector: React.FC<MCPServerSelectorProps> = ({
 
   const accessGroupSet = new Set(accessGroups);
 
-  // Combine options: access groups (green) + servers (blue) + toolsets (purple)
+  // Combine options: access groups + servers + toolsets
   const options = [
     ...accessGroups.map((group) => ({
       label: group,
       value: group,
-      type: "accessGroup" as const,
-      searchText: `${group} ${t("permissions.accessGroup")}`,
+      description: "Access Group",
     })),
     ...mcpServers.map((server) => ({
       label: `${server.server_name || server.server_id} (${server.server_id})`,
       value: server.server_id,
-      type: "server" as const,
-      searchText: `${server.server_name || server.server_id} ${server.server_id} ${t("permissions.mcp.server")}`,
+      description: "MCP Server",
     })),
     ...toolsets.map((toolset) => ({
       label: toolset.toolset_name,
       value: `${TOOLSET_PREFIX}${toolset.toolset_id}`,
-      type: "toolset" as const,
-      searchText: `${toolset.toolset_name} ${toolset.toolset_id} ${t("permissions.toolset")}`,
+      description: "Toolset",
     })),
   ];
-
-  const colorByType: Record<string, string> = {
-    accessGroup: "#52c41a",
-    server: "#1890ff",
-    toolset: "#722ed1",
-  };
-  const labelByType: Record<string, string> = {
-    accessGroup: t("permissions.accessGroup"),
-    server: t("permissions.mcp.server"),
-    toolset: t("permissions.toolset"),
-  };
 
   // Flatten value for Select — prefix toolset IDs
   const selectedValues = [
@@ -107,82 +91,31 @@ const MCPServerSelector: React.FC<MCPServerSelectorProps> = ({
     onChange({ servers, accessGroups: accessGroupsSelected, toolsets: toolsetsSelected });
   };
 
+  const selectOptions: MultiSelectOption[] = [
+    ...(allowAllProxyMcpServers || hasAllProxyMcpServersSelected
+      ? [{ label: "All Proxy MCP Servers", value: ALL_PROXY_MCP_SERVERS_SENTINEL }]
+      : []),
+    ...(allowNoMcpServers
+      ? [{ label: "No MCP Servers", value: NO_MCP_SERVERS_SENTINEL, description: "Block all" }]
+      : []),
+    ...options.map((opt) => ({
+      ...opt,
+      disabled: hasNoMcpServersSelected || hasAllProxyMcpServersSelected,
+    })),
+  ];
+
   return (
     <div>
-      <Select
-        mode="multiple"
-        placeholder={placeholder || t("permissions.mcp.selectServers")}
-        onChange={handleChange}
+      <MultiSelect
+        options={selectOptions}
         value={selectedValues}
+        onValueChange={handleChange}
+        placeholder={placeholder}
+        emptyText="No MCP servers found"
         loading={loading}
-        className={className}
-        allowClear
-        showSearch
-        style={{ width: "100%" }}
         disabled={disabled}
-        filterOption={(input, option) => {
-          if (option?.value === NO_MCP_SERVERS_SENTINEL) return true;
-          if (option?.value === ALL_PROXY_MCP_SERVERS_SENTINEL) return true;
-          const searchText = options.find((opt) => opt.value === option?.value)?.searchText || "";
-          return searchText.toLowerCase().includes(input.toLowerCase());
-        }}
-      >
-        {(allowAllProxyMcpServers || hasAllProxyMcpServersSelected) && (
-          <Select.Option
-            key={ALL_PROXY_MCP_SERVERS_SENTINEL}
-            value={ALL_PROXY_MCP_SERVERS_SENTINEL}
-            label={t("permissions.mcp.allProxyServers")}
-          >
-            <span style={{ color: "#1890ff", fontWeight: 500 }}>{t("permissions.mcp.allProxyServers")}</span>
-          </Select.Option>
-        )}
-        {allowNoMcpServers && (
-          <Select.Option
-            key={NO_MCP_SERVERS_SENTINEL}
-            value={NO_MCP_SERVERS_SENTINEL}
-            label={t("permissions.mcp.noServers")}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ flex: 1 }}>{t("permissions.mcp.noServers")}</span>
-              <span style={{ color: "#8c8c8c", fontSize: "12px", fontWeight: 500, opacity: 0.8 }}>
-                {t("permissions.mcp.blockAll")}
-              </span>
-            </div>
-          </Select.Option>
-        )}
-        {options.map((opt) => (
-          <Select.Option
-            key={opt.value}
-            value={opt.value}
-            label={opt.label}
-            disabled={hasNoMcpServersSelected || hasAllProxyMcpServersSelected}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: colorByType[opt.type],
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ flex: 1 }}>{opt.label}</span>
-              <span
-                style={{
-                  color: colorByType[opt.type],
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  opacity: 0.8,
-                }}
-              >
-                {labelByType[opt.type]}
-              </span>
-            </div>
-          </Select.Option>
-        ))}
-      </Select>
+        className={`w-full ${className ?? ""}`}
+      />
     </div>
   );
 };

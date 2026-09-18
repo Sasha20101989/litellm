@@ -12,6 +12,9 @@ from litellm.llms.vertex_ai.gemini.vertex_and_google_ai_studio_gemini import (
     ModelResponseIterator as GeminiModelResponseIterator,
 )
 from litellm.proxy._types import PassThroughEndpointLoggingTypedDict
+from litellm.proxy.pass_through_endpoints.llm_provider_handlers.vertex_passthrough_logging_handler import (
+    VertexPassthroughLoggingHandler,
+)
 from litellm.types.utils import (
     ModelResponse,
     TextCompletionResponse,
@@ -40,6 +43,17 @@ class GeminiPassthroughLoggingHandler:
         request_body: dict,
         **kwargs,
     ) -> PassThroughEndpointLoggingTypedDict:
+        if VertexPassthroughLoggingHandler.is_interactions_route(url_route):
+            return VertexPassthroughLoggingHandler.interactions_passthrough_handler(
+                httpx_response=httpx_response,
+                request_body=request_body,
+                logging_obj=logging_obj,
+                kwargs=kwargs,
+                start_time=start_time,
+                end_time=end_time,
+                custom_llm_provider="gemini",
+                vertex_location=None,
+            )
         if "predictLongRunning" in url_route:
             model = GeminiPassthroughLoggingHandler.extract_model_from_url(url_route)
 
@@ -92,7 +106,7 @@ class GeminiPassthroughLoggingHandler:
                 litellm_params={},
                 api_key="",
                 request_data={},
-                encoding=litellm.encoding,
+                encoding=getattr(litellm, "encoding", None),
             )
             kwargs = GeminiPassthroughLoggingHandler._create_gemini_response_logging_payload_for_generate_content(
                 litellm_model_response=litellm_model_response,

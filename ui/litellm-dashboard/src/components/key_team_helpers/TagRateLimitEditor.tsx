@@ -1,5 +1,6 @@
-import { Button, Input, InputNumber } from "antd";
 import React from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export interface TagRateLimitEntry {
   // Stable identity for React list keys so deleting a middle row doesn't shift
@@ -52,15 +53,9 @@ export const tagLimitsToRows = (tagRpmLimit?: unknown): TagRateLimitEntry[] => {
 interface TagRateLimitEditorProps {
   value: TagRateLimitEntry[];
   onChange: (v: TagRateLimitEntry[]) => void;
-  labels?: {
-    tagPlaceholder: string;
-    rpmPlaceholder: string;
-    addLimit: string;
-    removeLimit: string;
-  };
 }
 
-export function TagRateLimitEditor({ value, onChange, labels }: TagRateLimitEditorProps) {
+export function TagRateLimitEditor({ value, onChange }: TagRateLimitEditorProps) {
   const addRow = () => {
     onChange([...value, { id: newRowId(), tag: "", rpm_limit: null }]);
   };
@@ -78,38 +73,35 @@ export function TagRateLimitEditor({ value, onChange, labels }: TagRateLimitEdit
       {value.map((row, idx) => (
         <div key={row.id} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
           <Input
+            aria-label="Tag"
             value={row.tag}
             onChange={(e) => updateRow(idx, "tag", e.target.value)}
-            placeholder={labels?.tagPlaceholder ?? "Tag (e.g. cell-1)"}
+            placeholder="Tag (e.g. cell-1)"
             style={{ width: 180 }}
           />
-          <InputNumber
+          <Input
+            aria-label="RPM limit"
+            type="number"
             min={0}
-            value={row.rpm_limit ?? undefined}
-            onChange={(v) => updateRow(idx, "rpm_limit", v ?? null)}
-            placeholder={labels?.rpmPlaceholder ?? "RPM"}
+            value={row.rpm_limit ?? ""}
+            onChange={(e) => updateRow(idx, "rpm_limit", e.target.value === "" ? null : Number(e.target.value))}
+            placeholder="RPM"
             style={{ width: 120 }}
           />
-          <Button
-            type="text"
-            danger
-            size="small"
-            aria-label={labels?.removeLimit ?? "Remove tag limit"}
-            onClick={() => removeRow(idx)}
-            style={{ padding: "0 4px" }}
-          >
+          <Button variant="destructive" size="sm" aria-label="Remove tag limit" onClick={() => removeRow(idx)}>
             ✕
           </Button>
         </div>
       ))}
       <Button
-        size="small"
+        variant="outline"
+        size="sm"
         onClick={(e) => {
           e.preventDefault();
           addRow();
         }}
       >
-        {labels?.addLimit ?? "+ Add Tag Limit"}
+        + Add Tag Limit
       </Button>
     </div>
   );

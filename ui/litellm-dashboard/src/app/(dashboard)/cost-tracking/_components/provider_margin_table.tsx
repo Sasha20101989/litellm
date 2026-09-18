@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { TextInput, Icon, Text } from "@tremor/react";
-import { TrashIcon, PencilAltIcon, CheckIcon, XIcon } from "@heroicons/react/outline";
+import { Check, SquarePen, Trash2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SimpleTable } from "@/components/common_components/simple_table";
 import { MarginConfig } from "./types";
 import { getProviderLogoAndName } from "@/components/provider_info_helpers";
 import { Logo } from "@/components/molecules/logo/Logo";
-import { useTranslation } from "react-i18next";
 
 interface ProviderMarginTableProps {
   marginConfig: MarginConfig;
@@ -18,12 +18,14 @@ interface ProviderMarginRow {
   margin: number | { percentage?: number; fixed_amount?: number };
 }
 
+const marginRowDisplayName = (provider: string): string =>
+  provider === "global" ? "Global" : getProviderLogoAndName(provider).displayName;
+
 const ProviderMarginTable: React.FC<ProviderMarginTableProps> = ({
   marginConfig,
   onMarginChange,
   onRemoveProvider,
 }) => {
-  const { t } = useTranslation("costOptimization");
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const [editPercentage, setEditPercentage] = useState<string>("");
   const [editFixedAmount, setEditFixedAmount] = useState<string>("");
@@ -101,12 +103,12 @@ const ProviderMarginTable: React.FC<ProviderMarginTableProps> = ({
       data={data}
       columns={[
         {
-          header: t("tracking.provider"),
+          header: "Provider",
           cell: (row) => {
             if (row.provider === "global") {
               return (
                 <div className="flex items-center space-x-2">
-                  <span className="font-medium">{t("tracking.margins.global")}</span>
+                  <span className="font-medium">Global (All Providers)</span>
                 </div>
               );
             }
@@ -120,78 +122,90 @@ const ProviderMarginTable: React.FC<ProviderMarginTableProps> = ({
           },
         },
         {
-          header: t("tracking.margins.margin"),
-          cell: (row) => (
-            <div className="flex items-center gap-2">
-              {editingProvider === row.provider ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <TextInput
-                      value={editPercentage}
-                      onValueChange={setEditPercentage}
-                      placeholder="10"
-                      className="w-20"
-                      autoFocus
-                    />
-                    <span className="text-gray-600">%</span>
-                    <span className="text-gray-400">+</span>
-                    <span className="text-gray-600">$</span>
-                    <TextInput
-                      value={editFixedAmount}
-                      onValueChange={setEditFixedAmount}
-                      placeholder="0.001"
-                      className="w-24"
-                    />
-                  </div>
-                  <Icon
-                    icon={CheckIcon}
-                    size="sm"
-                    onClick={() => handleSaveEdit(row.provider)}
-                    className="cursor-pointer text-green-600 hover:text-green-700"
-                  />
-                  <Icon
-                    icon={XIcon}
-                    size="sm"
-                    onClick={handleCancelEdit}
-                    className="cursor-pointer text-gray-600 hover:text-gray-700"
-                  />
-                </>
-              ) : (
-                <>
-                  <Text className="font-medium">{formatMargin(row.margin)}</Text>
-                  <Icon
-                    icon={PencilAltIcon}
-                    size="sm"
-                    onClick={() => handleStartEdit(row.provider, row.margin)}
-                    className="cursor-pointer text-blue-600 hover:text-blue-700"
-                  />
-                </>
-              )}
-            </div>
-          ),
+          header: "Margin",
+          cell: (row) => {
+            const displayName = marginRowDisplayName(row.provider);
+            return (
+              <div className="flex items-center gap-2">
+                {editingProvider === row.provider ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={editPercentage}
+                        onChange={(e) => setEditPercentage(e.target.value)}
+                        placeholder="10"
+                        className="w-20"
+                        autoFocus
+                      />
+                      <span className="text-muted-foreground">%</span>
+                      <span className="text-muted-foreground">+</span>
+                      <span className="text-muted-foreground">$</span>
+                      <Input
+                        value={editFixedAmount}
+                        onChange={(e) => setEditFixedAmount(e.target.value)}
+                        placeholder="0.001"
+                        className="w-24"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Save margin for ${displayName}`}
+                      onClick={() => handleSaveEdit(row.provider)}
+                      className="cursor-pointer text-success hover:text-success/80"
+                    >
+                      <Check className="size-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Cancel editing margin for ${displayName}`}
+                      onClick={handleCancelEdit}
+                      className="cursor-pointer text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="size-5" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium">{formatMargin(row.margin)}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Edit margin for ${displayName}`}
+                      onClick={() => handleStartEdit(row.provider, row.margin)}
+                      className="cursor-pointer text-info hover:text-info/80"
+                    >
+                      <SquarePen className="size-5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            );
+          },
           width: "350px",
         },
         {
-          header: t("tracking.actions"),
+          header: "Actions",
           cell: (row) => {
-            const displayName =
-              row.provider === "global"
-                ? t("tracking.margins.globalShort")
-                : getProviderLogoAndName(row.provider).displayName;
+            const displayName = marginRowDisplayName(row.provider);
             return (
-              <Icon
-                icon={TrashIcon}
-                size="sm"
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Remove margin for ${displayName}`}
                 onClick={() => onRemoveProvider(row.provider, displayName)}
-                className="cursor-pointer hover:text-red-600"
-              />
+                className="cursor-pointer hover:text-destructive"
+              >
+                <Trash2 className="size-5" />
+              </Button>
             );
           },
           width: "80px",
         },
       ]}
       getRowKey={(row) => row.provider}
-      emptyMessage={t("tracking.margins.empty")}
+      emptyMessage="No provider margins configured"
     />
   );
 };

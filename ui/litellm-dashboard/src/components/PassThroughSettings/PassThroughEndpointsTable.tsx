@@ -44,6 +44,7 @@ export function PassThroughEndpointsTable({
   return (
     <DataTable
       data={endpoints}
+      paginationMode="client"
       columns={columns}
       getRowId={(endpoint, index) => endpoint.id || endpoint.path || String(index)}
       isLoading={isLoading}

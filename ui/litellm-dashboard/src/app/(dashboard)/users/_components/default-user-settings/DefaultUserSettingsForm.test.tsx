@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
 
@@ -58,7 +58,7 @@ vi.mock("@/components/ModelSelect/ModelSelect", async (importOriginal) => {
   };
 });
 
-import NotificationsManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 
 import { DefaultUserSettingsForm } from "./DefaultUserSettingsForm";
 import type { InternalUserSettings } from "./mapper";
@@ -88,10 +88,7 @@ const SAVED_BODY = {
   teams: [{ team_id: "team-alpha", max_budget_in_team: 25, user_role: "user" }],
 };
 
-const renderForm = (overrides?: {
-  fetchSettings?: ReturnType<typeof vi.fn>;
-  updateSettings?: ReturnType<typeof vi.fn>;
-}) => {
+const renderForm = (overrides?: { fetchSettings?: Mock; updateSettings?: Mock }) => {
   const fetchSettings = overrides?.fetchSettings ?? vi.fn().mockResolvedValue(SETTINGS);
   const updateSettings = overrides?.updateSettings ?? vi.fn().mockResolvedValue(undefined);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -311,7 +308,7 @@ describe("DefaultUserSettingsForm", () => {
     expect(await screen.findByRole("button", { name: "Edit Settings" })).toBeInTheDocument();
     expect(await screen.findByText("250")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save Changes" })).not.toBeInTheDocument();
-    expect(NotificationsManager.success).toHaveBeenCalledWith("Default user settings updated successfully");
+    expect(toast.success).toHaveBeenCalledWith("Default user settings updated successfully");
 
     await enterEditMode(user);
     expect(await saveButton()).toBeDisabled();
@@ -329,9 +326,7 @@ describe("DefaultUserSettingsForm", () => {
     await user.click(await saveButton());
 
     await waitFor(() => expect(updateSettings).toHaveBeenCalledTimes(1));
-    await waitFor(() =>
-      expect(NotificationsManager.fromBackend).toHaveBeenCalledWith("Team(s) not found: team-alhpa."),
-    );
+    await waitFor(() => expect(toast.fromError).toHaveBeenCalledWith("Team(s) not found: team-alhpa."));
     expect(await saveButton()).toBeEnabled();
     expect(screen.getByLabelText("Max Budget (USD)")).toHaveValue(250);
   });

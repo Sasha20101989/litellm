@@ -1,17 +1,17 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Plus, MessageSquare, LayoutGrid, KeyRound, Lock, BarChart3, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { migratedHref } from "@/utils/migratedPages";
+import { uiHref } from "@/utils/uiHref";
 import { useChatShell } from "@/contexts/ChatShellContext";
 import ConversationList from "./ConversationList";
-import { useTranslation } from "react-i18next";
 
 export function getChatRoutes() {
-  const base = migratedHref("chat");
+  const base = uiHref("chat");
   return {
     chats: base,
     integrations: `${base}/integrations`,
@@ -64,15 +64,15 @@ const ChatShell: React.FC<ChatShellProps> = ({ children }) => {
 
   return (
     <div className="flex h-full w-full flex-col bg-background overflow-hidden">
-      <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-center text-[13px] text-amber-800">
-        {t("preview.warning")}{" "}
+      <div className="shrink-0 border-b border-warning/20 bg-warning/10 px-4 py-1.5 text-center text-[13px] text-warning">
+        {t("common:merge.preV0Before")}{" "}
         <a
           href="https://github.com/BerriAI/litellm/discussions/32085"
           target="_blank"
           rel="noreferrer"
           className="font-medium underline"
         >
-          {t("preview.link")}
+          {t("playground.here")}
         </a>
         .
       </div>
@@ -90,37 +90,37 @@ const ChatShell: React.FC<ChatShellProps> = ({ children }) => {
           <div className="px-2 py-1 shrink-0">
             <NavItem
               icon={<MessageSquare className="h-4 w-4" />}
-              label={t("navigation.chats")}
+              label="Chats"
               onClick={() => router.push(routes.chats)}
               active={isChatsRoute}
             />
             <NavItem
               icon={<LayoutGrid className="h-4 w-4" />}
-              label={t("navigation.integrations")}
+              label="Integrations"
               onClick={() => router.push(routes.integrations)}
               active={pathname === routes.integrations}
             />
             <NavItem
               icon={<KeyRound className="h-4 w-4" />}
-              label={t("navigation.credentials")}
+              label="Credentials"
               onClick={() => router.push(routes.credentials)}
               active={pathname === routes.credentials}
             />
             <NavItem
               icon={<Lock className="h-4 w-4" />}
-              label={t("navigation.apiKeys")}
+              label="API Keys"
               onClick={() => router.push(routes.apiKeys)}
               active={pathname === routes.apiKeys}
             />
             <NavItem
               icon={<ScrollText className="h-4 w-4" />}
-              label={t("navigation.logs")}
+              label="Logs"
               onClick={() => router.push(routes.logs)}
               active={pathname === routes.logs}
             />
             <NavItem
               icon={<BarChart3 className="h-4 w-4" />}
-              label={t("navigation.usage")}
+              label="Usage"
               onClick={() => router.push(routes.usage)}
               active={pathname === routes.usage}
             />

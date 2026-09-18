@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@tremor/react";
 import useCan from "@/app/(dashboard)/hooks/useCan";
 import DeletedKeysPage from "../DeletedKeysPage/DeletedKeysPage";
 import DeletedTeamsPage from "../DeletedTeamsPage/DeletedTeamsPage";
 import AuditLogsPanel from "./AuditLogsPanel";
 import RequestLogsPanel from "./RequestLogsPanel";
-import { AntDLoadingSpinner } from "../ui/AntDLoadingSpinner";
-import { useTranslation } from "react-i18next";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
 
 interface SpendLogsTableProps {
   accessToken: string | null;
@@ -23,25 +22,32 @@ interface LogsTab {
   label: string;
 }
 
+const REQUEST_LOGS_TAB: LogsTab = { id: "request logs", label: "Request Logs" };
+const AUDIT_LOGS_TAB: LogsTab = { id: "audit logs", label: "Audit Logs" };
+const DELETED_KEYS_TAB: LogsTab = { id: "deleted keys", label: "Deleted Keys" };
+const DELETED_TEAMS_TAB: LogsTab = { id: "deleted teams", label: "Deleted Teams" };
+
+const tabContentClassName = (tabId: LogsTabId): string =>
+  tabId === REQUEST_LOGS_TAB.id ? "flex min-h-0 flex-1 flex-col" : "min-h-0 flex-1 overflow-y-auto";
+
 export default function SpendLogsTable({ accessToken, token, userRole, userID, premiumUser }: SpendLogsTableProps) {
-  const { t } = useTranslation("logs");
-  const [activeTab, setActiveTab] = useState<LogsTabId>("request logs");
+  const [activeTab, setActiveTab] = useState<LogsTabId>(REQUEST_LOGS_TAB.id);
   const canViewAuditLogs = useCan("viewAuditLogs");
   const canViewDeletedTeams = useCan("viewDeletedTeams");
 
   if (!accessToken || !token || !userRole || !userID) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <AntDLoadingSpinner size="large" />
+      <div role="status" aria-busy="true" aria-label="Loading" className="flex h-64 items-center justify-center">
+        <UiLoadingSpinner className="size-8 text-primary" />
       </div>
     );
   }
 
   const tabs: LogsTab[] = [
-    { id: "request logs", label: t("tabs.requests") },
-    ...(canViewAuditLogs ? [{ id: "audit logs" as const, label: t("tabs.audit") }] : []),
-    { id: "deleted keys", label: t("tabs.deletedKeys") },
-    ...(canViewDeletedTeams ? [{ id: "deleted teams" as const, label: t("tabs.deletedTeams") }] : []),
+    REQUEST_LOGS_TAB,
+    ...(canViewAuditLogs ? [AUDIT_LOGS_TAB] : []),
+    DELETED_KEYS_TAB,
+    ...(canViewDeletedTeams ? [DELETED_TEAMS_TAB] : []),
   ];
 
   const renderPanel = (tabId: LogsTabId) => {
@@ -75,19 +81,21 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
   };
 
   return (
-    <div className="w-full p-6 overflow-x-hidden box-border">
-      <TabGroup defaultIndex={0} onIndexChange={(index) => setActiveTab(tabs[index].id)}>
-        <TabList>
+    <div className="flex h-full w-full flex-col p-6">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as LogsTabId)} className="min-h-0 flex-1">
+        <TabsList variant="line">
           {tabs.map((tab) => (
-            <Tab key={tab.id}>{tab.label}</Tab>
+            <TabsTrigger key={tab.id} value={tab.id} className="flex-none">
+              {tab.label}
+            </TabsTrigger>
           ))}
-        </TabList>
-        <TabPanels>
-          {tabs.map((tab) => (
-            <TabPanel key={tab.id}>{renderPanel(tab.id)}</TabPanel>
-          ))}
-        </TabPanels>
-      </TabGroup>
+        </TabsList>
+        {tabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id} keepMounted className={tabContentClassName(tab.id)}>
+            {renderPanel(tab.id)}
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }

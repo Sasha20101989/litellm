@@ -1,22 +1,31 @@
 import React from "react";
-import { Tooltip } from "antd";
 import {
-  ClockCircleOutlined,
-  NumberOutlined,
-  ImportOutlined,
-  ExportOutlined,
-  BulbOutlined,
-  ToolOutlined,
-  DollarOutlined,
-} from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Clock,
+  Database,
+  DatabaseBackup,
+  DollarSign,
+  Hash,
+  History,
+  Lightbulb,
+  Wrench,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PROMPT_CACHE_CREATION_TOOLTIP, PROMPT_CACHE_READ_TOOLTIP } from "@/utils/promptCacheUsage";
+
+const RESPONSE_CACHE_TOOLTIP =
+  "This response was replayed from LiteLLM's response cache. The request never reached the provider, so it did not read from or write to the provider's own prompt cache.";
 
 export interface TokenUsage {
   completionTokens?: number;
   promptTokens?: number;
   totalTokens?: number;
   reasoningTokens?: number;
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
   cost?: number;
+  servedFromResponseCache?: boolean;
 }
 
 interface ResponseMetricsProps {
@@ -26,82 +35,146 @@ interface ResponseMetricsProps {
   toolName?: string;
 }
 
+interface MetricItemProps {
+  label: string;
+  tooltip: string;
+  icon: React.ReactNode;
+  value: string;
+}
+
+function MetricItem({ label, tooltip, icon, value }: MetricItemProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<div className="flex items-center gap-1" aria-label={`${label}: ${value}`} />}>
+        {icon}
+        <span>
+          {label}: {value}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ResponseCacheIndicator() {
+  return (
+    <MetricItem
+      label="Response Cache"
+      tooltip={RESPONSE_CACHE_TOOLTIP}
+      icon={<History className="size-3" aria-hidden="true" />}
+      value="Hit"
+    />
+  );
+}
+
+function PromptCacheChips({ usage }: { usage?: TokenUsage }) {
+  if (usage?.servedFromResponseCache) {
+    return <ResponseCacheIndicator />;
+  }
+
+  const readTokens = usage?.cacheReadTokens ?? 0;
+  const creationTokens = usage?.cacheCreationTokens ?? 0;
+
+  return (
+    <>
+      {readTokens > 0 && (
+        <MetricItem
+          label="Cache Read"
+          tooltip={PROMPT_CACHE_READ_TOOLTIP}
+          icon={<Database className="size-3" aria-hidden="true" />}
+          value={String(readTokens)}
+        />
+      )}
+
+      {creationTokens > 0 && (
+        <MetricItem
+          label="Cache Write"
+          tooltip={PROMPT_CACHE_CREATION_TOOLTIP}
+          icon={<DatabaseBackup className="size-3" aria-hidden="true" />}
+          value={String(creationTokens)}
+        />
+      )}
+    </>
+  );
+}
+
 const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, totalLatency, usage, toolName }) => {
-  const { t } = useTranslation("chat");
   if (!timeToFirstToken && !totalLatency && !usage) return null;
 
   return (
-    <div className="response-metrics mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500 flex flex-wrap gap-3">
+    <div className="response-metrics mt-2 flex flex-wrap gap-3 border-t border-border pt-2 text-xs text-muted-foreground">
       {timeToFirstToken !== undefined && (
-        <Tooltip title={t("details.timeToFirstToken")}>
-          <div className="flex items-center">
-            <ClockCircleOutlined className="mr-1" />
-            <span>{t("details.ttft", { seconds: (timeToFirstToken / 1000).toFixed(2) })}</span>
-          </div>
-        </Tooltip>
+        <MetricItem
+          label="TTFT"
+          tooltip="Time to first token"
+          icon={<Clock className="size-3" aria-hidden="true" />}
+          value={`${(timeToFirstToken / 1000).toFixed(2)}s`}
+        />
       )}
 
       {totalLatency !== undefined && (
-        <Tooltip title={t("details.totalLatency")}>
-          <div className="flex items-center">
-            <ClockCircleOutlined className="mr-1" />
-            <span>{t("details.totalLatencyValue", { seconds: (totalLatency / 1000).toFixed(2) })}</span>
-          </div>
-        </Tooltip>
+        <MetricItem
+          label="Total Latency"
+          tooltip="Total latency"
+          icon={<Clock className="size-3" aria-hidden="true" />}
+          value={`${(totalLatency / 1000).toFixed(2)}s`}
+        />
       )}
 
       {usage?.promptTokens !== undefined && (
-        <Tooltip title={t("details.promptTokens")}>
-          <div className="flex items-center">
-            <ImportOutlined className="mr-1" />
-            <span>{t("details.inputTokens", { count: usage.promptTokens })}</span>
-          </div>
-        </Tooltip>
+        <MetricItem
+          label="In"
+          tooltip="Prompt tokens"
+          icon={<ArrowDownToLine className="size-3" aria-hidden="true" />}
+          value={String(usage.promptTokens)}
+        />
       )}
 
+      <PromptCacheChips usage={usage} />
+
       {usage?.completionTokens !== undefined && (
-        <Tooltip title={t("details.completionTokens")}>
-          <div className="flex items-center">
-            <ExportOutlined className="mr-1" />
-            <span>{t("details.outputTokens", { count: usage.completionTokens })}</span>
-          </div>
-        </Tooltip>
+        <MetricItem
+          label="Out"
+          tooltip="Completion tokens"
+          icon={<ArrowUpFromLine className="size-3" aria-hidden="true" />}
+          value={String(usage.completionTokens)}
+        />
       )}
 
       {usage?.reasoningTokens !== undefined && (
-        <Tooltip title={t("details.reasoningTokens")}>
-          <div className="flex items-center">
-            <BulbOutlined className="mr-1" />
-            <span>{t("details.reasoningTokensValue", { count: usage.reasoningTokens })}</span>
-          </div>
-        </Tooltip>
+        <MetricItem
+          label="Reasoning"
+          tooltip="Reasoning tokens"
+          icon={<Lightbulb className="size-3" aria-hidden="true" />}
+          value={String(usage.reasoningTokens)}
+        />
       )}
 
       {usage?.totalTokens !== undefined && (
-        <Tooltip title={t("details.totalTokens")}>
-          <div className="flex items-center">
-            <NumberOutlined className="mr-1" />
-            <span>{t("details.totalTokensValue", { count: usage.totalTokens })}</span>
-          </div>
-        </Tooltip>
+        <MetricItem
+          label="Total"
+          tooltip="Total tokens"
+          icon={<Hash className="size-3" aria-hidden="true" />}
+          value={String(usage.totalTokens)}
+        />
       )}
 
-      {usage?.cost !== undefined && (
-        <Tooltip title={t("details.cost")}>
-          <div className="flex items-center">
-            <DollarOutlined className="mr-1" />
-            <span>${usage.cost.toFixed(6)}</span>
-          </div>
-        </Tooltip>
+      {typeof usage?.cost === "number" && Number.isFinite(usage.cost) && (
+        <MetricItem
+          label="Cost"
+          tooltip="Cost"
+          icon={<DollarSign className="size-3" aria-hidden="true" />}
+          value={`$${usage.cost.toFixed(6)}`}
+        />
       )}
 
       {toolName && (
-        <Tooltip title={t("details.toolUsed")}>
-          <div className="flex items-center">
-            <ToolOutlined className="mr-1" />
-            <span>{t("details.toolValue", { name: toolName })}</span>
-          </div>
-        </Tooltip>
+        <MetricItem
+          label="Tool"
+          tooltip="Tool used"
+          icon={<Wrench className="size-3" aria-hidden="true" />}
+          value={toolName}
+        />
       )}
     </div>
   );

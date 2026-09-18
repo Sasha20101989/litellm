@@ -1,21 +1,23 @@
+import { formatBudgetReset } from "@/utils/budgetUtils";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
-import { InfoCircleOutlined } from "@ant-design/icons";
-import { Card, Col, Row, Space, Tag, Tooltip, Typography } from "antd";
+import { SimpleTooltip } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { CircleHelp } from "lucide-react";
 import React from "react";
 import { useMyTeamMember } from "./useMyTeamMember";
-import { useTranslation } from "react-i18next";
 
 interface MyUserTabProps {
   teamId: string;
 }
 
 const labelWithTooltip = (label: string, tooltip: string) => (
-  <Space size={4}>
-    <Typography.Text type="secondary">{label}</Typography.Text>
-    <Tooltip title={tooltip}>
-      <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
-    </Tooltip>
-  </Space>
+  <span className="flex items-center gap-1 text-muted-foreground">
+    {label}
+    <SimpleTooltip content={tooltip}>
+      <CircleHelp className="size-4" aria-label={`${label} information`} />
+    </SimpleTooltip>
+  </span>
 );
 
 const formatNumber = (value: number | null | undefined, digits = 4): string => {
@@ -23,19 +25,18 @@ const formatNumber = (value: number | null | undefined, digits = 4): string => {
   return formatNumberWithCommas(value, digits);
 };
 
-const formatRateLimit = (value: number | null | undefined, unlimited: string): string => {
-  if (value === null || value === undefined) return unlimited;
+const formatRateLimit = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return "Unlimited";
   return formatNumberWithCommas(value, 0);
 };
 
 export default function MyUserTab({ teamId }: MyUserTabProps) {
-  const { t, i18n } = useTranslation("gateway");
   const { data, isLoading, error } = useMyTeamMember(teamId);
 
   if (isLoading) {
     return (
       <Card>
-        <Typography.Text type="secondary">{t("teams.myMembership.loading")}</Typography.Text>
+        <CardContent className="text-muted-foreground">Loading your membership info…</CardContent>
       </Card>
     );
   }
@@ -43,9 +44,9 @@ export default function MyUserTab({ teamId }: MyUserTabProps) {
   if (error) {
     return (
       <Card>
-        <Typography.Text type="danger">
-          {error instanceof Error ? error.message : t("teams.myMembership.loadFailed")}
-        </Typography.Text>
+        <CardContent className="text-destructive">
+          {error instanceof Error ? error.message : "Failed to load your membership info for this team."}
+        </CardContent>
       </Card>
     );
   }
@@ -53,7 +54,9 @@ export default function MyUserTab({ teamId }: MyUserTabProps) {
   if (!data) {
     return (
       <Card>
-        <Typography.Text type="secondary">{t("teams.myMembership.empty")}</Typography.Text>
+        <CardContent className="text-muted-foreground">
+          No membership info available for the current user in this team.
+        </CardContent>
       </Card>
     );
   }
@@ -64,99 +67,83 @@ export default function MyUserTab({ teamId }: MyUserTabProps) {
   const totalSpend = data.total_spend ?? 0;
   const tpmLimit = budgetTable?.tpm_limit ?? null;
   const rpmLimit = budgetTable?.rpm_limit ?? null;
-  const budgetReset = budgetTable?.budget_reset_at
-    ? new Intl.DateTimeFormat(i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-US", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }).format(new Date(budgetTable.budget_reset_at))
-    : null;
+  const budgetReset = formatBudgetReset(budgetTable?.budget_reset_at);
   const allowedModels = budgetTable?.allowed_models ?? null;
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+    <div className="flex w-full flex-col gap-4">
       <Card>
-        <Row gutter={[24, 16]}>
-          <Col xs={24} sm={12} md={8}>
-            <Typography.Text type="secondary">{t("teams.myMembership.user")}</Typography.Text>
-            <div style={{ marginTop: 4 }}>
-              <Typography.Text strong>{data.user_email || data.user_id}</Typography.Text>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <div>
+              <span className="text-muted-foreground">User</span>
+              <div className="mt-1 font-semibold">{data.user_email || data.user_id}</div>
+              <span className="font-mono text-xs text-muted-foreground">{data.user_id}</span>
             </div>
-            <Typography.Text type="secondary" style={{ fontSize: 12, fontFamily: "monospace" }}>
-              {data.user_id}
-            </Typography.Text>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Typography.Text type="secondary">{t("teams.myMembership.teamRole")}</Typography.Text>
-            <div style={{ marginTop: 4 }}>
-              <Tag color={data.role === "admin" ? "blue" : "default"}>{data.role || "user"}</Tag>
+            <div>
+              <span className="text-muted-foreground">Team Role</span>
+              <div className="mt-1">
+                <Badge variant={data.role === "admin" ? "default" : "secondary"}>{data.role || "user"}</Badge>
+              </div>
             </div>
-          </Col>
-        </Row>
+          </div>
+        </CardContent>
       </Card>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12}>
-          <Card>
-            {labelWithTooltip(t("teams.myMembership.currentSpend"), t("teams.myMembership.currentSpendTooltip"))}
-            <div style={{ marginTop: 8 }}>
-              <Typography.Title level={3} style={{ margin: 0 }}>
-                ${formatNumber(spend, 4)}
-              </Typography.Title>
-              <Typography.Text type="secondary">
-                {t("teams.table.of")}{" "}
-                {maxBudget === null ? t("teams.table.unlimited") : `$${formatNumber(maxBudget, 4)}`}
-              </Typography.Text>
-            </div>
-            {budgetReset && (
-              <div style={{ marginTop: 4 }}>
-                <Typography.Text type="secondary">
-                  {t("teams.myMembership.resets", { date: budgetReset })}
-                </Typography.Text>
-              </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardContent>
+            {labelWithTooltip(
+              "Current Cycle Spend (USD)",
+              "Spend for the current budget cycle. Resets to $0 when the budget window rolls over.",
             )}
-          </Card>
-        </Col>
+            <div className="mt-2">
+              <h3 className="text-2xl font-semibold">${formatNumber(spend, 4)}</h3>
+              <span className="text-muted-foreground">
+                of {maxBudget === null ? "Unlimited" : `$${formatNumber(maxBudget, 4)}`}
+              </span>
+            </div>
+            {budgetReset && <div className="mt-1 text-muted-foreground">Resets {budgetReset}</div>}
+          </CardContent>
+        </Card>
 
-        <Col xs={24} md={12}>
-          <Card>
-            {labelWithTooltip(t("teams.table.rateLimits"), t("teams.myMembership.rateLimitsTooltip"))}
-            <div style={{ marginTop: 8 }}>
-              <Typography.Text>TPM: {formatRateLimit(tpmLimit, t("teams.table.unlimited"))}</Typography.Text>
+        <Card>
+          <CardContent>
+            {labelWithTooltip("Rate Limits", "Your per-member rate limits within this team.")}
+            <div className="mt-2">
+              <span>TPM: {formatRateLimit(tpmLimit)}</span>
               <br />
-              <Typography.Text>RPM: {formatRateLimit(rpmLimit, t("teams.table.unlimited"))}</Typography.Text>
+              <span>RPM: {formatRateLimit(rpmLimit)}</span>
             </div>
-          </Card>
-        </Col>
+          </CardContent>
+        </Card>
 
-        <Col xs={24} md={12}>
-          <Card>
-            {labelWithTooltip(t("teams.myMembership.totalSpend"), t("teams.myMembership.totalSpendTooltip"))}
-            <div style={{ marginTop: 8 }}>
-              <Typography.Title level={4} style={{ margin: 0 }}>
-                ${formatNumber(totalSpend, 4)}
-              </Typography.Title>
-            </div>
-          </Card>
-        </Col>
+        <Card>
+          <CardContent>
+            {labelWithTooltip("Total Spend (USD)", "Cumulative spend across all budget cycles within this team.")}
+            <h4 className="mt-2 text-xl font-semibold">${formatNumber(totalSpend, 4)}</h4>
+          </CardContent>
+        </Card>
 
-        <Col xs={24} md={12}>
-          <Card>
-            {labelWithTooltip(t("teams.myMembership.modelScope"), t("teams.myMembership.modelScopeTooltip"))}
-            <div style={{ marginTop: 8 }}>
+        <Card>
+          <CardContent>
+            {labelWithTooltip("Model Scope", "Models you can access within this team.")}
+            <div className="mt-2">
               {allowedModels && allowedModels.length > 0 ? (
-                <Space wrap>
+                <div className="flex flex-wrap gap-1">
                   {allowedModels.map((m) => (
-                    <Tag key={m}>{m}</Tag>
+                    <Badge key={m} variant="secondary">
+                      {m}
+                    </Badge>
                   ))}
-                </Space>
+                </div>
               ) : (
-                <Typography.Text>{t("teams.myMembership.allTeamModels")}</Typography.Text>
+                <span>All Team Models</span>
               )}
             </div>
-          </Card>
-        </Col>
-      </Row>
-    </Space>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

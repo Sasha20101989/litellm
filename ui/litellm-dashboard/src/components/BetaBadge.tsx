@@ -1,29 +1,21 @@
-import { Badge } from "antd";
+import { Badge } from "@/components/ui/badge";
 import { useDisableShowNewBadge } from "@/app/(dashboard)/hooks/useDisableShowNewBadge";
-import { useTranslation } from "react-i18next";
 
-export default function BetaBadge({
-  children,
-  dot = false,
-  label,
-}: {
-  children?: React.ReactNode;
-  dot?: boolean;
-  label?: React.ReactNode;
-}) {
+export default function BetaBadge({ children, dot = false }: { children?: React.ReactNode; dot?: boolean }) {
   const disableShowNewBadge = useDisableShowNewBadge();
-  const { t } = useTranslation("common");
-  const badgeLabel = label ?? t("badges.beta");
 
   if (disableShowNewBadge) {
     return children ? <>{children}</> : null;
   }
 
+  const badge = dot ? <Badge className="size-1.5 p-0" /> : <Badge>Beta</Badge>;
+
   return children ? (
-    <Badge color="blue" count={dot ? undefined : badgeLabel} dot={dot}>
+    <span className="inline-flex items-center gap-1.5">
       {children}
-    </Badge>
+      {badge}
+    </span>
   ) : (
-    <Badge color="blue" count={dot ? undefined : badgeLabel} dot={dot} />
+    badge
   );
 }

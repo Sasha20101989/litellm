@@ -1,36 +1,72 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useLogin } from "@/app/(dashboard)/hooks/login/useLogin";
 import { useUIConfig } from "@/app/(dashboard)/hooks/uiConfig/useUIConfig";
 import LoadingScreen from "@/components/common_components/LoadingScreen";
 import { exchangeLoginCode, getProxyBaseUrl, switchToWorkerUrl } from "@/components/networking";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/shared/Alert";
+import { PasswordInput } from "@/components/shared/PasswordInput";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { FormField } from "@/components/shared/form/FormField";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
+import { useZodForm } from "@/lib/forms/useZodForm";
 import { clearTokenCookies, getCookieFromDocument } from "@/utils/cookieUtils";
 import { isJwtExpired } from "@/utils/jwtUtils";
 import { consumeReturnUrl, getLoginUrl, getReturnUrl, isValidReturnUrl } from "@/utils/returnUrlUtils";
-import { InfoCircleOutlined, CloudServerOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Form, Input, Popover, Select, Space, Typography } from "antd";
+import { CircleAlert, Info, TriangleAlert, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { z } from "zod/v4";
 import { useWorker } from "@/hooks/useWorker";
-import LanguageSelector from "@/components/LanguageSelector/LanguageSelector";
-import { useTranslation } from "react-i18next";
 
-const LanguageToolbar = () => (
-  <div className="fixed right-4 top-4 z-50 rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
-    <LanguageSelector />
-  </div>
-);
+const loginSchema = z.object({
+  username: z.string().min(1, "Please enter your username"),
+  password: z.string().min(1, "Please enter your password"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+function SsoEnabledNotice() {
+  const { t } = useTranslation("auth");
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) {
+    return null;
+  }
+
+  return (
+    <Alert variant="info" className="mt-4">
+      <Info />
+      <AlertTitle>
+        {t("common:merge.ssoEnabledBefore")} {" "}
+        <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">AUTO_REDIRECT_UI_LOGIN_TO_SSO=true</code>{" "}
+        {t("common:merge.ssoEnabledAfter")}
+      </AlertTitle>
+      <AlertAction>
+        <Button variant="ghost" size="icon-sm" aria-label={t("common:actions.close")} onClick={() => setDismissed(true)}>
+          <X className="size-4" />
+        </Button>
+      </AlertAction>
+    </Alert>
+  );
+}
 
 function LoginPageContent() {
   const { t } = useTranslation("auth");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const { data: uiConfig, isLoading: isConfigLoading } = useUIConfig();
   const loginMutation = useLogin();
   const router = useRouter();
   const { workers, selectWorker } = useWorker();
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const workerFieldId = useId();
+  const form = useZodForm(loginSchema, { defaultValues: { username: "", password: "" } });
 
   // Pre-select worker from URL param (e.g. /ui/login?worker=team-b)
   useEffect(() => {
@@ -107,7 +143,7 @@ function LoginPageContent() {
     setIsLoading(false);
   }, [isConfigLoading, router, uiConfig]);
 
-  const handleSubmit = () => {
+  const handleSubmit = ({ username, password }: LoginFormValues) => {
     // If a worker is selected, point proxyBaseUrl at it before login
     const selectedWorker = workers.find((w) => w.worker_id === selectedWorkerId);
     if (selectedWorker) {
@@ -146,196 +182,177 @@ function LoginPageContent() {
   const error = loginMutation.error instanceof Error ? loginMutation.error.message : null;
   const isLoginLoading = loginMutation.isPending;
 
-  const { Title, Text, Paragraph } = Typography;
-
   if (isConfigLoading || isLoading) {
-    return (
-      <>
-        <LanguageToolbar />
-        <LoadingScreen />
-      </>
-    );
+    return <LoadingScreen />;
   }
 
   // Show disabled message if admin UI is disabled
   if (uiConfig && uiConfig.admin_ui_disabled) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LanguageToolbar />
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <Card className="w-full max-w-lg shadow-md">
-          <Space direction="vertical" size="middle" className="w-full">
-            <div className="text-center">
-              <Title level={2}>Nexoplane</Title>
-            </div>
+          <CardContent>
+            <div className="flex w-full flex-col gap-4">
+              <div className="text-center">
+                <h2 className="text-3xl font-semibold text-foreground">🚅 LiteLLM</h2>
+              </div>
 
-            <Alert
-              message={t("login.adminDisabledTitle")}
-              description={
-                <>
-                  <Paragraph className="text-sm">
-                    {t("login.adminDisabledDescription")} {t("login.adminDisabledInstruction")}
-                  </Paragraph>
-                  <Paragraph className="text-sm">
-                    <code className="bg-gray-100 px-1 py-0.5 rounded-sm text-xs">DISABLE_ADMIN_UI=False</code>
-                  </Paragraph>
-                </>
-              }
-              type="warning"
-              showIcon
-            />
-          </Space>
+              <Alert variant="warning">
+                <TriangleAlert />
+                <AlertTitle>{t("login.adminDisabledTitle")}</AlertTitle>
+                <AlertDescription>
+                  <p className="text-sm">
+                    {t("common:merge.adminDisabled")}
+                  </p>
+                  <p className="mt-2 text-sm">
+                    <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">DISABLE_ADMIN_UI=False</code>
+                  </p>
+                </AlertDescription>
+              </Alert>
+            </div>
+          </CardContent>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <LanguageToolbar />
+    <div className="min-h-screen flex items-center justify-center bg-muted">
       <Card className="w-full max-w-lg shadow-md">
-        <Space direction="vertical" size="middle" className="w-full">
-          <div className="text-center">
-            <Title level={2}>Nexoplane</Title>
-          </div>
+        <CardContent>
+          <TooltipProvider>
+            <div className="flex w-full flex-col gap-4">
+              <div className="text-center">
+                <h2 className="text-3xl font-semibold text-foreground">🚅 LiteLLM</h2>
+              </div>
 
-          <div className="text-center">
-            <Title level={3}>{t("login.title")}</Title>
-            <Text type="secondary">{t("login.description")}</Text>
-          </div>
+              <div className="text-center">
+                <h3 className="text-2xl font-semibold text-foreground">{t("login.title")}</h3>
+                <p className="text-sm text-muted-foreground">{t("common:merge.accessAdmin")}</p>
+              </div>
 
-          {!uiConfig?.hide_default_credentials_hint && (
-            <Alert
-              message={t("login.defaultCredentialsTitle")}
-              description={
-                <>
-                  <Paragraph className="text-sm">
-                    {t("login.defaultCredentialsBeforeUsername")}{" "}
-                    <code className="bg-gray-100 px-1 py-0.5 rounded-sm text-xs">admin</code>{" "}
-                    {t("login.defaultCredentialsBetween")}{" "}
-                    <code className="bg-gray-100 px-1 py-0.5 rounded-sm text-xs">MASTER_KEY</code>.
-                  </Paragraph>
-                  <Paragraph className="text-sm">
-                    {t("login.credentialsHelp")}{" "}
-                    <a href="https://docs.litellm.ai/docs/proxy/ui" target="_blank" rel="noopener noreferrer">
-                      {t("login.documentation")}
-                    </a>
-                    .
-                  </Paragraph>
-                </>
-              }
-              type="info"
-              icon={<InfoCircleOutlined />}
-              showIcon
-            />
-          )}
-
-          {error && <Alert message={error} type="error" showIcon />}
-
-          <Form onFinish={handleSubmit} layout="vertical" requiredMark={false}>
-            {uiConfig?.is_control_plane && workers.length > 0 && (
-              <Form.Item label={t("login.worker")} style={{ marginBottom: 16 }}>
-                <Select
-                  value={selectedWorkerId || undefined}
-                  onChange={(value) => setSelectedWorkerId(value)}
-                  placeholder={t("login.workerPlaceholder")}
-                  size="large"
-                  suffixIcon={<CloudServerOutlined />}
-                  options={workers.map((w) => ({
-                    label: w.name,
-                    value: w.worker_id,
-                  }))}
-                />
-              </Form.Item>
-            )}
-
-            <Form.Item
-              label={t("login.username")}
-              name="username"
-              rules={[{ required: true, message: t("login.usernameRequired") }]}
-            >
-              <Input
-                placeholder={t("login.usernamePlaceholder")}
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={isLoginLoading}
-                size="large"
-                className="rounded-md border-gray-300"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={t("login.password")}
-              name="password"
-              rules={[{ required: true, message: t("login.passwordRequired") }]}
-            >
-              <Input.Password
-                placeholder={t("login.passwordPlaceholder")}
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoginLoading}
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isLoginLoading}
-                disabled={isLoginLoading}
-                block
-                size="large"
-              >
-                {isLoginLoading ? t("login.submitting") : t("login.submit")}
-              </Button>
-            </Form.Item>
-            <Form.Item>
-              {!uiConfig?.sso_configured ? (
-                <Popover content={t("login.ssoConfigure")} trigger="hover">
-                  <Button disabled block size="large">
-                    {t("login.sso")}
-                  </Button>
-                </Popover>
-              ) : (
-                <Button
-                  disabled={isLoginLoading || (!!selectedWorkerId && workers.length === 0)}
-                  onClick={() => {
-                    const selectedWorker = workers.find((w) => w.worker_id === selectedWorkerId);
-                    if (selectedWorker) {
-                      // Store worker selection so useWorker hook restores it after redirect
-                      localStorage.setItem("litellm_selected_worker_id", selectedWorkerId!);
-                      switchToWorkerUrl(selectedWorker.url);
-                    }
-                    // SSO on the worker (or this instance if no worker), always
-                    // include return_to so the callback redirects back here
-                    const ssoBase = selectedWorker?.url ?? getProxyBaseUrl();
-                    const returnTo = encodeURIComponent(getLoginUrl(window.location.origin));
-                    router.push(`${ssoBase}/sso/key/generate?return_to=${returnTo}`);
-                  }}
-                  block
-                  size="large"
-                >
-                  {t("login.sso")}
-                </Button>
+              {!uiConfig?.hide_default_credentials_hint && (
+                <Alert variant="info">
+                  <Info />
+                  <AlertTitle>{t("login.defaultCredentialsTitle")}</AlertTitle>
+                  <AlertDescription>
+                    <p className="text-sm">
+                      {t("login.defaultCredentialsBeforeUsername")} <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">admin</code>{" "}
+                      {t("common:merge.passwordIs")}{" "}
+                      <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">MASTER_KEY</code>.
+                    </p>
+                    <p className="mt-2 text-sm">
+                      {t("login.credentialsHelp")}{" "}
+                      <a href="https://docs.litellm.ai/docs/proxy/ui" target="_blank" rel="noopener noreferrer">
+                        {t("login.documentation")}
+                      </a>
+                      .
+                    </p>
+                  </AlertDescription>
+                </Alert>
               )}
-            </Form.Item>
-          </Form>
-        </Space>
-        {uiConfig?.sso_configured && (
-          <Alert
-            type="info"
-            showIcon
-            closable
-            message={
-              <Text>
-                {t("login.ssoEnabledBefore")} <Text code>AUTO_REDIRECT_UI_LOGIN_TO_SSO=true</Text>{" "}
-                {t("login.ssoEnabledAfter")}
-              </Text>
-            }
-          />
-        )}
+
+              {error && (
+                <Alert variant="error">
+                  <CircleAlert />
+                  <AlertTitle>{error}</AlertTitle>
+                </Alert>
+              )}
+
+              <form onSubmit={form.handleSubmit(handleSubmit)}>
+                <FieldGroup>
+                  {uiConfig?.is_control_plane && workers.length > 0 && (
+                    <Field>
+                      <FieldLabel htmlFor={workerFieldId}>{t("login.worker")}</FieldLabel>
+                      <Select
+                        items={workers.map((worker) => ({ label: worker.name, value: worker.worker_id }))}
+                        value={selectedWorkerId}
+                        onValueChange={(value: string | null) => setSelectedWorkerId(value)}
+                      >
+                        <SelectTrigger id={workerFieldId} className="h-10 w-full">
+                          <SelectValue placeholder={t("login.workerPlaceholder")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {workers.map((worker) => (
+                            <SelectItem key={worker.worker_id} value={worker.worker_id}>
+                              {worker.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+
+                  <FormField control={form.control} name="username" label="Username">
+                    {({ ref, ...field }) => (
+                      <Input
+                        {...field}
+                        ref={ref}
+                        placeholder={t("login.usernamePlaceholder")}
+                        autoComplete="username"
+                        disabled={isLoginLoading}
+                        className="h-10 rounded-md"
+                      />
+                    )}
+                  </FormField>
+
+                  <FormField control={form.control} name="password" label="Password">
+                    {({ ref, ...field }) => (
+                      <PasswordInput
+                        {...field}
+                        ref={ref}
+                        placeholder={t("login.passwordPlaceholder")}
+                        autoComplete="current-password"
+                        disabled={isLoginLoading}
+                        groupClassName="h-10"
+                      />
+                    )}
+                  </FormField>
+
+                  <Button type="submit" size="lg" disabled={isLoginLoading} className="w-full">
+                    {isLoginLoading && <UiLoadingSpinner className="size-4" role="img" aria-label={t("common:merge.loadingAria")} />}
+                    {isLoginLoading ? "Logging in..." : "Login"}
+                  </Button>
+
+                  {!uiConfig?.sso_configured ? (
+                    <Tooltip>
+                      <TooltipTrigger render={<span className="block w-full" />}>
+                        <Button type="button" variant="outline" size="lg" disabled className="w-full">
+                          {t("login.sso")}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{t("login.ssoConfigure")}</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      disabled={isLoginLoading || (!!selectedWorkerId && workers.length === 0)}
+                      onClick={() => {
+                        const selectedWorker = workers.find((w) => w.worker_id === selectedWorkerId);
+                        if (selectedWorker) {
+                          // Store worker selection so useWorker hook restores it after redirect
+                          localStorage.setItem("litellm_selected_worker_id", selectedWorkerId!);
+                          switchToWorkerUrl(selectedWorker.url);
+                        }
+                        // SSO on the worker (or this instance if no worker), always
+                        // include return_to so the callback redirects back here
+                        const ssoBase = selectedWorker?.url ?? getProxyBaseUrl();
+                        const returnTo = encodeURIComponent(getLoginUrl(window.location.origin));
+                        router.push(`${ssoBase}/sso/key/generate?return_to=${returnTo}`);
+                      }}
+                      className="w-full"
+                    >
+                      {t("login.sso")}
+                    </Button>
+                  )}
+                </FieldGroup>
+              </form>
+            </div>
+            {uiConfig?.sso_configured && <SsoEnabledNotice />}
+          </TooltipProvider>
+        </CardContent>
       </Card>
     </div>
   );

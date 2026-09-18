@@ -1,10 +1,9 @@
 import { BarChart } from "@/components/shared/charts";
+import { DataTable } from "@/components/shared/DataTable";
 import { MoneyCell } from "@/components/shared/table_cells";
-import { Segmented } from "antd";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
-import { DataTable } from "@/components/view_logs/table";
-import { useTranslation } from "react-i18next";
 
 type TopModel = {
   key: string;
@@ -20,36 +19,37 @@ interface TopModelViewProps {
   setTopModelsLimit: (limit: number) => void;
 }
 
+export const TOP_MODEL_LIMITS = [5, 10, 25, 50];
+
 export default function TopModelView({ topModels, topModelsLimit, setTopModelsLimit }: TopModelViewProps) {
-  const { t } = useTranslation("usage");
   const [modelViewMode, setModelViewMode] = useState<"chart" | "table">("table");
 
   const columns = [
     {
-      header: t("common.model"),
+      header: "Model",
       accessorKey: "key",
       cell: (info: any) => info.getValue() || "-",
     },
     {
-      header: t("common.spendUsd"),
+      header: "Spend (USD)",
       accessorKey: "spend",
       meta: { numeric: true },
       cell: (info: any) => <MoneyCell value={info.getValue()} decimals={2} />,
     },
     {
-      header: t("common.successful"),
+      header: "Successful",
       accessorKey: "successful_requests",
       meta: { numeric: true },
-      cell: (info: any) => <span className="text-green-600">{info.getValue()?.toLocaleString() || 0}</span>,
+      cell: (info: any) => <span className="text-success">{info.getValue()?.toLocaleString() || 0}</span>,
     },
     {
-      header: t("common.failed"),
+      header: "Failed",
       accessorKey: "failed_requests",
       meta: { numeric: true },
-      cell: (info: any) => <span className="text-red-600">{info.getValue()?.toLocaleString() || 0}</span>,
+      cell: (info: any) => <span className="text-destructive">{info.getValue()?.toLocaleString() || 0}</span>,
     },
     {
-      header: t("common.tokens"),
+      header: "Tokens",
       accessorKey: "tokens",
       meta: { numeric: true },
       cell: (info: any) => info.getValue()?.toLocaleString() || 0,
@@ -60,30 +60,25 @@ export default function TopModelView({ topModels, topModelsLimit, setTopModelsLi
   return (
     <>
       <div className="mb-4 flex justify-between items-center">
-        <Segmented
-          options={[
-            { label: "5", value: 5 },
-            { label: "10", value: 10 },
-            { label: "25", value: 25 },
-            { label: "50", value: 50 },
-          ]}
-          value={topModelsLimit}
-          onChange={(value) => setTopModelsLimit(value as number)}
-        />
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setModelViewMode("table")}
-            className={`px-3 py-1 text-sm rounded-md ${modelViewMode === "table" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}
-          >
-            {t("common.tableView")}
-          </button>
-          <button
-            onClick={() => setModelViewMode("chart")}
-            className={`px-3 py-1 text-sm rounded-md ${modelViewMode === "chart" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}
-          >
-            {t("common.chartView")}
-          </button>
-        </div>
+        <Tabs value={String(topModelsLimit)} onValueChange={(value: string) => setTopModelsLimit(Number(value))}>
+          <TabsList aria-label="Number of models to show">
+            {TOP_MODEL_LIMITS.map((limit) => (
+              <TabsTrigger key={limit} value={String(limit)} className="flex-none px-3">
+                {limit}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        <Tabs value={modelViewMode} onValueChange={(value: string) => setModelViewMode(value as "chart" | "table")}>
+          <TabsList aria-label="Top model view mode">
+            <TabsTrigger value="table" className="flex-none px-3">
+              Table View
+            </TabsTrigger>
+            <TabsTrigger value="chart" className="flex-none px-3">
+              Chart View
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       {modelViewMode === "chart" ? (
         <div className="relative max-h-[600px] overflow-y-auto">
@@ -102,9 +97,7 @@ export default function TopModelView({ topModels, topModelsLimit, setTopModelsLi
           />
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden max-h-[600px] overflow-y-auto">
-          <DataTable columns={columns} data={processedTopModels} isLoading={false} />
-        </div>
+        <DataTable columns={columns} data={processedTopModels} isLoading={false} maxBodyHeight={600} size="compact" />
       )}
     </>
   );

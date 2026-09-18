@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 
 import ViewUserSpend from "@/components/view_user_spend";
-import { ProxySettings } from "@/components/user_dashboard";
-import UsageDatePicker from "@/components/shared/usage_date_picker";
+import { ProxySettings } from "@/app/(dashboard)/hooks/proxySettings/useProxySettings";
+import AdvancedDatePicker from "@/components/shared/advanced_date_picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,8 +15,9 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxValue,
+  useComboboxAnchor,
 } from "@/components/ui/combobox";
-import { Meter, MeterIndicator, MeterTrack } from "@/components/ui/meter";
+import { Meter, MeterIndicator, MeterTrack } from "@/components/shared/Meter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,6 +56,8 @@ interface GlobalActivityData {
   daily_data: { date: string; api_requests: number; total_tokens: number }[];
 }
 
+const EMPTY_GLOBAL_ACTIVITY: GlobalActivityData = { sum_api_requests: 0, sum_total_tokens: 0, daily_data: [] };
+
 type UsageDateRange = { from?: Date; to?: Date };
 
 type TeamSpendTotal = { name: string; value: number };
@@ -92,7 +94,7 @@ const TeamSpendBarList: React.FC<{ data: TeamSpendTotal[] }> = ({ data }) => {
 };
 
 const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, userID, keys, premiumUser }) => {
-  const { t, i18n } = useTranslation("usage");
+  const anchor = useComboboxAnchor();
   const canViewGlobalSpend = hasCapability(userRole, "viewGlobalSpend");
   const currentDate = new Date();
   const [keySpendData, setKeySpendData] = useState<any[]>([]);
@@ -105,7 +107,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
   const [uniqueTeamIds, setUniqueTeamIds] = useState<any[]>([]);
   const [totalSpendPerTeam, setTotalSpendPerTeam] = useState<TeamSpendTotal[]>([]);
   const [spendByProvider, setSpendByProvider] = useState<any[]>([]);
-  const [globalActivity, setGlobalActivity] = useState<GlobalActivityData>({} as GlobalActivityData);
+  const [globalActivity, setGlobalActivity] = useState<GlobalActivityData>(EMPTY_GLOBAL_ACTIVITY);
   const [globalActivityPerModel, setGlobalActivityPerModel] = useState<any[]>([]);
   const [selectedKeyToken, setSelectedKeyToken] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([ALL_TAGS]);
@@ -127,18 +129,18 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
     .map((key: any) => ({ token: String(key["token"]), alias: String(key["key_alias"]) }));
 
   const tagOptions: TagOption[] = [
-    { value: ALL_TAGS, label: t("legacy.allTags"), disabled: false },
+    { value: ALL_TAGS, label: "All Tags", disabled: false },
     ...allTagNames
       .filter((tag) => tag !== ALL_TAGS)
       .map((tag) => ({
         value: tag,
-        label: premiumUser ? tag : `✨ ${tag} (${t("legacy.enterpriseOnly")})`,
+        label: premiumUser ? tag : `✨ ${tag} (Enterprise only Feature)`,
         disabled: !premiumUser,
       })),
   ];
 
   function valueFormatterNumbers(number: number) {
-    const formatter = new Intl.NumberFormat(i18n.language.startsWith("ru") ? "ru-RU" : "en-US", {
+    const formatter = new Intl.NumberFormat("en-US", {
       maximumFractionDigits: 0,
       notation: "compact",
       compactDisplay: "short",
@@ -507,10 +509,12 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
       <div className="w-full p-8">
         <Card>
           <CardHeader>
-            <CardTitle>{t("legacy.title")}</CardTitle>
+            <CardTitle>Usage</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">{t("legacy.adminOnly")}</p>
+            <p className="text-sm text-muted-foreground">
+              Proxy-wide usage is only available to admin users. Your own usage is on the Usage page.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -522,16 +526,18 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
       <div className="w-full p-8">
         <Card>
           <CardHeader>
-            <CardTitle>{t("legacy.databaseLimitTitle")}</CardTitle>
+            <CardTitle>Database Query Limit Reached</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-start gap-4">
             <p className="text-sm text-muted-foreground">
-              {t("legacy.databaseLimitDescription", { count: proxySettings.NUM_SPEND_LOGS_ROWS })}
+              SpendLogs in DB has {proxySettings.NUM_SPEND_LOGS_ROWS} rows.
+              <br></br>
+              Please follow our guide to view usage when SpendLogs has more than 1M rows.
             </p>
             <Button
               render={
                 <a href="https://docs.litellm.ai/docs/proxy/cost_tracking" target="_blank" rel="noreferrer">
-                  {t("legacy.viewGuide")}
+                  View Usage Guide
                 </a>
               }
             />
@@ -545,41 +551,37 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
     <div className="w-full p-8">
       <Tabs defaultValue="all-up">
         <TabsList variant="line" className="mt-2">
-          <TabsTrigger value="all-up">{t("legacy.tabs.all")}</TabsTrigger>
+          <TabsTrigger value="all-up">All Up</TabsTrigger>
 
           {isAdminOrAdminViewer(userRole) && (
             <>
-              <TabsTrigger value="team-based-usage">{t("legacy.tabs.team")}</TabsTrigger>
-              <TabsTrigger value="customer-usage">{t("legacy.tabs.customer")}</TabsTrigger>
-              <TabsTrigger value="tag-based-usage">{t("legacy.tabs.tag")}</TabsTrigger>
+              <TabsTrigger value="team-based-usage">Team Based Usage</TabsTrigger>
+              <TabsTrigger value="customer-usage">Customer Usage</TabsTrigger>
+              <TabsTrigger value="tag-based-usage">Tag Based Usage</TabsTrigger>
             </>
           )}
         </TabsList>
 
-        <TabsContent value="all-up">
+        <TabsContent value="all-up" keepMounted>
           <Tabs defaultValue="cost">
             <TabsList className="mt-1">
-              <TabsTrigger value="cost">{t("legacy.tabs.cost")}</TabsTrigger>
-              <TabsTrigger value="activity">{t("legacy.tabs.activity")}</TabsTrigger>
+              <TabsTrigger value="cost">Cost</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="cost">
+            <TabsContent value="cost" keepMounted>
               <div className="grid h-screen w-full grid-cols-2 gap-2">
                 <div className="col-span-2">
                   <p className="mt-2 mb-2 text-lg text-muted-foreground">
-                    {t("legacy.projectSpend", {
-                      month: new Date().toLocaleString(i18n.language.startsWith("ru") ? "ru-RU" : "en-US", {
-                        month: "long",
-                      }),
-                      lastDay: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(),
-                    })}
+                    Project Spend {new Date().toLocaleString("default", { month: "long" })} 1 -{" "}
+                    {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}
                   </p>
                   <ViewUserSpend userSpend={totalMonthlySpend} selectedTeam={null} userMaxBudget={null} />
                 </div>
                 <div className="col-span-2">
                   <Card>
                     <CardHeader>
-                      <CardTitle>{t("legacy.monthlySpend")}</CardTitle>
+                      <CardTitle>Monthly Spend</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <BarChart
@@ -597,7 +599,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 <div className="col-span-1">
                   <Card className="h-full">
                     <CardHeader>
-                      <CardTitle>{t("legacy.topVirtualKeys")}</CardTitle>
+                      <CardTitle>Top Virtual Keys</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <TopKeyView topKeys={topKeys} teams={null} topKeysLimit={5} setTopKeysLimit={() => {}} />
@@ -607,7 +609,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 <div className="col-span-1">
                   <Card className="h-full">
                     <CardHeader>
-                      <CardTitle>{t("legacy.topModels")}</CardTitle>
+                      <CardTitle>Top Models</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <BarChart
@@ -629,7 +631,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 <div className="col-span-2">
                   <Card className="mb-2">
                     <CardHeader>
-                      <CardTitle>{t("legacy.spendByProvider")}</CardTitle>
+                      <CardTitle>Spend by Provider</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2">
@@ -648,8 +650,8 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>{t("legacy.provider")}</TableHead>
-                                <TableHead>{t("legacy.spend")}</TableHead>
+                                <TableHead>Provider</TableHead>
+                                <TableHead>Spend</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -671,17 +673,17 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
               </div>
             </TabsContent>
 
-            <TabsContent value="activity">
+            <TabsContent value="activity" keepMounted>
               <div className="grid h-[75vh] w-full grid-cols-1 gap-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t("legacy.tabs.all")}</CardTitle>
+                    <CardTitle>All Up</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2">
                       <div>
                         <p className="text-[15px] font-normal text-muted-foreground">
-                          {t("legacy.apiRequests")} {valueFormatterNumbers(globalActivity.sum_api_requests)}
+                          API Requests {valueFormatterNumbers(globalActivity.sum_api_requests)}
                         </p>
                         <AreaChart
                           className="h-40"
@@ -694,7 +696,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                       </div>
                       <div>
                         <p className="text-[15px] font-normal text-muted-foreground">
-                          {t("legacy.tokens")} {valueFormatterNumbers(globalActivity.sum_total_tokens)}
+                          Tokens {valueFormatterNumbers(globalActivity.sum_total_tokens)}
                         </p>
                         <BarChart
                           className="h-40"
@@ -718,7 +720,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                       <div className="grid grid-cols-2">
                         <div>
                           <p className="text-[15px] font-normal text-muted-foreground">
-                            {t("legacy.apiRequests")} {valueFormatterNumbers(globalActivity.sum_api_requests)}
+                            API Requests {valueFormatterNumbers(globalActivity.sum_api_requests)}
                           </p>
                           <AreaChart
                             className="h-40"
@@ -731,7 +733,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                         </div>
                         <div>
                           <p className="text-[15px] font-normal text-muted-foreground">
-                            {t("legacy.tokens")} {valueFormatterNumbers(globalActivity.sum_total_tokens)}
+                            Tokens {valueFormatterNumbers(globalActivity.sum_total_tokens)}
                           </p>
                           <BarChart
                             className="h-40"
@@ -751,12 +753,12 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="team-based-usage">
+        <TabsContent value="team-based-usage" keepMounted>
           <div className="grid h-[75vh] w-full grid-cols-2 gap-2">
             <div className="col-span-2">
               <Card className="mb-2">
                 <CardHeader>
-                  <CardTitle>{t("legacy.totalSpendPerTeam")}</CardTitle>
+                  <CardTitle>Total Spend Per Team</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TeamSpendBarList data={totalSpendPerTeam} />
@@ -764,7 +766,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("legacy.dailySpendPerTeam")}</CardTitle>
+                  <CardTitle>Daily Spend Per Team</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <BarChart
@@ -782,21 +784,22 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
           </div>
         </TabsContent>
 
-        <TabsContent value="customer-usage">
+        <TabsContent value="customer-usage" keepMounted>
           <p className="mb-2 text-[12px] text-muted-foreground italic">
-            {t("legacy.customerDescription")}{" "}
+            Customers of your LLM API calls. Tracked when a `user` param is passed in your LLM calls{" "}
             <a
               className="text-primary"
               href="https://docs.litellm.ai/docs/proxy/users"
               target="_blank"
               rel="noreferrer"
             >
-              {t("legacy.docsHere")}
+              docs here
             </a>
           </p>
           <div className="grid grid-cols-2">
             <div>
-              <UsageDatePicker
+              <AdvancedDatePicker
+                align="left"
                 value={dateValue}
                 onValueChange={(value) => {
                   setDateValue(value);
@@ -805,7 +808,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
               />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{t("legacy.selectKey")}</p>
+              <p className="text-sm text-muted-foreground">Select Key</p>
               <Select
                 value={selectedKeyToken}
                 onValueChange={(value: string | null) => {
@@ -814,14 +817,12 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("legacy.allKeys")}>
-                    {(token: string | null) =>
-                      selectableKeys.find((key) => key.token === token)?.alias ?? t("legacy.allKeys")
-                    }
+                  <SelectValue placeholder="All Keys">
+                    {(token: string | null) => selectableKeys.find((key) => key.token === token)?.alias ?? "All Keys"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>{t("legacy.allKeys")}</SelectItem>
+                  <SelectItem value={null}>All Keys</SelectItem>
                   {selectableKeys.map((key) => (
                     <SelectItem key={key.token} value={key.token}>
                       {key.alias}
@@ -838,9 +839,9 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t("legacy.customer")}</TableHead>
-                      <TableHead>{t("legacy.spend")}</TableHead>
-                      <TableHead>{t("legacy.totalEvents")}</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Spend</TableHead>
+                      <TableHead>Total Events</TableHead>
                     </TableRow>
                   </TableHeader>
 
@@ -861,10 +862,11 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
           </Card>
         </TabsContent>
 
-        <TabsContent value="tag-based-usage">
+        <TabsContent value="tag-based-usage" keepMounted>
           <div className="grid grid-cols-2">
             <div className="col-span-1">
-              <UsageDatePicker
+              <AdvancedDatePicker
+                align="left"
                 className="mb-4"
                 value={dateValue}
                 onValueChange={(value) => {
@@ -883,7 +885,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                 isItemEqualToValue={(a: TagOption, b: TagOption) => a.value === b.value}
                 itemToStringLabel={(option: TagOption) => option.label}
               >
-                <ComboboxChips>
+                <ComboboxChips render={<div ref={anchor} />}>
                   <ComboboxValue>
                     {(options: TagOption[]) =>
                       options.map((option) => (
@@ -893,10 +895,10 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                       ))
                     }
                   </ComboboxValue>
-                  <ComboboxChipsInput placeholder={t("legacy.selectTags")} className="border-0 bg-transparent" />
+                  <ComboboxChipsInput placeholder="Select tags" />
                 </ComboboxChips>
-                <ComboboxContent>
-                  <ComboboxEmpty>{t("legacy.noTagsFound")}</ComboboxEmpty>
+                <ComboboxContent anchor={anchor}>
+                  <ComboboxEmpty>No tags found</ComboboxEmpty>
                   <ComboboxList>
                     {(option: TagOption) => (
                       <ComboboxItem key={option.value} value={option} disabled={option.disabled}>
@@ -912,18 +914,18 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
             <div className="col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("legacy.spendPerTag")}</CardTitle>
+                  <CardTitle>Spend Per Tag</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
                   <p className="text-sm text-muted-foreground">
-                    {t("legacy.trackCostPerTag")}{" "}
+                    Get Started by Tracking cost per tag{" "}
                     <a
                       className="text-primary"
                       href="https://docs.litellm.ai/docs/proxy/cost_tracking"
                       target="_blank"
                       rel="noreferrer"
                     >
-                      {t("legacy.here")}
+                      here
                     </a>
                   </p>
                   <BarChart className="h-72" data={topTagsData} index="name" categories={["spend"]} colors={["cyan"]} />

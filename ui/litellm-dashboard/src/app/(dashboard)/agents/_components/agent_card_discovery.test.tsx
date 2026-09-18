@@ -88,7 +88,9 @@ describe("AgentCardDiscovery", () => {
 
     expect(screen.getByPlaceholderText("https://upstream-agent.example.com")).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText("https://upstream-agent.example.com"), "https://upstream.example.com");
+    fireEvent.change(screen.getByPlaceholderText("https://upstream-agent.example.com"), {
+      target: { value: "https://upstream.example.com" },
+    });
     await vi.advanceTimersByTimeAsync(500);
 
     await waitFor(() => expect(mockDiscover).toHaveBeenCalled());
@@ -112,7 +114,9 @@ describe("AgentCardDiscovery", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithProviders(<AgentCardDiscovery accessToken="tok" onApply={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText("https://upstream-agent.example.com"), "https://upstream.example.com");
+    fireEvent.change(screen.getByPlaceholderText("https://upstream-agent.example.com"), {
+      target: { value: "https://upstream.example.com" },
+    });
     await vi.advanceTimersByTimeAsync(500);
 
     expect(await screen.findByText("Upstream card loaded")).toBeInTheDocument();
@@ -128,7 +132,9 @@ describe("AgentCardDiscovery", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithProviders(<AgentCardDiscovery accessToken="tok" onApply={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText("https://upstream-agent.example.com"), "https://nope.example");
+    fireEvent.change(screen.getByPlaceholderText("https://upstream-agent.example.com"), {
+      target: { value: "https://nope.example" },
+    });
     await vi.advanceTimersByTimeAsync(500);
 
     expect(await screen.findByText("Discovery failed")).toBeInTheDocument();
@@ -144,7 +150,9 @@ describe("AgentCardDiscovery", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithProviders(<AgentCardDiscovery accessToken="tok" onApply={onApply} />);
 
-    await user.type(screen.getByPlaceholderText("https://upstream-agent.example.com"), "https://upstream.example.com");
+    fireEvent.change(screen.getByPlaceholderText("https://upstream-agent.example.com"), {
+      target: { value: "https://upstream.example.com" },
+    });
     await vi.advanceTimersByTimeAsync(500);
     await screen.findByText("Upstream card loaded");
 
@@ -223,12 +231,10 @@ describe("AgentCardDiscovery", () => {
     );
 
     expect(
-      (
-        screen.getByRole("button", {
-          name: /discover/i,
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
+      screen.getByRole("button", {
+        name: /discover/i,
+      }),
+    ).toBeDisabled();
     expect(mockDiscover).not.toHaveBeenCalled();
   });
 
@@ -319,7 +325,9 @@ describe("AgentCardDiscovery", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderWithProviders(<AgentCardDiscovery accessToken={null} onApply={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText("https://upstream-agent.example.com"), "https://upstream.example.com");
+    fireEvent.change(screen.getByPlaceholderText("https://upstream-agent.example.com"), {
+      target: { value: "https://upstream.example.com" },
+    });
     await user.click(screen.getByRole("button", { name: /discover/i }));
 
     expect(await screen.findByText(/No access token available/i)).toBeInTheDocument();

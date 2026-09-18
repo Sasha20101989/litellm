@@ -48,6 +48,7 @@ const GuardrailTable: React.FC<GuardrailTableProps> = ({
   return (
     <DataTable
       data={guardrailsList}
+      paginationMode="client"
       columns={columns}
       getRowId={(guardrail, index) => guardrail.guardrail_id || String(index)}
       sortingMode="client"

@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 
 import { getGeneralSettingsCall } from "@/components/networking";
-import NotificationsManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import {
   PromptCachingPanel,
   generalSettingsItem,
@@ -18,7 +17,6 @@ interface PromptCachingTabProps {
 }
 
 const PromptCachingTab: React.FC<PromptCachingTabProps> = ({ accessToken, activity }) => {
-  const { t } = useTranslation("costOptimization");
   const [settings, setSettings] = useState<generalSettingsItem[]>([]);
 
   const loadSettings = useCallback(() => {
@@ -29,9 +27,9 @@ const PromptCachingTab: React.FC<PromptCachingTabProps> = ({ accessToken, activi
       .then((data: generalSettingsItem[]) => setSettings(data))
       .catch((error) => {
         console.error("Failed to load prompt caching settings:", error);
-        NotificationsManager.fromBackend(t("caching.loadError"));
+        toast.fromError("Failed to load prompt caching settings");
       });
-  }, [accessToken, t]);
+  }, [accessToken]);
 
   useEffect(() => {
     loadSettings();

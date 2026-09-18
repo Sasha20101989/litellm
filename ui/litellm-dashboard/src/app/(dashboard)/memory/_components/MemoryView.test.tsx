@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen } from "@testing-library/react";
+import type { PaginationState } from "@tanstack/react-table";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,39 +9,33 @@ import { MemoryRow } from "@/components/networking";
 
 import { MemoryView } from "./MemoryView";
 
-const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
-
-vi.mock("react-i18next", async () => {
-  const { resources } = await import("@/i18n/catalog");
-  const t = (key: string, values?: Record<string, unknown>) => {
-    const copy = key.split(".").reduce<unknown>((value, segment) => {
-      if (typeof value !== "object" || value === null) return undefined;
-      return (value as Record<string, unknown>)[segment];
-    }, resources[localization.language].gateway);
-    if (typeof copy !== "string") return key;
-    return Object.entries(values ?? {}).reduce(
-      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
-      copy,
-    );
-  };
-  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
-});
-
 interface CapturedTableProps {
   isLoading: boolean;
   rowCount: number;
   data: MemoryRow[];
   hasActiveSearch: boolean;
+  onSearchChange: (value: string) => void;
+  onPaginationChange: (state: PaginationState) => void;
   onViewClick: (row: MemoryRow) => void;
 }
 
 const captured = vi.hoisted(() => ({ current: null as CapturedTableProps | null }));
+const fetchMemoryListMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./MemoryTable", () => ({
   MemoryTable: function MemoryTableMock(props: CapturedTableProps) {
     captured.current = props;
     return <div data-testid="memory-table-mock" />;
   },
+}));
+
+vi.mock("@/components/networking", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/networking")>()),
+  fetchMemoryList: fetchMemoryListMock,
+}));
+
+vi.mock("@tanstack/react-pacer/debouncer", () => ({
+  useDebouncedValue: (value: unknown) => [value, { cancel: vi.fn(), flush: vi.fn() }],
 }));
 
 const renderView = (accessToken: string | null) => {
@@ -54,15 +49,25 @@ const renderView = (accessToken: string | null) => {
 
 describe("MemoryView", () => {
   beforeEach(() => {
-    localization.language = "en";
+    fetchMemoryListMock.mockReset();
+    fetchMemoryListMock.mockResolvedValue({ memories: [], total: 0 });
   });
 
-  it("renders the memory page in Russian", () => {
-    localization.language = "ru";
-    renderView(null);
+  it("queries the server with the search box value as `search` and resets to page 1", async () => {
+    renderView("token");
+    await waitFor(() => expect(fetchMemoryListMock).toHaveBeenCalled());
 
-    expect(screen.getByRole("heading", { name: "Память" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Новая запись" })).toBeInTheDocument();
+    act(() => captured.current?.onPaginationChange({ pageIndex: 2, pageSize: 50 }));
+    await waitFor(() =>
+      expect(fetchMemoryListMock).toHaveBeenLastCalledWith("token", expect.objectContaining({ page: 3 })),
+    );
+
+    act(() => captured.current?.onSearchChange("mem-abc123"));
+
+    await waitFor(() =>
+      expect(fetchMemoryListMock).toHaveBeenLastCalledWith("token", { search: "mem-abc123", page: 1, pageSize: 50 }),
+    );
+    expect(captured.current?.hasActiveSearch).toBe(true);
   });
 
   it("keeps the table out of the skeleton state when the token is null (disabled query)", () => {

@@ -3,7 +3,6 @@
 import moment from "moment";
 import { CalendarDays } from "lucide-react";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,8 @@ interface LogsTableToolbarProps {
   onSelectedTimeIntervalChange: (value: { value: number; unit: string }) => void;
   isLiveTail: boolean;
   onIsLiveTailChange: (value: boolean) => void;
+  excludeInternalHealthChecks: boolean;
+  onExcludeInternalHealthChecksChange: (value: boolean) => void;
   onResetToFirstPage: () => void;
   onResetFilters: () => void;
 }
@@ -39,20 +40,12 @@ export function LogsTableToolbar({
   onSelectedTimeIntervalChange,
   isLiveTail,
   onIsLiveTailChange,
+  excludeInternalHealthChecks,
+  onExcludeInternalHealthChecksChange,
   onResetToFirstPage,
   onResetFilters,
 }: LogsTableToolbarProps) {
-  const { t, i18n } = useTranslation("logs");
   const [quickSelectOpen, setQuickSelectOpen] = useState(false);
-
-  const optionLabel = (option: { value: number; unit: string }): string => {
-    if (option.value === 1 && option.unit === "minutes") return t("toolbar.lastMinute");
-    if (option.value === 15 && option.unit === "minutes") return t("toolbar.last15Minutes");
-    if (option.value === 1 && option.unit === "hours") return t("toolbar.lastHour");
-    if (option.value === 4 && option.unit === "hours") return t("toolbar.last4Hours");
-    if (option.value === 24 && option.unit === "hours") return t("toolbar.last24Hours");
-    return t("toolbar.last7Days");
-  };
 
   const applyQuickSelect = (option: { label: string; value: number; unit: string }) => {
     onResetToFirstPage();
@@ -70,12 +63,7 @@ export function LogsTableToolbar({
   const selectedOption = QUICK_SELECT_OPTIONS.find(
     (option) => option.value === selectedTimeInterval.value && option.unit === selectedTimeInterval.unit,
   );
-  const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-US";
-  const displayLabel = isCustomDate
-    ? getTimeRangeDisplay(isCustomDate, startTime, endTime, locale)
-    : selectedOption
-      ? optionLabel(selectedOption)
-      : "";
+  const displayLabel = isCustomDate ? getTimeRangeDisplay(isCustomDate, startTime, endTime) : selectedOption?.label;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -97,16 +85,19 @@ export function LogsTableToolbar({
                 className="w-full justify-start font-normal"
                 onClick={() => applyQuickSelect(option)}
               >
-                {optionLabel(option)}
+                {option.label}
               </Button>
             ))}
             <div className="my-2 border-t" />
             <Button
               variant="ghost"
               className="w-full justify-start font-normal"
-              onClick={() => onIsCustomDateChange(!isCustomDate)}
+              onClick={() => {
+                onIsCustomDateChange(!isCustomDate);
+                onResetToFirstPage();
+              }}
             >
-              {t("toolbar.customRange")}
+              Custom Range
             </Button>
           </div>
         </PopoverContent>
@@ -123,7 +114,7 @@ export function LogsTableToolbar({
               onResetToFirstPage();
             }}
           />
-          <span className="text-sm text-muted-foreground">{t("toolbar.to")}</span>
+          <span className="text-sm text-muted-foreground">to</span>
           <Input
             type="datetime-local"
             className="w-auto"
@@ -137,24 +128,32 @@ export function LogsTableToolbar({
       )}
 
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">{t("toolbar.liveTail")}</span>
-        <Switch checked={isLiveTail} onCheckedChange={onIsLiveTailChange} aria-label={t("toolbar.liveTail")} />
+        <span className="text-sm font-medium">Live Tail</span>
+        <Switch checked={isLiveTail} onCheckedChange={onIsLiveTailChange} aria-label="Live Tail" />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">Hide Health Checks</span>
+        <Switch
+          checked={excludeInternalHealthChecks}
+          onCheckedChange={onExcludeInternalHealthChecksChange}
+          aria-label="Hide Health Checks"
+        />
       </div>
 
       <Button variant="outline" size="sm" onClick={onResetFilters}>
-        {t("toolbar.reset")}
+        Reset Filters
       </Button>
     </div>
   );
 }
 
 export function LiveTailBanner({ onStop }: { onStop: () => void }) {
-  const { t } = useTranslation("logs");
   return (
-    <div className="mb-4 flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-4 py-2">
-      <span className="text-sm text-green-700">{t("toolbar.autoRefresh")}</span>
-      <button type="button" onClick={onStop} className="text-sm text-green-600 hover:text-green-800">
-        {t("toolbar.stop")}
+    <div className="mb-4 flex items-center justify-between rounded-md border border-success/20 bg-success/10 px-4 py-2">
+      <span className="text-sm text-success">Auto-refreshing every 15 seconds</span>
+      <button type="button" onClick={onStop} className="text-sm text-success hover:text-success/80">
+        Stop
       </button>
     </div>
   );

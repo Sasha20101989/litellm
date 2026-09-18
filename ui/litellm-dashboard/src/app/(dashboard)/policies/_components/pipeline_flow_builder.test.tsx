@@ -1,34 +1,13 @@
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/../tests/test-utils";
-import PipelineFlowBuilder, { PipelineInfoDisplay } from "./pipeline_flow_builder";
+import PipelineFlowBuilder, { FlowBuilderPage, PipelineInfoDisplay } from "./pipeline_flow_builder";
 import { GuardrailPipeline, PipelineStep } from "@/components/policies/types";
 import { Guardrail } from "@/components/guardrails/types";
 
-const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
-
-vi.mock("react-i18next", async () => {
-  const { resources } = await import("@/i18n/catalog");
-  const t = (key: string, values?: Record<string, unknown>) => {
-    const copy = key.split(".").reduce<unknown>((value, segment) => {
-      if (typeof value !== "object" || value === null) return undefined;
-      return (value as Record<string, unknown>)[segment];
-    }, resources[localization.language].gateway);
-    return Object.entries(values ?? {}).reduce(
-      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
-      typeof copy === "string" ? copy : key,
-    );
-  };
-  return { useTranslation: () => ({ t, i18n: { language: localization.language } }) };
-});
-
 vi.mock("@/components/networking");
-
-beforeEach(() => {
-  localization.language = "en";
-});
 
 const step = (overrides: Partial<PipelineStep> = {}): PipelineStep => ({
   guardrail: "pii-masker",
@@ -86,17 +65,6 @@ describe("PipelineInfoDisplay", () => {
 });
 
 describe("PipelineFlowBuilder", () => {
-  it("renders the flow controls in Russian", () => {
-    localization.language = "ru";
-    renderWithProviders(
-      <PipelineFlowBuilder pipeline={pipeline([step()])} onChange={vi.fn()} availableGuardrails={guardrails} />,
-    );
-
-    expect(screen.getByText("ВХОД")).toBeInTheDocument();
-    expect(screen.getByText("ПРИ УСПЕХЕ")).toBeInTheDocument();
-    expect(screen.getByText("Продолжить к LLM")).toBeInTheDocument();
-  });
-
   it("renders the trigger and end cards around the steps", () => {
     renderWithProviders(
       <PipelineFlowBuilder pipeline={pipeline([step()])} onChange={vi.fn()} availableGuardrails={guardrails} />,
@@ -183,7 +151,7 @@ describe("PipelineFlowBuilder", () => {
       />,
     );
 
-    await user.type(screen.getByPlaceholderText("Enter custom response..."), "x");
+    fireEvent.change(screen.getByPlaceholderText("Enter custom response..."), { target: { value: "x" } });
 
     expect(onChange.mock.calls[0][0].steps[0].modify_response_message).toBe("x");
   });
@@ -197,5 +165,29 @@ describe("PipelineFlowBuilder", () => {
     // guardrail is the one displayed is covered by the PipelineInfoDisplay tests above.
     expect(screen.getByText("Guardrail")).toBeInTheDocument();
     expect(screen.getAllByRole("combobox").length).toBeGreaterThan(0);
+  });
+});
+
+describe("FlowBuilderPage", () => {
+  it("renders its shell in flow with no stacking level, so it can never cover the portalled popup layer", () => {
+    const { container } = renderWithProviders(
+      <FlowBuilderPage
+        onBack={vi.fn()}
+        onSuccess={vi.fn()}
+        accessToken="sk-test"
+        availableGuardrails={guardrails}
+        createPolicy={vi.fn()}
+        updatePolicy={vi.fn()}
+      />,
+    );
+
+    const shell = container.firstElementChild as HTMLElement;
+    const shellClasses = shell.className.split(/\s+/);
+
+    expect(shell).toContainElement(screen.getByPlaceholderText("Policy name..."));
+    expect(shell).not.toHaveStyle({ position: "fixed" });
+    expect(shellClasses).not.toContain("fixed");
+    expect(window.getComputedStyle(shell).zIndex).not.toMatch(/\d/);
+    expect(shellClasses.filter((cls) => /^-?z-/.test(cls))).toEqual([]);
   });
 });

@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Input } from "antd";
-import { SearchOutlined, ArrowRightOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
+import { ArrowRight, Search } from "lucide-react";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { GuardrailCardInfo, ALL_CARDS } from "./guardrail_garden_data";
 import GuardrailCard from "./guardrail_garden_card";
 import GuardrailDetailView from "./guardrail_garden_detail";
@@ -12,46 +11,13 @@ interface GuardrailGardenProps {
 }
 
 const GuardrailGarden: React.FC<GuardrailGardenProps> = ({ accessToken, onGuardrailCreated }) => {
-  const { t } = useTranslation("gateway");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCard, setSelectedCard] = useState<GuardrailCardInfo | null>(null);
   const [showAllLitellm, setShowAllLitellm] = useState(false);
   const CARDS_PER_ROW = 5;
   const VISIBLE_ROWS = 2;
 
-  const localizedCards = useMemo(
-    () =>
-      ALL_CARDS.map((card) => ({
-        ...card,
-        name: String(
-          t(`guardrailsPage.garden.cards.${card.id}.name`, {
-            defaultValue: card.name,
-          }),
-        ),
-        description: String(
-          t(`guardrailsPage.garden.cards.${card.id}.description`, {
-            defaultValue: card.description,
-          }),
-        ),
-        subcategory: card.subcategory
-          ? String(
-              t(`guardrailsPage.garden.labels.${card.subcategory}`, {
-                defaultValue: card.subcategory,
-              }),
-            )
-          : undefined,
-        tags: card.tags.map((tag) =>
-          String(
-            t(`guardrailsPage.garden.labels.${tag}`, {
-              defaultValue: tag,
-            }),
-          ),
-        ),
-      })),
-    [t],
-  );
-
-  const filteredCards = localizedCards.filter((card) => {
+  const filteredCards = ALL_CARDS.filter((card) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -77,76 +43,52 @@ const GuardrailGarden: React.FC<GuardrailGardenProps> = ({ accessToken, onGuardr
 
   return (
     <div>
-      {/* Search Bar */}
-      <div style={{ marginBottom: 24 }}>
-        <Input
-          size="large"
-          placeholder={t("guardrailsPage.garden.searchPlaceholder")}
-          prefix={<SearchOutlined style={{ color: "#9ca3af" }} />}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ borderRadius: 8 }}
-        />
+      <div className="mb-6">
+        <InputGroup>
+          <InputGroupAddon>
+            <Search className="size-4 text-muted-foreground" />
+          </InputGroupAddon>
+          <InputGroupInput
+            placeholder="Search guardrails"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </InputGroup>
       </div>
 
-      {/* LiteLLM Content Filter Section */}
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: "#111827", margin: 0 }}>
-            {t("guardrailsPage.garden.litellmTitle")}
-          </h2>
+      <div className="mb-10">
+        <div className="mb-1 flex items-center justify-between">
+          <h2 className="m-0 text-xl font-semibold text-foreground">LiteLLM Content Filter</h2>
           <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 14,
-              color: "#1a73e8",
-              cursor: "pointer",
-            }}
+            className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-primary"
             onClick={() => setShowAllLitellm(!showAllLitellm)}
           >
             {showAllLitellm ? (
-              <>{t("guardrailsPage.garden.showLess")}</>
+              <>Show less</>
             ) : (
               <>
-                <ArrowRightOutlined style={{ fontSize: 12 }} />
-                {t("guardrailsPage.garden.showAll", { count: litellmCards.length })}
+                <ArrowRight className="size-3" />
+                {`Show all (${litellmCards.length})`}
               </>
             )}
           </span>
         </div>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "4px 0 20px 0" }}>
-          {t("guardrailsPage.garden.litellmDescription")}
+        <p className="mt-1 mb-5 text-[13px] text-muted-foreground">
+          Built-in guardrails powered by LiteLLM. Zero latency, no external dependencies, no additional cost.
         </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-            gap: 16,
-          }}
-        >
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {(showAllLitellm ? litellmCards : litellmCards.slice(0, CARDS_PER_ROW * VISIBLE_ROWS)).map((card) => (
             <GuardrailCard key={card.id} card={card} onClick={() => setSelectedCard(card)} />
           ))}
         </div>
       </div>
 
-      {/* Partner Guardrails Section */}
-      <div style={{ marginBottom: 40 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 600, color: "#111827", margin: "0 0 4px 0" }}>
-          {t("guardrailsPage.garden.partnerTitle")}
-        </h2>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "4px 0 20px 0" }}>
-          {t("guardrailsPage.garden.partnerDescription")}
+      <div className="mb-10">
+        <h2 className="mt-0 mb-1 text-xl font-semibold text-foreground">Partner Guardrails</h2>
+        <p className="mt-1 mb-5 text-[13px] text-muted-foreground">
+          Third-party guardrail integrations from leading AI security providers.
         </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-            gap: 16,
-          }}
-        >
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {partnerCards.map((card) => (
             <GuardrailCard key={card.id} card={card} onClick={() => setSelectedCard(card)} />
           ))}

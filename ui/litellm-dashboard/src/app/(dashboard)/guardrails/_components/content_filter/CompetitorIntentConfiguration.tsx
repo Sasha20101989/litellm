@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Card, Typography, Select, Switch, Form, Space, InputNumber } from "antd";
-import { getMajorAirlines } from "@/components/networking";
+import React, { useEffect, useId, useState } from "react";
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+import { getMajorAirlines } from "@/components/networking";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+
+import { TagsInput } from "./TagsInput";
+import { ThresholdInput } from "./ThresholdInput";
 
 export interface MajorAirline {
   id: string;
@@ -46,16 +49,37 @@ const DEFAULT_CONFIG: CompetitorIntentConfig = {
   threshold_low: 0.3,
 };
 
+const INTENT_TYPES = [
+  { value: "airline", label: "Airline (auto-load competitors from IATA)" },
+  { value: "generic", label: "Generic (specify competitors manually)" },
+] as const;
+
+const COMPETITOR_COMPARISON_POLICIES = [
+  { value: "refuse", label: "Refuse (block request)" },
+  { value: "reframe", label: "Reframe (suggest alternative)" },
+] as const;
+
+const POSSIBLE_COMPETITOR_COMPARISON_POLICIES = [
+  { value: "refuse", label: "Refuse (block request)" },
+  { value: "reframe", label: "Reframe (suggest alternative to backend LLM)" },
+] as const;
+
+const THRESHOLDS = [
+  { field: "threshold_high", label: "High", hint: "e.g. 0.7", fallback: 0.7 },
+  { field: "threshold_medium", label: "Medium", hint: "e.g. 0.45", fallback: 0.45 },
+  { field: "threshold_low", label: "Low", hint: "e.g. 0.3", fallback: 0.3 },
+] as const;
+
 const CompetitorIntentConfiguration: React.FC<CompetitorIntentConfigurationProps> = ({
   enabled,
   config,
   onChange,
   accessToken,
 }) => {
-  const { t } = useTranslation("gateway");
   const effectiveConfig = config ?? DEFAULT_CONFIG;
   const [airlineOptions, setAirlineOptions] = useState<MajorAirline[]>([]);
   const [loadingAirlines, setLoadingAirlines] = useState(false);
+  const fieldId = useId();
 
   useEffect(() => {
     if (effectiveConfig.competitor_intent_type === "airline" && accessToken && airlineOptions.length === 0) {
@@ -113,225 +137,209 @@ const CompetitorIntentConfiguration: React.FC<CompetitorIntentConfigurationProps
     onChange(enabled, { ...effectiveConfig, brand_self: expanded });
   };
 
+  const header = (
+    <CardHeader className="gap-0">
+      <CardTitle className="text-base">Competitor Intent Filter</CardTitle>
+      <CardAction>
+        <Switch checked={enabled} onCheckedChange={handleEnabledChange} />
+      </CardAction>
+    </CardHeader>
+  );
+
   if (!enabled) {
     return (
-      <Card
-        title={
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Title level={5} style={{ margin: 0 }}>
-              {t("guardrailsPage.contentFilter.competitor.title")}
-            </Title>
-            <Switch checked={false} onChange={handleEnabledChange} />
-          </div>
-        }
-        size="small"
-      >
-        <Text type="secondary">{t("guardrailsPage.contentFilter.competitor.disabledDescription")}</Text>
+      <Card>
+        {header}
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Block or reframe competitor comparison questions. When enabled, airline type auto-loads competitors from
+            IATA; generic type requires manual competitor list.
+          </p>
+        </CardContent>
       </Card>
     );
   }
 
+  const airlineTags =
+    effectiveConfig.competitor_intent_type === "airline" && airlineOptions.length > 0
+      ? airlineOptions.map((a) => {
+          const primary = a.match.split("|")[0]?.trim() ?? a.id;
+          const variants = a.match
+            .split("|")
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+          return {
+            value: primary.toLowerCase(),
+            label: `${primary}${variants.length > 1 ? ` (${variants.slice(1).join(", ")})` : ""}`,
+          };
+        })
+      : [];
+
   return (
-    <Card
-      title={
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Title level={5} style={{ margin: 0 }}>
-            {t("guardrailsPage.contentFilter.competitor.title")}
-          </Title>
-          <Switch checked={enabled} onChange={handleEnabledChange} />
-        </div>
-      }
-      size="small"
-    >
-      <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
-        {t("guardrailsPage.contentFilter.competitor.description")}
-      </Text>
-      <Form layout="vertical" size="small">
-        <Form.Item label={t("guardrailsPage.contentFilter.type")}>
-          <Select
-            value={effectiveConfig.competitor_intent_type}
-            onChange={(v) => handleConfigChange("competitor_intent_type", v)}
-            style={{ width: "100%" }}
-          >
-            <Option value="airline">{t("guardrailsPage.contentFilter.competitor.airlineType")}</Option>
-            <Option value="generic">{t("guardrailsPage.contentFilter.competitor.genericType")}</Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          label={t("guardrailsPage.contentFilter.competitor.yourBrand")}
-          required
-          help={
-            effectiveConfig.competitor_intent_type === "airline"
-              ? t("guardrailsPage.contentFilter.competitor.airlineBrandHelp")
-              : t("guardrailsPage.contentFilter.competitor.brandHelp")
-          }
-        >
-          <Select
-            mode="tags"
-            style={{ width: "100%" }}
-            placeholder={
-              loadingAirlines
-                ? t("guardrailsPage.contentFilter.competitor.loadingAirlines")
-                : effectiveConfig.competitor_intent_type === "airline"
-                  ? t("guardrailsPage.contentFilter.competitor.airlinePlaceholder")
-                  : t("guardrailsPage.contentFilter.competitor.tagsPlaceholder")
-            }
-            value={effectiveConfig.brand_self}
-            onChange={(v) =>
-              effectiveConfig.competitor_intent_type === "airline" && airlineOptions.length > 0
-                ? handleBrandSelfChange(v ?? [])
-                : handleNestedArrayChange("brand_self", v ?? [])
-            }
-            tokenSeparators={[","]}
-            loading={loadingAirlines}
-            showSearch
-            filterOption={(input, option) =>
-              (option?.label?.toString().toLowerCase() ?? "").includes(input.toLowerCase())
-            }
-            optionFilterProp="label"
-            options={
-              effectiveConfig.competitor_intent_type === "airline" && airlineOptions.length > 0
-                ? airlineOptions.map((a) => {
-                    const primary = a.match.split("|")[0]?.trim() ?? a.id;
-                    const variants = a.match
-                      .split("|")
-                      .map((s) => s.trim().toLowerCase())
-                      .filter(Boolean);
-                    return {
-                      value: primary.toLowerCase(),
-                      label: `${primary}${variants.length > 1 ? ` (${variants.slice(1).join(", ")})` : ""}`,
-                    };
-                  })
-                : undefined
-            }
-          />
-        </Form.Item>
-
-        {effectiveConfig.competitor_intent_type === "airline" && (
-          <Form.Item
-            label={t("guardrailsPage.contentFilter.competitor.locations")}
-            help={t("guardrailsPage.contentFilter.competitor.locationsHelp")}
-          >
+    <Card>
+      {header}
+      <CardContent>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Block or reframe competitor comparison questions. Airline type uses major airlines (excluding your brand);
+          generic requires manual competitor list.
+        </p>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor={`${fieldId}-type`}>Type</FieldLabel>
             <Select
-              mode="tags"
-              style={{ width: "100%" }}
-              placeholder={t("guardrailsPage.contentFilter.competitor.tagsPlaceholder")}
-              value={effectiveConfig.locations ?? []}
-              onChange={(v) => handleNestedArrayChange("locations", v ?? [])}
-              tokenSeparators={[","]}
-            />
-          </Form.Item>
-        )}
+              items={INTENT_TYPES}
+              value={effectiveConfig.competitor_intent_type}
+              onValueChange={(v: string | null) => v !== null && handleConfigChange("competitor_intent_type", v)}
+            >
+              <SelectTrigger id={`${fieldId}-type`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {INTENT_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value} title={type.label}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
-        {effectiveConfig.competitor_intent_type === "generic" && (
-          <Form.Item
-            label={t("guardrailsPage.contentFilter.competitor.competitors")}
-            required
-            help={t("guardrailsPage.contentFilter.competitor.competitorsHelp")}
-          >
+          <Field>
+            <FieldLabel htmlFor={`${fieldId}-brand-self`}>Your Brand (brand_self)</FieldLabel>
+            <TagsInput
+              id={`${fieldId}-brand-self`}
+              value={effectiveConfig.brand_self}
+              onValueChange={(v) =>
+                effectiveConfig.competitor_intent_type === "airline" && airlineOptions.length > 0
+                  ? handleBrandSelfChange(v)
+                  : handleNestedArrayChange("brand_self", v)
+              }
+              options={airlineTags}
+              tokenSeparators={[","]}
+              loading={loadingAirlines}
+              placeholder={
+                effectiveConfig.competitor_intent_type === "airline"
+                  ? "Search or select airline, or type to add custom"
+                  : "Type and press Enter to add"
+              }
+            />
+            <FieldDescription>
+              {effectiveConfig.competitor_intent_type === "airline"
+                ? "Select your airline from the list (excluded from competitors) or type to add a custom term"
+                : "Names/codes users use for your brand"}
+            </FieldDescription>
+          </Field>
+
+          {effectiveConfig.competitor_intent_type === "airline" && (
+            <Field>
+              <FieldLabel htmlFor={`${fieldId}-locations`}>Locations (optional)</FieldLabel>
+              <TagsInput
+                id={`${fieldId}-locations`}
+                value={effectiveConfig.locations ?? []}
+                onValueChange={(v) => handleNestedArrayChange("locations", v)}
+                tokenSeparators={[","]}
+                placeholder="Type and press Enter to add"
+              />
+              <FieldDescription>Countries, cities, airports for disambiguation (e.g. qatar, doha)</FieldDescription>
+            </Field>
+          )}
+
+          {effectiveConfig.competitor_intent_type === "generic" && (
+            <Field>
+              <FieldLabel htmlFor={`${fieldId}-competitors`}>Competitors</FieldLabel>
+              <TagsInput
+                id={`${fieldId}-competitors`}
+                value={effectiveConfig.competitors ?? []}
+                onValueChange={(v) => handleNestedArrayChange("competitors", v)}
+                tokenSeparators={[","]}
+                placeholder="Type and press Enter to add"
+              />
+              <FieldDescription>Competitor names to detect (required for generic type)</FieldDescription>
+            </Field>
+          )}
+
+          <Field>
+            <FieldLabel htmlFor={`${fieldId}-competitor-comparison`}>Policy: Competitor comparison</FieldLabel>
             <Select
-              mode="tags"
-              style={{ width: "100%" }}
-              placeholder={t("guardrailsPage.contentFilter.competitor.tagsPlaceholder")}
-              value={effectiveConfig.competitors ?? []}
-              onChange={(v) => handleNestedArrayChange("competitors", v ?? [])}
-              tokenSeparators={[","]}
-            />
-          </Form.Item>
-        )}
+              items={COMPETITOR_COMPARISON_POLICIES}
+              value={effectiveConfig.policy?.competitor_comparison ?? "refuse"}
+              onValueChange={(v: string | null) => v !== null && handlePolicyChange("competitor_comparison", v)}
+            >
+              <SelectTrigger id={`${fieldId}-competitor-comparison`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COMPETITOR_COMPARISON_POLICIES.map((policy) => (
+                  <SelectItem key={policy.value} value={policy.value} title={policy.label}>
+                    {policy.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
-        <Form.Item label={t("guardrailsPage.contentFilter.competitor.comparisonPolicy")}>
-          <Select
-            value={effectiveConfig.policy?.competitor_comparison ?? "refuse"}
-            onChange={(v) => handlePolicyChange("competitor_comparison", v)}
-            style={{ width: "100%" }}
-          >
-            <Option value="refuse">{t("guardrailsPage.contentFilter.competitor.refuse")}</Option>
-            <Option value="reframe">{t("guardrailsPage.contentFilter.competitor.reframe")}</Option>
-          </Select>
-        </Form.Item>
+          <Field>
+            <FieldLabel htmlFor={`${fieldId}-possible-competitor-comparison`}>
+              Policy: Possible competitor comparison
+            </FieldLabel>
+            <Select
+              items={POSSIBLE_COMPETITOR_COMPARISON_POLICIES}
+              value={effectiveConfig.policy?.possible_competitor_comparison ?? "reframe"}
+              onValueChange={(v: string | null) =>
+                v !== null && handlePolicyChange("possible_competitor_comparison", v)
+              }
+            >
+              <SelectTrigger id={`${fieldId}-possible-competitor-comparison`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {POSSIBLE_COMPETITOR_COMPARISON_POLICIES.map((policy) => (
+                  <SelectItem key={policy.value} value={policy.value} title={policy.label}>
+                    {policy.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
-        <Form.Item label={t("guardrailsPage.contentFilter.competitor.possibleComparisonPolicy")}>
-          <Select
-            value={effectiveConfig.policy?.possible_competitor_comparison ?? "reframe"}
-            onChange={(v) => handlePolicyChange("possible_competitor_comparison", v)}
-            style={{ width: "100%" }}
-          >
-            <Option value="refuse">{t("guardrailsPage.contentFilter.competitor.refuse")}</Option>
-            <Option value="reframe">{t("guardrailsPage.contentFilter.competitor.reframeBackend")}</Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          label={t("guardrailsPage.contentFilter.competitor.confidenceThresholds")}
-          help={
-            <>
-              {t("guardrailsPage.contentFilter.competitor.confidenceHelp")}
-              <ul style={{ marginBottom: 0, marginTop: 4, paddingLeft: 20 }}>
+          <Field>
+            <FieldLabel>Confidence thresholds</FieldLabel>
+            <div className="flex flex-wrap gap-4">
+              {THRESHOLDS.map((threshold) => (
+                <Field key={threshold.field} className="w-20">
+                  <FieldLabel htmlFor={`${fieldId}-${threshold.field}`}>{threshold.label}</FieldLabel>
+                  <ThresholdInput
+                    id={`${fieldId}-${threshold.field}`}
+                    value={effectiveConfig[threshold.field] ?? threshold.fallback}
+                    onValueChange={(v) => handleConfigChange(threshold.field, v ?? threshold.fallback)}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                  />
+                  <FieldDescription>{threshold.hint}</FieldDescription>
+                </Field>
+              ))}
+            </div>
+            <FieldDescription>
+              Classify competitor intent by confidence (0–1). Higher confidence -&gt; stronger intent.
+              <ul className="mt-1 mb-0 list-disc pl-5">
                 <li>
-                  <strong>{t("guardrailsPage.contentFilter.severity.high")} (≥)</strong>:{" "}
-                  {t("guardrailsPage.contentFilter.competitor.highHelp")}
+                  <strong>High (≥)</strong>: Treat as full competitor comparison -&gt; uses &quot;Competitor
+                  comparison&quot; policy
                 </li>
                 <li>
-                  <strong>{t("guardrailsPage.contentFilter.severity.medium")} (≥)</strong>:{" "}
-                  {t("guardrailsPage.contentFilter.competitor.mediumHelp")}
+                  <strong>Medium (≥)</strong>: Treat as possible comparison -&gt; uses &quot;Possible competitor
+                  comparison&quot; policy
                 </li>
                 <li>
-                  <strong>{t("guardrailsPage.contentFilter.severity.low")} (≥)</strong>:{" "}
-                  {t("guardrailsPage.contentFilter.competitor.lowHelp")}
+                  <strong>Low (≥)</strong>: Log only; allow request. Below Low -&gt; allow with no action
                 </li>
               </ul>
-              {t("guardrailsPage.contentFilter.competitor.thresholdDirection")}
-            </>
-          }
-        >
-          <Space wrap>
-            <Form.Item
-              label={t("guardrailsPage.contentFilter.severity.high")}
-              style={{ marginBottom: 0 }}
-              help={t("guardrailsPage.contentFilter.example", { value: "0.7" })}
-            >
-              <InputNumber
-                min={0}
-                max={1}
-                step={0.05}
-                value={effectiveConfig.threshold_high ?? 0.7}
-                onChange={(v) => handleConfigChange("threshold_high", v ?? 0.7)}
-                style={{ width: 80 }}
-              />
-            </Form.Item>
-            <Form.Item
-              label={t("guardrailsPage.contentFilter.severity.medium")}
-              style={{ marginBottom: 0 }}
-              help={t("guardrailsPage.contentFilter.example", { value: "0.45" })}
-            >
-              <InputNumber
-                min={0}
-                max={1}
-                step={0.05}
-                value={effectiveConfig.threshold_medium ?? 0.45}
-                onChange={(v) => handleConfigChange("threshold_medium", v ?? 0.45)}
-                style={{ width: 80 }}
-              />
-            </Form.Item>
-            <Form.Item
-              label={t("guardrailsPage.contentFilter.severity.low")}
-              style={{ marginBottom: 0 }}
-              help={t("guardrailsPage.contentFilter.example", { value: "0.3" })}
-            >
-              <InputNumber
-                min={0}
-                max={1}
-                step={0.05}
-                value={effectiveConfig.threshold_low ?? 0.3}
-                onChange={(v) => handleConfigChange("threshold_low", v ?? 0.3)}
-                style={{ width: 80 }}
-              />
-            </Form.Item>
-          </Space>
-        </Form.Item>
-      </Form>
+              Raise thresholds to be more permissive; lower them to be stricter.
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
+      </CardContent>
     </Card>
   );
 };

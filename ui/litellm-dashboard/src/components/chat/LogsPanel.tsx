@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import moment from "moment";
 import { AlertCircle, ScrollText } from "lucide-react";
@@ -9,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useTranslation } from "react-i18next";
 
 const LOGS_QUERY_KEY = "chat-user-logs";
 const PAGE_SIZE = 50;
@@ -85,16 +85,11 @@ function formatDuration(row: LogRow): string {
 }
 
 function StatusBadge({ status }: { status?: string }) {
-  const { t } = useTranslation("chat");
   const isFailure = status === "failure";
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 text-xs ${
-        isFailure ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
-      }`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${isFailure ? "bg-red-500" : "bg-emerald-500"}`} />
-      {isFailure ? t("logs.failure") : t("logs.success")}
+    <span className={`inline-flex items-center gap-1.5 text-xs ${isFailure ? "text-destructive" : "text-success"}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${isFailure ? "bg-destructive" : "bg-success"}`} />
+      {isFailure ? "Failure" : "Success"}
     </span>
   );
 }
@@ -153,39 +148,25 @@ function LogsError({ onRetry }: { onRetry: () => void }) {
 }
 
 function LogsTable({ rows, onRowClick }: { rows: LogRow[]; onRowClick: (row: LogRow) => void }) {
-  const { t, i18n } = useTranslation("chat");
+  const { t } = useTranslation("chat");
   return (
     <div className="overflow-hidden rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="text-[11px] font-medium uppercase tracking-wide">{t("logs.columns.time")}</TableHead>
-            <TableHead className="text-[11px] font-medium uppercase tracking-wide">{t("logs.columns.model")}</TableHead>
-            <TableHead className="text-[11px] font-medium uppercase tracking-wide">
-              {t("logs.columns.status")}
-            </TableHead>
-            <TableHead className="text-right text-[11px] font-medium uppercase tracking-wide">
-              {t("logs.columns.tokens")}
-            </TableHead>
-            <TableHead className="text-right text-[11px] font-medium uppercase tracking-wide">
-              {t("logs.columns.duration")}
-            </TableHead>
-            <TableHead className="text-right text-[11px] font-medium uppercase tracking-wide">
-              {t("logs.columns.cost")}
-            </TableHead>
+            <TableHead className="text-[11px] font-medium uppercase tracking-wide">{t("playground.compare.model")}</TableHead>
+            <TableHead className="text-[11px] font-medium uppercase tracking-wide">{t("logs.columns.status")}</TableHead>
+            <TableHead className="text-right text-[11px] font-medium uppercase tracking-wide">{t("logs.columns.tokens")}</TableHead>
+            <TableHead className="text-right text-[11px] font-medium uppercase tracking-wide">{t("logs.columns.duration")}</TableHead>
+            <TableHead className="text-right text-[11px] font-medium uppercase tracking-wide">{t("logs.columns.cost")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.request_id} className="cursor-pointer" onClick={() => onRowClick(row)}>
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                {new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                }).format(new Date(row.startTime))}
+                {moment(row.startTime).format("MMM D, HH:mm:ss")}
               </TableCell>
               <TableCell className="text-sm">{row.model || "-"}</TableCell>
               <TableCell>
@@ -227,7 +208,7 @@ function LogDetailDialog({
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-md border bg-card p-3">
-                <div className="mb-0.5 text-xs text-muted-foreground">{t("logs.columns.model")}</div>
+                <div className="mb-0.5 text-xs text-muted-foreground">{t("playground.compare.model")}</div>
                 <div className="text-sm text-foreground">{log.model || "-"}</div>
               </div>
               <div className="rounded-md border bg-card p-3">
@@ -237,11 +218,8 @@ function LogDetailDialog({
               <div className="rounded-md border bg-card p-3">
                 <div className="mb-0.5 text-xs text-muted-foreground">{t("logs.columns.tokens")}</div>
                 <div className="text-sm text-foreground">
-                  {t("logs.tokenBreakdown", {
-                    total: formatTokens(log.total_tokens),
-                    input: formatTokens(log.prompt_tokens),
-                    output: formatTokens(log.completion_tokens),
-                  })}
+                  {formatTokens(log.total_tokens)} ({formatTokens(log.prompt_tokens)} {t("common:merge.inputTokens")}{" "}
+                  {formatTokens(log.completion_tokens)} {t("common:merge.outputTokens")}
                 </div>
               </div>
               <div className="rounded-md border bg-card p-3">
@@ -251,9 +229,7 @@ function LogDetailDialog({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t("logs.request")}
-              </div>
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("logs.request")}</div>
               {isLoading ? (
                 <Skeleton className="h-16 w-full" />
               ) : (
@@ -261,9 +237,7 @@ function LogDetailDialog({
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t("logs.response")}
-              </div>
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("logs.response")}</div>
               {isLoading ? <Skeleton className="h-16 w-full" /> : <JsonBlock value={details?.response} />}
             </div>
           </div>
@@ -320,8 +294,8 @@ const LogsPanel: React.FC<Props> = ({ accessToken, userId }) => {
         <LogsTable rows={rows} onRowClick={setSelectedLog} />
         <div className="mt-3 flex items-center justify-between">
           <p className="m-0 text-xs text-muted-foreground">
-            {t("logs.requestCount", { count: total })}
-            {totalPages > 1 ? ` · ${t("logs.page", { page, total: totalPages })}` : ""}
+            {total.toLocaleString()} {t("common:merge.request")}{total === 1 ? "" : "s"}
+            {totalPages > 1 ? ` · Page ${page} of ${totalPages}` : ""}
           </p>
           {totalPages > 1 && (
             <div className="flex gap-1">

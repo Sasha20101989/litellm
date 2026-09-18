@@ -1,19 +1,41 @@
-import { AreaChart, BarChart, CustomLegend, CustomTooltip } from "@/components/shared/charts";
+import {
+  AreaChart,
+  BarChart,
+  type ChartTooltipProps,
+  CustomLegend,
+  CustomTooltip,
+  formatCategoryName,
+  LineChart,
+  ValueTooltip,
+} from "@/components/shared/charts";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
 import { resolveTeamAliasFromTeamID } from "@/utils/teamUtils";
-import { Card, Grid, Text, Title } from "@tremor/react";
-import { Collapse } from "antd";
-import React from "react";
-import { useTranslation } from "react-i18next";
+import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
+import React, { useState } from "react";
 import { Team } from "./key_team_helpers/key_list";
 import KeyModelUsageView from "./UsagePage/components/KeyModelUsageView";
+import { keyActivityLabel } from "./UsagePage/keyActivityLabel";
 import { DailyData, KeyMetricWithMetadata, ModelActivityData, TopApiKeyData, TopModelData } from "./UsagePage/types";
-import { valueFormatter } from "./UsagePage/utils/value_formatters";
+import { averageResponseTimeMs, formatResponseTime, valueFormatter } from "./UsagePage/utils/value_formatters";
 
 interface ActivityMetricsProps {
   modelMetrics: Record<string, ModelActivityData>;
   hidePromptCachingMetrics?: boolean;
 }
+
+const modelAverageResponseTimeMs = (metrics: ModelActivityData): number | null =>
+  averageResponseTimeMs(metrics.total_response_time_ms ?? 0, metrics.total_timed_requests ?? 0);
+
+export const ResponseTimeTooltip = ({ active, payload, label }: ChartTooltipProps) => (
+  <ValueTooltip
+    active={active}
+    payload={payload?.map((item) => ({ ...item, name: formatCategoryName(String(item.dataKey ?? "")) }))}
+    label={label}
+    valueFormatter={formatResponseTime}
+  />
+);
 
 const ModelSection = ({
   modelName,
@@ -24,65 +46,79 @@ const ModelSection = ({
   metrics: ModelActivityData;
   hidePromptCachingMetrics?: boolean;
 }) => {
-  const { t } = useTranslation("usage");
   return (
     <div className="space-y-2">
       {/* Summary Cards */}
-      <Grid numItems={4} className="gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <Card>
-          <Text>{t("common.totalRequests")}</Text>
-          <Title>{metrics.total_requests.toLocaleString()}</Title>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Total Requests</p>
+            <h3 className="text-lg font-medium text-foreground">{metrics.total_requests.toLocaleString()}</h3>
+          </CardContent>
         </Card>
         <Card>
-          <Text>{t("activity.totalSuccessfulRequests")}</Text>
-          <Title>{metrics.total_successful_requests.toLocaleString()}</Title>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Total Successful Requests</p>
+            <h3 className="text-lg font-medium text-foreground">
+              {metrics.total_successful_requests.toLocaleString()}
+            </h3>
+          </CardContent>
         </Card>
         <Card>
-          <Text>{t("common.totalTokens")}</Text>
-          <Title>{metrics.total_tokens.toLocaleString()}</Title>
-          <Text>
-            {t("activity.averagePerSuccessfulRequest", {
-              value: Math.round(metrics.total_tokens / metrics.total_successful_requests),
-            })}
-          </Text>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Total Tokens</p>
+            <h3 className="text-lg font-medium text-foreground">{metrics.total_tokens.toLocaleString()}</h3>
+            <p className="text-sm text-muted-foreground">
+              {Math.round(metrics.total_tokens / metrics.total_successful_requests)} avg per successful request
+            </p>
+          </CardContent>
         </Card>
         <Card>
-          <Text>{t("common.totalSpend")}</Text>
-          <Title>${formatNumberWithCommas(metrics.total_spend, 2)}</Title>
-          <Text>
-            {t("activity.perSuccessfulRequest", {
-              value: formatNumberWithCommas(metrics.total_spend / metrics.total_successful_requests, 3),
-            })}
-          </Text>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Total Spend</p>
+            <h3 className="text-lg font-medium text-foreground">${formatNumberWithCommas(metrics.total_spend, 2)}</h3>
+            <p className="text-sm text-muted-foreground">
+              ${formatNumberWithCommas(metrics.total_spend / metrics.total_successful_requests, 3)} per successful
+              request
+            </p>
+          </CardContent>
         </Card>
-      </Grid>
+        <Card>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Avg Response Time</p>
+            <h3 className="text-lg font-medium text-foreground">
+              {formatResponseTime(modelAverageResponseTimeMs(metrics))}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              over {(metrics.total_timed_requests ?? 0).toLocaleString()} timed successful requests
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {metrics.top_api_keys && metrics.top_api_keys.length > 0 && (
         <Card className="mt-4">
-          <Title>{t("activity.topKeysBySpend")}</Title>
-          <div className="mt-3">
-            <div className="grid grid-cols-1 gap-2">
-              {metrics.top_api_keys.map((keyData, index) => (
-                <div key={keyData.api_key} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <Text className="font-medium">{keyData.key_alias || `${keyData.api_key.substring(0, 10)}...`}</Text>
-                    {keyData.team_id && (
-                      <Text className="text-xs text-gray-500">{t("activity.team", { value: keyData.team_id })}</Text>
-                    )}
+          <CardContent>
+            <h3 className="text-lg font-medium text-foreground">Top Virtual Keys by Spend</h3>
+            <div className="mt-3">
+              <div className="grid grid-cols-1 gap-2">
+                {metrics.top_api_keys.map((keyData) => (
+                  <div key={keyData.api_key} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="font-medium">{keyData.key_alias || `${keyData.api_key.substring(0, 10)}...`}</p>
+                      {keyData.team_id && <p className="text-xs text-muted-foreground">Team: {keyData.team_id}</p>}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">${formatNumberWithCommas(keyData.spend, 2)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {keyData.requests.toLocaleString()} requests | {keyData.tokens.toLocaleString()} tokens
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <Text className="font-medium">${formatNumberWithCommas(keyData.spend, 2)}</Text>
-                    <Text className="text-xs text-gray-500">
-                      {t("activity.requestsAndTokens", {
-                        requests: keyData.requests.toLocaleString(),
-                        tokens: keyData.tokens.toLocaleString(),
-                      })}
-                    </Text>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
       )}
 
@@ -90,118 +126,181 @@ const ModelSection = ({
 
       {/* Spend per day - Full width card */}
       <Card className="mt-4">
-        <div className="flex justify-between items-center">
-          <Title>{t("activity.spendPerDay")}</Title>
-          <CustomLegend categories={["metrics.spend"]} colors={["green"]} />
-        </div>
-        <BarChart
-          className="mt-4"
-          data={metrics.daily_data}
-          index="date"
-          categories={["metrics.spend"]}
-          colors={["green"]}
-          valueFormatter={(value: number) => `$${formatNumberWithCommas(value, 2, true)}`}
-          yAxisWidth={72}
-        />
-      </Card>
-
-      {/* Charts */}
-      <Grid numItems={2} className="gap-4 mt-4">
-        <Card>
+        <CardContent>
           <div className="flex justify-between items-center">
-            <Title>{t("common.totalTokens")}</Title>
-            <CustomLegend
-              categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
-              colors={["blue", "cyan", "indigo"]}
-            />
-          </div>
-          <AreaChart
-            className="mt-4"
-            data={metrics.daily_data}
-            index="date"
-            categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
-            colors={["blue", "cyan", "indigo"]}
-            valueFormatter={valueFormatter}
-            customTooltip={CustomTooltip}
-            showLegend={false}
-          />
-        </Card>
-
-        <Card>
-          <div className="flex justify-between items-center">
-            <Title>{t("activity.requestsPerDay")}</Title>
-            <CustomLegend categories={["metrics.api_requests"]} colors={["blue"]} />
+            <h3 className="text-lg font-medium text-foreground">Spend per day</h3>
+            <CustomLegend categories={["metrics.spend"]} colors={["green"]} />
           </div>
           <BarChart
             className="mt-4"
             data={metrics.daily_data}
             index="date"
-            categories={["metrics.api_requests"]}
-            colors={["blue"]}
-            valueFormatter={valueFormatter}
-            customTooltip={CustomTooltip}
-            showLegend={false}
+            categories={["metrics.spend"]}
+            colors={["green"]}
+            valueFormatter={(value: number) => `$${formatNumberWithCommas(value, 2, true)}`}
+            yAxisWidth={72}
           />
-        </Card>
+        </CardContent>
+      </Card>
 
+      {/* Charts */}
+      <div className="grid grid-cols-2 gap-4 mt-4">
         <Card>
-          <div className="flex justify-between items-center">
-            <Title>{t("activity.successVsFailed")}</Title>
-            <CustomLegend
-              categories={["metrics.successful_requests", "metrics.failed_requests"]}
-              colors={["green", "red"]}
-            />
-          </div>
-          <AreaChart
-            className="mt-4"
-            data={metrics.daily_data}
-            index="date"
-            categories={["metrics.successful_requests", "metrics.failed_requests"]}
-            colors={["green", "red"]}
-            valueFormatter={valueFormatter}
-            customTooltip={CustomTooltip}
-            showLegend={false}
-          />
-        </Card>
-
-        {!hidePromptCachingMetrics && (
-          <Card>
+          <CardContent>
             <div className="flex justify-between items-center">
-              <Title>{t("activity.promptCachingMetrics")}</Title>
+              <h3 className="text-lg font-medium text-foreground">Total Tokens</h3>
               <CustomLegend
-                categories={["metrics.cache_read_input_tokens", "metrics.cache_creation_input_tokens"]}
-                colors={["cyan", "purple"]}
+                categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
+                colors={["blue", "cyan", "indigo"]}
               />
-            </div>
-            <div className="mb-2">
-              <Text>
-                {t("activity.cacheRead", { value: metrics.total_cache_read_input_tokens?.toLocaleString() || 0 })}
-              </Text>
-              <Text>
-                {t("activity.cacheCreation", {
-                  value: metrics.total_cache_creation_input_tokens?.toLocaleString() || 0,
-                })}
-              </Text>
             </div>
             <AreaChart
               className="mt-4"
               data={metrics.daily_data}
               index="date"
-              categories={["metrics.cache_read_input_tokens", "metrics.cache_creation_input_tokens"]}
-              colors={["cyan", "purple"]}
+              categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
+              colors={["blue", "cyan", "indigo"]}
               valueFormatter={valueFormatter}
               customTooltip={CustomTooltip}
               showLegend={false}
             />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium text-foreground">Requests per day</h3>
+              <CustomLegend categories={["metrics.api_requests"]} colors={["blue"]} />
+            </div>
+            <BarChart
+              className="mt-4"
+              data={metrics.daily_data}
+              index="date"
+              categories={["metrics.api_requests"]}
+              colors={["blue"]}
+              valueFormatter={valueFormatter}
+              customTooltip={CustomTooltip}
+              showLegend={false}
+            />
+          </CardContent>
+        </Card>
+
+        {(metrics.total_timed_requests ?? 0) > 0 && (
+          <Card>
+            <CardContent>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-foreground">Avg Response Time per day</h3>
+                <CustomLegend categories={["metrics.avg_response_time_ms"]} colors={["amber"]} />
+              </div>
+              <LineChart
+                className="mt-4"
+                data={metrics.daily_data}
+                index="date"
+                categories={["metrics.avg_response_time_ms"]}
+                colors={["amber"]}
+                valueFormatter={formatResponseTime}
+                customTooltip={ResponseTimeTooltip}
+                connectNulls={true}
+                showLegend={false}
+              />
+            </CardContent>
           </Card>
         )}
-      </Grid>
+
+        <Card>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium text-foreground">Success vs Failed Requests</h3>
+              <CustomLegend
+                categories={["metrics.successful_requests", "metrics.failed_requests"]}
+                colors={["green", "red"]}
+              />
+            </div>
+            <AreaChart
+              className="mt-4"
+              data={metrics.daily_data}
+              index="date"
+              categories={["metrics.successful_requests", "metrics.failed_requests"]}
+              colors={["green", "red"]}
+              valueFormatter={valueFormatter}
+              customTooltip={CustomTooltip}
+              showLegend={false}
+            />
+          </CardContent>
+        </Card>
+
+        {!hidePromptCachingMetrics && (
+          <Card>
+            <CardContent>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-foreground">Prompt Caching Metrics</h3>
+                <CustomLegend
+                  categories={["metrics.cache_read_input_tokens", "metrics.cache_creation_input_tokens"]}
+                  colors={["cyan", "purple"]}
+                />
+              </div>
+              <div className="mb-2">
+                <p className="text-sm">
+                  Cache Read: {metrics.total_cache_read_input_tokens?.toLocaleString() || 0} tokens
+                </p>
+                <p className="text-sm">
+                  Cache Creation: {metrics.total_cache_creation_input_tokens?.toLocaleString() || 0} tokens
+                </p>
+              </div>
+              <AreaChart
+                className="mt-4"
+                data={metrics.daily_data}
+                index="date"
+                categories={["metrics.cache_read_input_tokens", "metrics.cache_creation_input_tokens"]}
+                colors={["cyan", "purple"]}
+                valueFormatter={valueFormatter}
+                customTooltip={CustomTooltip}
+                showLegend={false}
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
 
+const ModelCollapsible = ({
+  defaultOpen,
+  header,
+  children,
+}: {
+  defaultOpen: boolean;
+  header: React.ReactNode;
+  children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const [everOpened, setEverOpened] = useState(defaultOpen);
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={(next: boolean) => {
+        setOpen(next);
+        if (next) setEverOpened(true);
+      }}
+      className="border-b last:border-b-0"
+    >
+      <CollapsibleTrigger className="flex w-full items-center gap-2 px-4 py-3 text-left">
+        <ChevronDown
+          className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`}
+        />
+        {header}
+      </CollapsibleTrigger>
+      <CollapsibleContent keepMounted={everOpened} className="px-4 pb-4">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, hidePromptCachingMetrics = false }) => {
-  const { t } = useTranslation("usage");
   const modelNames = Object.keys(modelMetrics).sort((a, b) => {
     if (a === "") return 1;
     if (b === "") return -1;
@@ -277,104 +376,122 @@ export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, 
     <div className="space-y-8">
       {/* Global Summary */}
       <div className="border rounded-lg p-4">
-        <Title>{t("activity.overallUsage")}</Title>
-        <Grid numItems={4} className="gap-4 mb-4">
+        <h3 className="text-lg font-medium text-foreground">Overall Usage</h3>
+        <div className="grid grid-cols-4 gap-4 mb-4">
           <Card>
-            <Text>{t("common.totalRequests")}</Text>
-            <Title>{totalMetrics.total_requests.toLocaleString()}</Title>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Total Requests</p>
+              <h3 className="text-lg font-medium text-foreground">{totalMetrics.total_requests.toLocaleString()}</h3>
+            </CardContent>
           </Card>
           <Card>
-            <Text>{t("activity.totalSuccessfulRequests")}</Text>
-            <Title>{totalMetrics.total_successful_requests.toLocaleString()}</Title>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Total Successful Requests</p>
+              <h3 className="text-lg font-medium text-foreground">
+                {totalMetrics.total_successful_requests.toLocaleString()}
+              </h3>
+            </CardContent>
           </Card>
           <Card>
-            <Text>{t("common.totalTokens")}</Text>
-            <Title>{totalMetrics.total_tokens.toLocaleString()}</Title>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Total Tokens</p>
+              <h3 className="text-lg font-medium text-foreground">{totalMetrics.total_tokens.toLocaleString()}</h3>
+            </CardContent>
           </Card>
           <Card>
-            <Text>{t("common.totalSpend")}</Text>
-            <Title>${formatNumberWithCommas(totalMetrics.total_spend, 2)}</Title>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Total Spend</p>
+              <h3 className="text-lg font-medium text-foreground">
+                ${formatNumberWithCommas(totalMetrics.total_spend, 2)}
+              </h3>
+            </CardContent>
           </Card>
-        </Grid>
+        </div>
 
-        <Grid numItems={2} className="gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Card>
-            <div className="flex justify-between items-center">
-              <Title>{t("activity.totalTokensOverTime")}</Title>
-              <CustomLegend
+            <CardContent>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-foreground">Total Tokens Over Time</h3>
+                <CustomLegend
+                  categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
+                  colors={["blue", "cyan", "indigo"]}
+                />
+              </div>
+              <AreaChart
+                className="mt-4"
+                data={sortedDailyData}
+                index="date"
                 categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
                 colors={["blue", "cyan", "indigo"]}
+                valueFormatter={valueFormatter}
+                customTooltip={CustomTooltip}
+                showLegend={false}
+                yAxisWidth={80}
               />
-            </div>
-            <AreaChart
-              className="mt-4"
-              data={sortedDailyData}
-              index="date"
-              categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
-              colors={["blue", "cyan", "indigo"]}
-              valueFormatter={valueFormatter}
-              customTooltip={CustomTooltip}
-              showLegend={false}
-              yAxisWidth={80}
-            />
+            </CardContent>
           </Card>
           <Card>
-            <div className="flex justify-between items-center">
-              <Title>{t("activity.totalRequestsOverTime")}</Title>
-              <CustomLegend
+            <CardContent>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-foreground">Total Requests Over Time</h3>
+                <CustomLegend
+                  categories={["metrics.successful_requests", "metrics.failed_requests"]}
+                  colors={["emerald", "red"]}
+                />
+              </div>
+              <AreaChart
+                className="mt-4"
+                data={sortedDailyData}
+                index="date"
                 categories={["metrics.successful_requests", "metrics.failed_requests"]}
                 colors={["emerald", "red"]}
+                valueFormatter={valueFormatter}
+                customTooltip={CustomTooltip}
+                showLegend={false}
+                yAxisWidth={80}
               />
-            </div>
-            <AreaChart
-              className="mt-4"
-              data={sortedDailyData}
-              index="date"
-              categories={["metrics.successful_requests", "metrics.failed_requests"]}
-              colors={["emerald", "red"]}
-              valueFormatter={valueFormatter}
-              customTooltip={CustomTooltip}
-              showLegend={false}
-              yAxisWidth={80}
-            />
+            </CardContent>
           </Card>
-        </Grid>
+        </div>
       </div>
 
       {/* Individual Model Sections */}
-      <Collapse defaultActiveKey={modelNames[0]}>
+      <div className="rounded-lg border">
         {modelNames.map((modelName) => (
-          <Collapse.Panel
+          <ModelCollapsible
             key={modelName}
+            defaultOpen={modelName === modelNames[0]}
             header={
               <div className="flex justify-between items-center w-full">
-                <Title>{modelMetrics[modelName].label || t("activity.unknownItem")}</Title>
-                <div className="flex space-x-4 text-sm text-gray-500">
+                <h3 className="text-lg font-medium text-foreground">
+                  {modelMetrics[modelName].label || "Unknown Item"}
+                </h3>
+                <div className="flex space-x-4 text-sm text-muted-foreground">
                   <span>${formatNumberWithCommas(modelMetrics[modelName].total_spend, 2)}</span>
-                  <span>
-                    {t("activity.requestsCount", {
-                      count: modelMetrics[modelName].total_requests.toLocaleString(),
-                    })}
-                  </span>
+                  <span>{modelMetrics[modelName].total_requests.toLocaleString()} requests</span>
+                  {modelAverageResponseTimeMs(modelMetrics[modelName]) != null && (
+                    <span>{formatResponseTime(modelAverageResponseTimeMs(modelMetrics[modelName]))} avg response</span>
+                  )}
                 </div>
               </div>
             }
           >
             <ModelSection
-              modelName={modelName || t("activity.unknownModel")}
+              modelName={modelName || "Unknown Model"}
               metrics={modelMetrics[modelName]}
               hidePromptCachingMetrics={hidePromptCachingMetrics}
             />
-          </Collapse.Panel>
+          </ModelCollapsible>
         ))}
-      </Collapse>
+      </div>
     </div>
   );
 };
 
 // Helper function to format key label
 export const formatKeyLabel = (modelData: KeyMetricWithMetadata, model: string, teams: Team[]): string => {
-  const keyAlias = modelData.metadata.key_alias || `key-hash-${model}`;
+  const keyAlias = keyActivityLabel(modelData.metadata, `key-hash-${model}`);
   const teamId = modelData.metadata.team_id;
   if (teamId) {
     const teamAlias = resolveTeamAliasFromTeamID(teamId, teams);
@@ -401,6 +518,7 @@ export const processActivityData = (
               : key === "entities"
                 ? (modelData as any).metadata?.agent_name || (modelData as any).metadata?.team_alias || model
                 : model,
+          ...(key === "api_keys" ? { key_metadata: (modelData as KeyMetricWithMetadata).metadata } : {}),
           total_requests: 0,
           total_successful_requests: 0,
           total_failed_requests: 0,
@@ -410,11 +528,15 @@ export const processActivityData = (
           total_spend: 0,
           total_cache_read_input_tokens: 0,
           total_cache_creation_input_tokens: 0,
+          total_response_time_ms: 0,
+          total_timed_requests: 0,
           top_api_keys: [],
           top_models: [],
           daily_data: [],
         };
       }
+      const dayResponseTimeMs = modelData.metrics.total_response_time_ms || 0;
+      const dayTimedRequests = modelData.metrics.timed_requests || 0;
       // Update totals
       modelMetrics[model].total_requests += modelData.metrics.api_requests;
       modelMetrics[model].prompt_tokens += modelData.metrics.prompt_tokens;
@@ -425,6 +547,9 @@ export const processActivityData = (
       modelMetrics[model].total_failed_requests += modelData.metrics.failed_requests;
       modelMetrics[model].total_cache_read_input_tokens += modelData.metrics.cache_read_input_tokens || 0;
       modelMetrics[model].total_cache_creation_input_tokens += modelData.metrics.cache_creation_input_tokens || 0;
+      modelMetrics[model].total_response_time_ms =
+        (modelMetrics[model].total_response_time_ms ?? 0) + dayResponseTimeMs;
+      modelMetrics[model].total_timed_requests = (modelMetrics[model].total_timed_requests ?? 0) + dayTimedRequests;
 
       // Add daily data
       modelMetrics[model].daily_data.push({
@@ -439,6 +564,7 @@ export const processActivityData = (
           failed_requests: modelData.metrics.failed_requests,
           cache_read_input_tokens: modelData.metrics.cache_read_input_tokens || 0,
           cache_creation_input_tokens: modelData.metrics.cache_creation_input_tokens || 0,
+          avg_response_time_ms: averageResponseTimeMs(dayResponseTimeMs, dayTimedRequests),
         },
       });
     });
@@ -457,7 +583,7 @@ export const processActivityData = (
             if (!apiKeyBreakdown[apiKey]) {
               apiKeyBreakdown[apiKey] = {
                 api_key: apiKey,
-                key_alias: keyData.metadata.key_alias,
+                key_alias: keyActivityLabel(keyData.metadata, "") || null,
                 team_id: keyData.metadata.team_id,
                 spend: 0,
                 requests: 0,

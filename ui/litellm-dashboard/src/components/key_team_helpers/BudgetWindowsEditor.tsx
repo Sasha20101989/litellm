@@ -1,4 +1,6 @@
-import { Button, InputNumber, Select } from "antd";
+import { Button } from "@/components/ui/button";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import React from "react";
 
 export interface BudgetWindowEntry {
@@ -16,29 +18,9 @@ export const BUDGET_WINDOW_OPTIONS = [
 interface BudgetWindowsEditorProps {
   value: BudgetWindowEntry[];
   onChange: (v: BudgetWindowEntry[]) => void;
-  labels?: {
-    hourly: string;
-    hourlyHint: string;
-    daily: string;
-    dailyHint: string;
-    weekly: string;
-    weeklyHint: string;
-    monthly: string;
-    monthlyHint: string;
-    maxSpend: string;
-    addWindow: string;
-  };
 }
 
-export function BudgetWindowsEditor({ value, onChange, labels }: BudgetWindowsEditorProps) {
-  const options = labels
-    ? [
-        { value: "1h", label: labels.hourly, resetHint: labels.hourlyHint },
-        { value: "24h", label: labels.daily, resetHint: labels.dailyHint },
-        { value: "7d", label: labels.weekly, resetHint: labels.weeklyHint },
-        { value: "30d", label: labels.monthly, resetHint: labels.monthlyHint },
-      ]
-    : BUDGET_WINDOW_OPTIONS;
+export function BudgetWindowsEditor({ value, onChange }: BudgetWindowsEditorProps) {
   const addWindow = () => {
     onChange([...value, { budget_duration: "24h", max_budget: null }]);
   };
@@ -55,27 +37,54 @@ export function BudgetWindowsEditor({ value, onChange, labels }: BudgetWindowsEd
   return (
     <div>
       {value.map((window, idx) => {
-        const hint = options.find((o) => o.value === window.budget_duration)?.resetHint;
+        const hint = BUDGET_WINDOW_OPTIONS.find((o) => o.value === window.budget_duration)?.resetHint;
         return (
           <div key={idx} style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <Select
+                items={BUDGET_WINDOW_OPTIONS}
                 value={window.budget_duration}
-                onChange={(v) => updateWindow(idx, "budget_duration", v)}
-                style={{ width: 130 }}
-                options={options.map((o) => ({ value: o.value, label: o.label }))}
-              />
-              <InputNumber
-                step={0.01}
-                min={0}
-                precision={2}
-                value={window.max_budget ?? undefined}
-                onChange={(v) => updateWindow(idx, "max_budget", v ?? null)}
-                placeholder={labels?.maxSpend ?? "Max spend ($)"}
-                style={{ width: 160 }}
-                prefix="$"
-              />
-              <Button type="text" danger size="small" onClick={() => removeWindow(idx)} style={{ padding: "0 4px" }}>
+                onValueChange={(v: string | null) => v && updateWindow(idx, "budget_duration", v)}
+              >
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUDGET_WINDOW_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <InputGroup className="w-40">
+                <InputGroupAddon>
+                  <InputGroupText>$</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  type="number"
+                  step={0.01}
+                  min={0}
+                  value={window.max_budget ?? ""}
+                  onChange={(event) => {
+                    const typed = event.target.valueAsNumber;
+                    updateWindow(idx, "max_budget", Number.isNaN(typed) ? null : typed);
+                  }}
+                  onBlur={(event) => {
+                    const typed = event.target.valueAsNumber;
+                    if (!Number.isNaN(typed)) {
+                      updateWindow(idx, "max_budget", Number(typed.toFixed(2)));
+                    }
+                  }}
+                  placeholder="Max spend ($)"
+                />
+              </InputGroup>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-1 text-destructive hover:text-destructive/80"
+                onClick={() => removeWindow(idx)}
+              >
                 ✕
               </Button>
             </div>
@@ -84,13 +93,14 @@ export function BudgetWindowsEditor({ value, onChange, labels }: BudgetWindowsEd
         );
       })}
       <Button
-        size="small"
+        variant="outline"
+        size="sm"
         onClick={(e) => {
           e.preventDefault();
           addWindow();
         }}
       >
-        {labels?.addWindow ?? "+ Add Budget Window"}
+        + Add Budget Window
       </Button>
     </div>
   );

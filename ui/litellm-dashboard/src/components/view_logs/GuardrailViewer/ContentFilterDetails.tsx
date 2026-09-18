@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 
 export interface ContentFilterDetection {
   type: "pattern" | "blocked_word" | "category_keyword";
@@ -18,11 +17,11 @@ interface ContentFilterDetailsProps {
 
 const chip = (text: React.ReactNode, tone: "green" | "red" | "blue" | "slate" | "amber" = "slate") => {
   const map: Record<string, string> = {
-    green: "bg-green-100 text-green-800",
-    red: "bg-red-100 text-red-800",
-    blue: "bg-blue-50 text-blue-700",
-    slate: "bg-slate-100 text-slate-800",
-    amber: "bg-amber-100 text-amber-800",
+    green: "bg-success/15 text-success",
+    red: "bg-destructive/15 text-destructive",
+    blue: "bg-info/10 text-info",
+    slate: "bg-muted text-foreground",
+    amber: "bg-warning/15 text-warning",
   };
   return <span className={`px-2 py-1 rounded-md text-xs font-medium inline-block ${map[tone]}`}>{text}</span>;
 };
@@ -39,7 +38,7 @@ const Section: React.FC<SectionProps> = ({ title, count, defaultOpen = true, chi
   return (
     <div className="border rounded-lg overflow-hidden">
       <div
-        className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+        className="flex items-center justify-between p-3 bg-muted cursor-pointer hover:bg-accent"
         onClick={() => setOpen((v) => !v)}
       >
         <div className="flex items-center">
@@ -52,11 +51,11 @@ const Section: React.FC<SectionProps> = ({ title, count, defaultOpen = true, chi
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           <h5 className="font-medium">
-            {title} {typeof count === "number" && <span className="text-gray-500 font-normal">({count})</span>}
+            {title} {typeof count === "number" && <span className="text-muted-foreground font-normal">({count})</span>}
           </h5>
         </div>
       </div>
-      {open && <div className="p-3 border-t bg-white">{children}</div>}
+      {open && <div className="p-3 border-t bg-card">{children}</div>}
     </div>
   );
 };
@@ -75,16 +74,13 @@ const KV: React.FC<KVProps> = ({ label, children, mono }) => (
 );
 
 const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response }) => {
-  const { t } = useTranslation("logs");
-  const actionLabel = (action: ContentFilterDetection["action"]) =>
-    action === "BLOCK" ? t("guardrails.blockAction") : t("guardrails.maskAction");
   // Handle case where response is a string (error message) or null
   if (!response || typeof response === "string") {
     if (typeof response === "string" && response) {
       return (
-        <div className="bg-white rounded-lg border border-red-200 p-4">
-          <div className="text-red-800">
-            <h5 className="font-medium mb-2">{t("guardrails.error")}</h5>
+        <div className="bg-card rounded-lg border border-destructive/20 p-4">
+          <div className="text-destructive">
+            <h5 className="font-medium mb-2">Error</h5>
             <p className="text-sm">{response}</p>
           </div>
         </div>
@@ -98,8 +94,8 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
 
   if (detections.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="text-gray-600 text-sm">{t("guardrails.noDetections")}</div>
+      <div className="bg-card rounded-lg border border-border p-4">
+        <div className="text-muted-foreground text-sm">No detections found</div>
       </div>
     );
   }
@@ -119,27 +115,26 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
   return (
     <div className="space-y-3">
       {/* Summary Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-card rounded-lg border border-border p-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <KV label={`${t("guardrails.totalDetections")}:`}>
+            <KV label="Total Detections:">
               <span className="font-semibold">{totalDetections}</span>
             </KV>
-            <KV label={`${t("guardrails.actions")}:`}>
+            <KV label="Actions:">
               <div className="flex flex-wrap gap-2">
-                {blockedCount > 0 && chip(t("guardrails.blocked", { count: blockedCount }), "red")}
-                {maskedCount > 0 && chip(t("guardrails.maskedCount", { count: maskedCount }), "blue")}
-                {blockedCount === 0 && maskedCount === 0 && chip(t("guardrails.passedAction"), "green")}
+                {blockedCount > 0 && chip(`${blockedCount} blocked`, "red")}
+                {maskedCount > 0 && chip(`${maskedCount} masked`, "blue")}
+                {blockedCount === 0 && maskedCount === 0 && chip("passed", "green")}
               </div>
             </KV>
           </div>
           <div className="space-y-2">
-            <KV label={`${t("guardrails.byType")}:`}>
+            <KV label="By Type:">
               <div className="flex flex-wrap gap-2">
-                {patterns.length > 0 && chip(t("guardrails.patterns", { count: patterns.length }), "slate")}
-                {blockedWords.length > 0 && chip(t("guardrails.keywords", { count: blockedWords.length }), "slate")}
-                {categoryKeywords.length > 0 &&
-                  chip(t("guardrails.categories", { count: categoryKeywords.length }), "slate")}
+                {patterns.length > 0 && chip(`${patterns.length} patterns`, "slate")}
+                {blockedWords.length > 0 && chip(`${blockedWords.length} keywords`, "slate")}
+                {categoryKeywords.length > 0 && chip(`${categoryKeywords.length} categories`, "slate")}
               </div>
             </KV>
           </div>
@@ -148,18 +143,16 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
 
       {/* Patterns Section */}
       {patterns.length > 0 && (
-        <Section title={t("guardrails.patternsMatched")} count={patterns.length} defaultOpen={true}>
+        <Section title="Patterns Matched" count={patterns.length} defaultOpen={true}>
           <div className="space-y-2">
             {patterns.map((detection, idx) => (
-              <div key={idx} className="p-3 bg-gray-50 rounded-md">
+              <div key={idx} className="p-3 bg-muted rounded-md">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.pattern")}:`}>{detection.pattern_name || t("guardrails.unknown")}</KV>
+                    <KV label="Pattern:">{detection.pattern_name || "unknown"}</KV>
                   </div>
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.action")}:`}>
-                      {chip(actionLabel(detection.action), detection.action === "BLOCK" ? "red" : "blue")}
-                    </KV>
+                    <KV label="Action:">{chip(detection.action, detection.action === "BLOCK" ? "red" : "blue")}</KV>
                   </div>
                 </div>
               </div>
@@ -170,23 +163,19 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
 
       {/* Blocked Words Section */}
       {blockedWords.length > 0 && (
-        <Section title={t("guardrails.blockedWords")} count={blockedWords.length} defaultOpen={true}>
+        <Section title="Blocked Words Detected" count={blockedWords.length} defaultOpen={true}>
           <div className="space-y-2">
             {blockedWords.map((detection, idx) => (
-              <div key={idx} className="p-3 bg-gray-50 rounded-md">
+              <div key={idx} className="p-3 bg-muted rounded-md">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.keyword")}:`} mono>
-                      {detection.keyword || t("guardrails.unknown")}
+                    <KV label="Keyword:" mono>
+                      {detection.keyword || "unknown"}
                     </KV>
-                    {detection.description && (
-                      <KV label={`${t("guardrails.description")}:`}>{detection.description}</KV>
-                    )}
+                    {detection.description && <KV label="Description:">{detection.description}</KV>}
                   </div>
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.action")}:`}>
-                      {chip(actionLabel(detection.action), detection.action === "BLOCK" ? "red" : "blue")}
-                    </KV>
+                    <KV label="Action:">{chip(detection.action, detection.action === "BLOCK" ? "red" : "blue")}</KV>
                   </div>
                 </div>
               </div>
@@ -197,18 +186,18 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
 
       {/* Category Keywords Section */}
       {categoryKeywords.length > 0 && (
-        <Section title={t("guardrails.categoryKeywords")} count={categoryKeywords.length} defaultOpen={true}>
+        <Section title="Category Keywords Detected" count={categoryKeywords.length} defaultOpen={true}>
           <div className="space-y-2">
             {categoryKeywords.map((detection, idx) => (
-              <div key={idx} className="p-3 bg-gray-50 rounded-md">
+              <div key={idx} className="p-3 bg-muted rounded-md">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.category")}:`}>{detection.category || t("guardrails.unknown")}</KV>
-                    <KV label={`${t("guardrails.keyword")}:`} mono>
-                      {detection.keyword || t("guardrails.unknown")}
+                    <KV label="Category:">{detection.category || "unknown"}</KV>
+                    <KV label="Keyword:" mono>
+                      {detection.keyword || "unknown"}
                     </KV>
                     {detection.severity && (
-                      <KV label={`${t("guardrails.severity")}:`}>
+                      <KV label="Severity:">
                         {chip(
                           detection.severity,
                           detection.severity === "high" ? "red" : detection.severity === "medium" ? "amber" : "slate",
@@ -217,9 +206,7 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
                     )}
                   </div>
                   <div className="space-y-1">
-                    <KV label={`${t("guardrails.action")}:`}>
-                      {chip(actionLabel(detection.action), detection.action === "BLOCK" ? "red" : "blue")}
-                    </KV>
+                    <KV label="Action:">{chip(detection.action, detection.action === "BLOCK" ? "red" : "blue")}</KV>
                   </div>
                 </div>
               </div>
@@ -229,8 +216,8 @@ const ContentFilterDetails: React.FC<ContentFilterDetailsProps> = ({ response })
       )}
 
       {/* Raw JSON (for debugging) */}
-      <Section title={t("guardrails.rawDetectionData")} defaultOpen={false}>
-        <pre className="bg-gray-50 rounded-sm p-3 text-xs overflow-x-auto">{JSON.stringify(detections, null, 2)}</pre>
+      <Section title="Raw Detection Data" defaultOpen={false}>
+        <pre className="bg-muted rounded-sm p-3 text-xs overflow-x-auto">{JSON.stringify(detections, null, 2)}</pre>
       </Section>
     </div>
   );

@@ -1,20 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Text } from "@tremor/react";
-import { Button, Modal, Table, Upload, Typography } from "antd";
-import {
-  UploadOutlined,
-  DownloadOutlined,
-  WarningOutlined,
-  FileTextOutlined,
-  DeleteOutlined,
-  FileExclamationOutlined,
-} from "@ant-design/icons";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download, FileText, FileWarning, Trash2, TriangleAlert, Upload } from "lucide-react";
 import { userCreateCall, invitationCreateCall, getProxyUISettings } from "./networking";
 import Papa from "papaparse";
 import { CheckCircleIcon, XCircleIcon, ExclamationIcon } from "@heroicons/react/outline";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import NotificationsManager from "./molecules/notifications_manager";
-import { useTranslation } from "react-i18next";
+import { toast } from "@/lib/toast";
 
 interface BulkCreateUsersProps {
   accessToken: string;
@@ -39,6 +32,8 @@ interface UserData {
   invitation_link?: string;
 }
 
+const PREVIEW_PAGE_SIZE = 5;
+
 // Define an interface for the UI settings
 interface UISettings {
   PROXY_BASE_URL: string | null;
@@ -53,7 +48,6 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
   possibleUIRoles,
   onUsersCreated,
 }) => {
-  const { t } = useTranslation("gateway");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [parsedData, setParsedData] = useState<UserData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -63,6 +57,9 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uiSettings, setUISettings] = useState<UISettings | null>(null);
   const [baseUrl, setBaseUrl] = useState("http://localhost:4000");
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const csvInputId = React.useId();
 
   useEffect(() => {
     // Get UI settings
@@ -93,29 +90,33 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
 
     // Check file type
     if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
-      setFileError(t("users.bulkInvite.errors.invalidFileName", { name: file.name }));
-      NotificationsManager.fromBackend(t("users.bulkInvite.errors.invalidFile"));
-      return false;
+      setFileError(`Invalid file type: ${file.name}. Please upload a CSV file (.csv extension).`);
+      toast.fromError("Invalid file type. Please upload a CSV file.");
+      return;
     }
 
     // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setFileError(t("users.bulkInvite.errors.fileTooLarge", { size: (file.size / (1024 * 1024)).toFixed(1) }));
-      return false;
+      setFileError(
+        `File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Please upload a CSV file smaller than 5MB.`,
+      );
+      return;
     }
 
     Papa.parse(file, {
       complete: (results) => {
         // Check if file is empty
         if (!results.data || results.data.length === 0) {
-          setCsvStructureError(t("users.bulkInvite.errors.emptyCsv"));
+          setCsvStructureError("The CSV file appears to be empty. Please upload a file with data.");
           setParsedData([]);
           return;
         }
 
         // Check if there's only header row
         if (results.data.length === 1) {
-          setCsvStructureError(t("users.bulkInvite.errors.headersOnly"));
+          setCsvStructureError(
+            "The CSV file only contains headers but no user data. Please add user data to your CSV.",
+          );
           setParsedData([]);
           return;
         }
@@ -124,7 +125,9 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
 
         // Check if headers exist
         if (headers.length === 0 || (headers.length === 1 && headers[0] === "")) {
-          setCsvStructureError(t("users.bulkInvite.errors.noHeaders"));
+          setCsvStructureError(
+            "The CSV file doesn't contain any column headers. Please make sure your CSV has headers.",
+          );
           setParsedData([]);
           return;
         }
@@ -134,7 +137,9 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
         // Check if all required columns are present
         const missingColumns = requiredColumns.filter((col) => !headers.includes(col));
         if (missingColumns.length > 0) {
-          setCsvStructureError(t("users.bulkInvite.errors.missingColumns", { columns: missingColumns.join(", ") }));
+          setCsvStructureError(
+            `Your CSV is missing these required columns: ${missingColumns.join(", ")}. Please add these columns to your CSV file.`,
+          );
           setParsedData([]);
           return;
         }
@@ -153,7 +158,7 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
                 return {
                   rowNumber: index + 2,
                   isValid: false,
-                  error: t("users.bulkInvite.errors.shortRow", { row: index + 2 }),
+                  error: `Row ${index + 2} has fewer columns than the header row. Please ensure all data is properly formatted.`,
                   user_email: "",
                   user_role: "",
                 } as UserData;
@@ -176,39 +181,36 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
 
               // Email validation
               if (!user.user_email) {
-                errors.push(t("users.bulkInvite.errors.emailRequired"));
+                errors.push("Email is required");
               } else if (!user.user_email.includes("@") || !user.user_email.includes(".")) {
-                errors.push(t("users.bulkInvite.errors.invalidEmail"));
+                errors.push("Invalid email format (must contain @ and domain)");
               }
 
               // Role validation
               if (!user.user_role) {
-                errors.push(t("users.bulkInvite.errors.roleRequired"));
+                errors.push("Role is required");
               } else {
                 // Validate user role
                 const validRoles = ["proxy_admin", "proxy_admin_viewer", "internal_user", "internal_user_viewer"];
                 if (!validRoles.includes(user.user_role)) {
-                  errors.push(
-                    t("users.bulkInvite.errors.invalidRole", {
-                      role: user.user_role,
-                      roles: validRoles.join(", "),
-                    }),
-                  );
+                  errors.push(`Invalid role "${user.user_role}". Must be one of: ${validRoles.join(", ")}`);
                 }
               }
 
               // Budget validation
               if (user.max_budget && user.max_budget.toString().trim() !== "") {
                 if (isNaN(parseFloat(user.max_budget.toString()))) {
-                  errors.push(t("users.bulkInvite.errors.budgetNumber", { budget: user.max_budget }));
+                  errors.push(`Max budget "${user.max_budget}" must be a number`);
                 } else if (parseFloat(user.max_budget.toString()) <= 0) {
-                  errors.push(t("users.bulkInvite.errors.budgetPositive"));
+                  errors.push("Max budget must be greater than 0");
                 }
               }
 
               // Budget duration validation
               if (user.budget_duration && !user.budget_duration.match(/^\d+[dhmwy]$|^\d+mo$/)) {
-                errors.push(t("users.bulkInvite.errors.durationInvalid", { duration: user.budget_duration }));
+                errors.push(
+                  `Invalid budget duration format "${user.budget_duration}". Use format like "30d", "1mo", "2w", "6h"`,
+                );
               }
 
               // Teams validation
@@ -219,7 +221,7 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
                   const userTeams = user.teams.split(",").map((t) => t.trim());
                   const invalidTeams = userTeams.filter((t) => !teamIds.includes(t));
                   if (invalidTeams.length > 0) {
-                    errors.push(t("users.bulkInvite.errors.unknownTeams", { teams: invalidTeams.join(", ") }));
+                    errors.push(`Unknown team(s): ${invalidTeams.join(", ")}`);
                   }
                 }
               }
@@ -237,32 +239,49 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
           setParsedData(userData);
 
           if (userData.length === 0) {
-            setCsvStructureError(t("users.bulkInvite.errors.noRows"));
+            setCsvStructureError("No valid data rows found in the CSV file. Please check your file format.");
           } else if (validData.length === 0) {
-            setParseError(t("users.bulkInvite.errors.noValidUsers"));
+            setParseError("No valid users found in the CSV. Please check the errors below and fix your CSV file.");
           } else if (validData.length < userData.length) {
             setParseError(
-              t("users.bulkInvite.errors.invalidRows", {
-                invalid: userData.length - validData.length,
-                total: userData.length,
-              }),
+              `Found ${userData.length - validData.length} row(s) with errors out of ${userData.length} total rows. Please correct them before proceeding.`,
             );
           } else {
-            NotificationsManager.success(t("users.bulkInvite.errors.parsed", { count: validData.length }));
+            toast.success(`Successfully parsed ${validData.length} users`);
           }
         } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : t("users.bulkInvite.errors.unknown");
-          setParseError(t("users.bulkInvite.errors.parse", { error: errorMessage }));
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          setParseError(`Error parsing CSV: ${errorMessage}`);
           setParsedData([]);
         }
       },
       error: (error) => {
-        setParseError(t("users.bulkInvite.errors.parseFailed", { error: error.message }));
+        setParseError(`Failed to parse CSV file: ${error.message}`);
         setParsedData([]);
       },
       header: false,
     });
-    return false;
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDraggingOver(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
 
   const removeSelectedFile = () => {
@@ -271,6 +290,12 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
     setParseError(null);
     setCsvStructureError(null);
     setFileError(null);
+  };
+
+  const resetParsedData = () => {
+    setParsedData([]);
+    setParseError(null);
+    setPageIndex(0);
   };
 
   const handleBulkCreate = async () => {
@@ -383,14 +408,14 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
                       ...u,
                       status: "success",
                       key: response.key || response.user_id,
-                      error: t("users.bulkInvite.errors.invitationFailed"),
+                      error: "User created but failed to generate invitation link",
                     }
                   : u,
               ),
             );
           }
         } else {
-          const errorMessage = response?.error || t("users.bulkInvite.errors.createFailed");
+          const errorMessage = response?.error || "Failed to create user";
           setParsedData((current) =>
             current.map((u, i) => (i === index ? { ...u, status: "failed", error: errorMessage } : u)),
           );
@@ -434,422 +459,419 @@ const BulkCreateUsersButton: React.FC<BulkCreateUsersProps> = ({
     window.URL.revokeObjectURL(url);
   };
 
-  const columns = [
-    {
-      title: t("users.bulkInvite.row"),
-      dataIndex: "rowNumber",
-      key: "rowNumber",
-      width: 80,
-    },
-    {
-      title: t("users.fields.email"),
-      dataIndex: "user_email",
-      key: "user_email",
-    },
-    {
-      title: t("users.fields.role"),
-      dataIndex: "user_role",
-      key: "user_role",
-    },
-    {
-      title: t("users.fields.teams"),
-      dataIndex: "teams",
-      key: "teams",
-    },
-    {
-      title: t("users.fields.budget"),
-      dataIndex: "max_budget",
-      key: "max_budget",
-    },
-    {
-      title: t("users.fields.status"),
-      key: "status",
-      render: (_: any, record: UserData) => {
-        if (!record.isValid) {
-          return (
-            <div>
-              <div className="flex items-center">
-                <XCircleIcon className="h-5 w-5 text-red-500 mr-2" />
-                <span className="text-red-500">{t("users.status.invalid")}</span>
-              </div>
-              {record.error && <span className="text-sm text-red-500 ml-7">{record.error}</span>}
-            </div>
-          );
-        }
-        if (!record.status || record.status === "pending") {
-          return <span className="text-gray-500">{t("users.status.pending")}</span>;
-        }
-        if (record.status === "success") {
-          return (
-            <div>
-              <div className="flex items-center">
-                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-green-500">{t("users.status.success")}</span>
-              </div>
-              {record.invitation_link && (
-                <div className="mt-1">
-                  <div className="flex items-center">
-                    <span className="text-xs text-gray-500 truncate max-w-[150px]">{record.invitation_link}</span>
-                    <CopyToClipboard
-                      text={record.invitation_link}
-                      onCopy={() => NotificationsManager.success(t("users.bulkInvite.invitationCopied"))}
-                    >
-                      <button className="ml-1 text-blue-500 text-xs hover:text-blue-700">
-                        {t("users.bulkInvite.copy")}
-                      </button>
-                    </CopyToClipboard>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        }
-        return (
-          <div>
-            <div className="flex items-center">
-              <XCircleIcon className="h-5 w-5 text-red-500 mr-2" />
-              <span className="text-red-500">{t("users.status.failed")}</span>
-            </div>
-            {record.error && <span className="text-sm text-red-500 ml-7">{JSON.stringify(record.error)}</span>}
+  const renderStatusCell = (record: UserData) => {
+    if (!record.isValid) {
+      return (
+        <div>
+          <div className="flex items-center">
+            <XCircleIcon className="h-5 w-5 text-destructive mr-2" />
+            <span className="text-destructive">Invalid</span>
           </div>
-        );
-      },
-    },
-  ];
-
-  return (
-    <>
-      <Button type="primary" className="mb-0" onClick={() => setIsModalVisible(true)}>
-        {t("users.bulkInvite.button")}
-      </Button>
-
-      <Modal
-        title={t("users.bulkInvite.title")}
-        open={isModalVisible}
-        width={800}
-        onCancel={() => setIsModalVisible(false)}
-        bodyStyle={{ maxHeight: "70vh", overflow: "auto" }}
-        footer={null}
-      >
-        <div className="flex flex-col">
-          {/* Step indicator */}
-          {parsedData.length === 0 ? (
-            <div className="mb-6">
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">
-                  1
-                </div>
-                <h3 className="text-lg font-medium">{t("users.bulkInvite.downloadAndFill")}</h3>
-              </div>
-
-              <div className="ml-11 mb-6">
-                <p className="mb-4">{t("users.bulkInvite.stepsIntro")}</p>
-                <ol className="list-decimal list-inside space-y-2 ml-2 mb-4">
-                  <li>{t("users.bulkInvite.stepDownload")}</li>
-                  <li>{t("users.bulkInvite.stepFill")}</li>
-                  <li>{t("users.bulkInvite.stepUpload")}</li>
-                  <li>{t("users.bulkInvite.stepResults")}</li>
-                </ol>
-
-                <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mb-4">
-                  <h4 className="font-medium mb-2">{t("users.bulkInvite.templateColumns")}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex items-start">
-                      <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 mr-2 shrink-0"></div>
-                      <div>
-                        <p className="font-medium">user_email</p>
-                        <p className="text-sm text-gray-600">{t("users.bulkInvite.emailDescription")}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 mr-2 shrink-0"></div>
-                      <div>
-                        <p className="font-medium">user_role</p>
-                        <p className="text-sm text-gray-600">{t("users.bulkInvite.roleDescription")}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="w-3 h-3 rounded-full bg-gray-300 mt-1.5 mr-2 shrink-0"></div>
-                      <div>
-                        <p className="font-medium">teams</p>
-                        <p className="text-sm text-gray-600">{t("users.bulkInvite.teamsDescription")}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="w-3 h-3 rounded-full bg-gray-300 mt-1.5 mr-2 shrink-0"></div>
-                      <div>
-                        <p className="font-medium">max_budget</p>
-                        <p className="text-sm text-gray-600">{t("users.bulkInvite.maxBudgetDescription")}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="w-3 h-3 rounded-full bg-gray-300 mt-1.5 mr-2 shrink-0"></div>
-                      <div>
-                        <p className="font-medium">budget_duration</p>
-                        <p className="text-sm text-gray-600">{t("users.bulkInvite.durationDescription")}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="w-3 h-3 rounded-full bg-gray-300 mt-1.5 mr-2 shrink-0"></div>
-                      <div>
-                        <p className="font-medium">models</p>
-                        <p className="text-sm text-gray-600">{t("users.bulkInvite.modelsDescription")}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Button type="primary" size="large" className="w-full md:w-auto" icon={<DownloadOutlined />}>
-                  {t("users.bulkInvite.downloadTemplate")}
-                </Button>
-              </div>
-
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">
-                  2
-                </div>
-                <h3 className="text-lg font-medium">{t("users.bulkInvite.uploadCompleted")}</h3>
-              </div>
-
-              <div className="ml-11">
-                {selectedFile ? (
-                  <div
-                    className={`mb-4 p-4 rounded-md border ${fileError ? "bg-red-50 border-red-200" : "bg-blue-50 border-blue-200"}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        {fileError ? (
-                          <FileExclamationOutlined className="text-red-500 text-xl mr-3" />
-                        ) : (
-                          <FileTextOutlined className="text-blue-500 text-xl mr-3" />
-                        )}
-                        <div>
-                          <Typography.Text strong className={fileError ? "text-red-800" : "text-blue-800"}>
-                            {selectedFile.name}
-                          </Typography.Text>
-                          <Typography.Text className={`block text-xs ${fileError ? "text-red-600" : "text-blue-600"}`}>
-                            {(selectedFile.size / 1024).toFixed(1)} KB • {new Date().toLocaleDateString()}
-                          </Typography.Text>
-                        </div>
-                      </div>
-                      <Button
-                        size="small"
-                        onClick={removeSelectedFile}
-                        className="flex items-center"
-                        icon={<DeleteOutlined />}
-                      >
-                        {t("users.bulkInvite.remove")}
-                      </Button>
-                    </div>
-
-                    {fileError ? (
-                      <div className="mt-3 text-red-600 text-sm flex items-start">
-                        <WarningOutlined className="mr-2 mt-0.5" />
-                        <span>{fileError}</span>
-                      </div>
-                    ) : (
-                      !csvStructureError && (
-                        <div className="mt-3 flex items-center">
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div className="bg-blue-500 h-1.5 rounded-full w-full animate-pulse"></div>
-                          </div>
-                          <span className="ml-2 text-xs text-blue-600">{t("users.bulkInvite.processing")}</span>
-                        </div>
-                      )
-                    )}
-                  </div>
-                ) : (
-                  <Upload beforeUpload={handleFileUpload} accept=".csv" maxCount={1} showUploadList={false}>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
-                      <UploadOutlined className="text-3xl text-gray-400 mb-2" />
-                      <p className="mb-1">{t("users.bulkInvite.dropFile")}</p>
-                      <p className="text-sm text-gray-500 mb-3">{t("users.bulkInvite.or")}</p>
-                      <Button size="small">{t("users.bulkInvite.browse")}</Button>
-                      <p className="text-xs text-gray-500 mt-4">{t("users.bulkInvite.csvOnly")}</p>
-                    </div>
-                  </Upload>
-                )}
-
-                {csvStructureError && (
-                  <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <div className="flex items-start">
-                      <ExclamationIcon className="h-5 w-5 text-yellow-500 mr-2 mt-0.5" />
-                      <div>
-                        <Typography.Text strong className="text-yellow-800">
-                          {t("users.bulkInvite.csvStructureError")}
-                        </Typography.Text>
-                        <Typography.Paragraph className="text-yellow-700 mt-1 mb-0">
-                          {csvStructureError}
-                        </Typography.Paragraph>
-                        <Typography.Paragraph className="text-yellow-700 mt-2 mb-0">
-                          {t("users.bulkInvite.csvStructureHint")}
-                        </Typography.Paragraph>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="mb-6">
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">
-                  3
-                </div>
-                <h3 className="text-lg font-medium">
-                  {parsedData.some((user) => user.status === "success" || user.status === "failed")
-                    ? t("users.bulkInvite.resultsTitle")
-                    : t("users.bulkInvite.reviewTitle")}
-                </h3>
-              </div>
-
-              {parseError && (
-                <div className="ml-11 mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                  <div className="flex items-start">
-                    <WarningOutlined className="text-red-500 mr-2 mt-1" />
-                    <div>
-                      <Text className="text-red-600 font-medium">{parseError}</Text>
-                      {parsedData.some((user) => !user.isValid) && (
-                        <ul className="mt-2 list-disc list-inside text-red-600 text-sm">
-                          <li>{t("users.bulkInvite.checkRows")}</li>
-                          <li>{t("users.bulkInvite.commonIssues")}</li>
-                          <li>{t("users.bulkInvite.fixIssues")}</li>
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="ml-11">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center">
-                    {parsedData.some((user) => user.status === "success" || user.status === "failed") ? (
-                      <div className="flex items-center">
-                        <Text className="text-lg font-medium mr-3">{t("users.bulkInvite.creationSummary")}</Text>
-                        <Text className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-sm mr-2">
-                          {t("users.bulkInvite.successfulCount", {
-                            count: parsedData.filter((d) => d.status === "success").length,
-                          })}
-                        </Text>
-                        {parsedData.some((d) => d.status === "failed") && (
-                          <Text className="text-sm bg-red-100 text-red-800 px-2 py-1 rounded-sm">
-                            {t("users.bulkInvite.failedCount", {
-                              count: parsedData.filter((d) => d.status === "failed").length,
-                            })}
-                          </Text>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <Text className="text-lg font-medium mr-3">{t("users.bulkInvite.preview")}</Text>
-                        <Text className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-sm">
-                          {t("users.bulkInvite.validCount", {
-                            valid: parsedData.filter((d) => d.isValid).length,
-                            total: parsedData.length,
-                          })}
-                        </Text>
-                      </div>
-                    )}
-                  </div>
-
-                  {!parsedData.some((user) => user.status === "success" || user.status === "failed") && (
-                    <div className="flex space-x-3">
-                      <Button
-                        onClick={() => {
-                          setParsedData([]);
-                          setParseError(null);
-                        }}
-                      >
-                        {t("users.bulkInvite.back")}
-                      </Button>
-                      <Button
-                        type="primary"
-                        onClick={handleBulkCreate}
-                        disabled={parsedData.filter((d) => d.isValid).length === 0 || isProcessing}
-                      >
-                        {isProcessing
-                          ? t("users.bulkInvite.creatingShort")
-                          : t("users.bulkInvite.createUsers", {
-                              count: parsedData.filter((d) => d.isValid).length,
-                            })}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {parsedData.some((user) => user.status === "success") && (
-                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                    <div className="flex items-start">
-                      <div className="mr-3 mt-1">
-                        <CheckCircleIcon className="h-5 w-5 text-blue-500" />
-                      </div>
-                      <div>
-                        <Text className="font-medium text-blue-800">{t("users.bulkInvite.complete")}</Text>
-                        <Text className="block text-sm text-blue-700 mt-1">
-                          <span className="font-medium">{t("users.bulkInvite.nextStep")}</span>{" "}
-                          {t("users.bulkInvite.nextStepDescription")}
-                        </Text>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <Table
-                  dataSource={parsedData}
-                  columns={columns}
-                  size="small"
-                  pagination={{ pageSize: 5 }}
-                  scroll={{ y: 300 }}
-                  rowClassName={(record) => (!record.isValid ? "bg-red-50" : "")}
-                />
-
-                {!parsedData.some((user) => user.status === "success" || user.status === "failed") && (
-                  <div className="flex justify-end mt-4">
-                    <Button
-                      onClick={() => {
-                        setParsedData([]);
-                        setParseError(null);
-                      }}
-                      className="mr-3"
-                    >
-                      {t("users.bulkInvite.back")}
-                    </Button>
-                    <Button
-                      type="primary"
-                      onClick={handleBulkCreate}
-                      disabled={parsedData.filter((d) => d.isValid).length === 0 || isProcessing}
-                    >
-                      {isProcessing
-                        ? t("users.bulkInvite.creatingShort")
-                        : t("users.bulkInvite.createUsers", {
-                            count: parsedData.filter((d) => d.isValid).length,
-                          })}
-                    </Button>
-                  </div>
-                )}
-
-                {parsedData.some((user) => user.status === "success" || user.status === "failed") && (
-                  <div className="flex justify-end mt-4">
-                    <Button
-                      onClick={() => {
-                        setParsedData([]);
-                        setParseError(null);
-                      }}
-                      className="mr-3"
-                    >
-                      {t("users.bulkInvite.startNew")}
-                    </Button>
-                    <Button type="primary" onClick={downloadResults} icon={<DownloadOutlined />}>
-                      {t("users.bulkInvite.downloadCredentials")}
-                    </Button>
-                  </div>
-                )}
+          {record.error && <span className="text-sm text-destructive ml-7">{record.error}</span>}
+        </div>
+      );
+    }
+    if (!record.status || record.status === "pending") {
+      return <span className="text-muted-foreground">Pending</span>;
+    }
+    if (record.status === "success") {
+      return (
+        <div>
+          <div className="flex items-center">
+            <CheckCircleIcon className="h-5 w-5 text-success mr-2" />
+            <span className="text-success">Success</span>
+          </div>
+          {record.invitation_link && (
+            <div className="mt-1">
+              <div className="flex items-center">
+                <span className="text-xs text-muted-foreground truncate max-w-[150px]">{record.invitation_link}</span>
+                <CopyToClipboard text={record.invitation_link} onCopy={() => toast.success("Invitation link copied!")}>
+                  <button className="ml-1 text-info text-xs hover:text-info/80">Copy</button>
+                </CopyToClipboard>
               </div>
             </div>
           )}
         </div>
-      </Modal>
+      );
+    }
+    return (
+      <div>
+        <div className="flex items-center">
+          <XCircleIcon className="h-5 w-5 text-destructive mr-2" />
+          <span className="text-destructive">Failed</span>
+        </div>
+        {record.error && <span className="text-sm text-destructive ml-7">{JSON.stringify(record.error)}</span>}
+      </div>
+    );
+  };
+
+  const pageCount = Math.max(1, Math.ceil(parsedData.length / PREVIEW_PAGE_SIZE));
+  const currentPage = Math.min(pageIndex, pageCount - 1);
+  const visibleRows = parsedData.slice(currentPage * PREVIEW_PAGE_SIZE, (currentPage + 1) * PREVIEW_PAGE_SIZE);
+
+  return (
+    <>
+      <Button className="mb-0" onClick={() => setIsModalVisible(true)}>
+        + Bulk Invite Users
+      </Button>
+
+      <Dialog open={isModalVisible} onOpenChange={(open) => !open && setIsModalVisible(false)}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Bulk Invite Users</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col">
+            {/* Step indicator */}
+            {parsedData.length === 0 ? (
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-info text-info-foreground flex items-center justify-center mr-3">
+                    1
+                  </div>
+                  <h3 className="text-lg font-medium">Download and fill the template</h3>
+                </div>
+
+                <div className="ml-11 mb-6">
+                  <p className="mb-4">Add multiple users at once by following these steps:</p>
+                  <ol className="list-decimal list-inside space-y-2 ml-2 mb-4">
+                    <li>Download our CSV template</li>
+                    <li>Add your users&apos; information to the spreadsheet</li>
+                    <li>Save the file and upload it here</li>
+                    <li>After creation, download the results file containing the Virtual Keys for each user</li>
+                  </ol>
+
+                  <div className="bg-muted p-4 rounded-md border border-border mb-4">
+                    <h4 className="font-medium mb-2">Template Column Names</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 rounded-full bg-destructive mt-1.5 mr-2 shrink-0"></div>
+                        <div>
+                          <p className="font-medium">user_email</p>
+                          <p className="text-sm text-muted-foreground">User&apos;s email address (required)</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 rounded-full bg-destructive mt-1.5 mr-2 shrink-0"></div>
+                        <div>
+                          <p className="font-medium">user_role</p>
+                          <p className="text-sm text-muted-foreground">
+                            User&apos;s role (one of: &quot;proxy_admin&quot;, &quot;proxy_admin_viewer&quot;,
+                            &quot;internal_user&quot;, &quot;internal_user_viewer&quot;)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 rounded-full bg-border mt-1.5 mr-2 shrink-0"></div>
+                        <div>
+                          <p className="font-medium">teams</p>
+                          <p className="text-sm text-muted-foreground">
+                            Comma-separated team IDs (e.g., &quot;team-1,team-2&quot;)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 rounded-full bg-border mt-1.5 mr-2 shrink-0"></div>
+                        <div>
+                          <p className="font-medium">max_budget</p>
+                          <p className="text-sm text-muted-foreground">
+                            Maximum budget as a number (e.g., &quot;100&quot;)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 rounded-full bg-border mt-1.5 mr-2 shrink-0"></div>
+                        <div>
+                          <p className="font-medium">budget_duration</p>
+                          <p className="text-sm text-muted-foreground">
+                            Budget reset period (e.g., &quot;30d&quot;, &quot;1mo&quot;)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 rounded-full bg-border mt-1.5 mr-2 shrink-0"></div>
+                        <div>
+                          <p className="font-medium">models</p>
+                          <p className="text-sm text-muted-foreground">
+                            Comma-separated allowed models (e.g., &quot;gpt-3.5-turbo,gpt-4&quot;)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button size="lg" className="w-full md:w-auto">
+                    <Download className="size-4" />
+                    Download CSV Template
+                  </Button>
+                </div>
+
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-info text-info-foreground flex items-center justify-center mr-3">
+                    2
+                  </div>
+                  <h3 className="text-lg font-medium">Upload your completed CSV</h3>
+                </div>
+
+                <div className="ml-11">
+                  {selectedFile ? (
+                    <div
+                      className={`mb-4 p-4 rounded-md border ${fileError ? "bg-destructive/10 border-destructive/20" : "bg-info/10 border-info/20"}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center min-w-0">
+                          {fileError ? (
+                            <FileWarning className="size-5 shrink-0 text-destructive mr-3" />
+                          ) : (
+                            <FileText className="size-5 shrink-0 text-info mr-3" />
+                          )}
+                          <div className="min-w-0">
+                            <strong className={`break-words ${fileError ? "text-destructive" : "text-info"}`}>
+                              {selectedFile.name}
+                            </strong>
+                            <span className={`block text-xs ${fileError ? "text-destructive" : "text-info"}`}>
+                              {(selectedFile.size / 1024).toFixed(1)} KB • {new Date().toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={removeSelectedFile} className="flex items-center">
+                          <Trash2 className="size-4" />
+                          Remove
+                        </Button>
+                      </div>
+
+                      {fileError ? (
+                        <div className="mt-3 text-destructive text-sm flex items-start">
+                          <TriangleAlert className="size-3.5 shrink-0 mr-2 mt-0.5" />
+                          <span className="min-w-0 break-words">{fileError}</span>
+                        </div>
+                      ) : (
+                        !csvStructureError && (
+                          <div className="mt-3 flex items-center">
+                            <div className="w-full bg-border rounded-full h-1.5">
+                              <div className="bg-info h-1.5 rounded-full w-full animate-pulse"></div>
+                            </div>
+                            <span className="ml-2 text-xs text-info">Processing...</span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor={csvInputId}
+                      className="block"
+                      onDragOver={handleDragOver}
+                      onDragLeave={() => setIsDraggingOver(false)}
+                      onDrop={handleDrop}
+                    >
+                      <div
+                        className={`border-2 border-dashed ${isDraggingOver ? "border-info" : "border-border"} rounded-lg p-8 text-center hover:border-info focus-within:border-info transition-colors cursor-pointer`}
+                      >
+                        <input
+                          id={csvInputId}
+                          type="file"
+                          accept=".csv"
+                          className="sr-only"
+                          onChange={handleFileInputChange}
+                        />
+                        <Upload className="size-[30px] text-muted-foreground mb-2" />
+                        <p className="mb-1">Drag and drop your CSV file here</p>
+                        <p className="text-sm text-muted-foreground mb-3">or</p>
+                        <span className={buttonVariants({ variant: "outline", size: "sm" })}>Browse files</span>
+                        <p className="text-xs text-muted-foreground mt-4">Only CSV files (.csv) are supported</p>
+                      </div>
+                    </label>
+                  )}
+
+                  {csvStructureError && (
+                    <div className="mb-4 p-4 bg-warning/10 border border-warning/20 rounded-md">
+                      <div className="flex items-start">
+                        <ExclamationIcon className="h-5 w-5 shrink-0 text-warning mr-2 mt-0.5" />
+                        <div className="min-w-0">
+                          <strong className="text-warning">CSV Structure Error</strong>
+                          <p className="text-warning mt-1 mb-0 break-words">{csvStructureError}</p>
+                          <p className="text-warning mt-2 mb-0">
+                            Please download our template and ensure your CSV follows the required format.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-info text-info-foreground flex items-center justify-center mr-3">
+                    3
+                  </div>
+                  <h3 className="text-lg font-medium">
+                    {parsedData.some((user) => user.status === "success" || user.status === "failed")
+                      ? "User Creation Results"
+                      : "Review and create users"}
+                  </h3>
+                </div>
+
+                {parseError && (
+                  <div className="ml-11 mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <div className="flex items-start">
+                      <TriangleAlert className="size-4 shrink-0 text-destructive mr-2 mt-1" />
+                      <div className="min-w-0">
+                        <p className="text-destructive font-medium break-words">{parseError}</p>
+                        {parsedData.some((user) => !user.isValid) && (
+                          <ul className="mt-2 list-disc list-inside text-destructive text-sm">
+                            <li>Check the table below for specific errors in each row</li>
+                            <li>
+                              Common issues include invalid email formats, missing required fields, or incorrect role
+                              values
+                            </li>
+                            <li>Fix these issues in your CSV file and upload again</li>
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="ml-11">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center">
+                      {parsedData.some((user) => user.status === "success" || user.status === "failed") ? (
+                        <div className="flex items-center">
+                          <p className="text-lg font-medium mr-3">Creation Summary</p>
+                          <p className="text-sm bg-success/15 text-success px-2 py-1 rounded-sm mr-2">
+                            {parsedData.filter((d) => d.status === "success").length} Successful
+                          </p>
+                          {parsedData.some((d) => d.status === "failed") && (
+                            <p className="text-sm bg-destructive/15 text-destructive px-2 py-1 rounded-sm">
+                              {parsedData.filter((d) => d.status === "failed").length} Failed
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <p className="text-lg font-medium mr-3">User Preview</p>
+                          <p className="text-sm bg-info/15 text-info px-2 py-1 rounded-sm">
+                            {parsedData.filter((d) => d.isValid).length} of {parsedData.length} users valid
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {!parsedData.some((user) => user.status === "success" || user.status === "failed") && (
+                      <div className="flex space-x-3">
+                        <Button variant="outline" onClick={resetParsedData}>
+                          Back
+                        </Button>
+                        <Button
+                          onClick={handleBulkCreate}
+                          disabled={parsedData.filter((d) => d.isValid).length === 0 || isProcessing}
+                        >
+                          {isProcessing ? "Creating..." : `Create ${parsedData.filter((d) => d.isValid).length} Users`}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {parsedData.some((user) => user.status === "success") && (
+                    <div className="mb-4 p-4 bg-info/10 border border-info/20 rounded-md">
+                      <div className="flex items-start">
+                        <div className="mr-3 mt-1">
+                          <CheckCircleIcon className="h-5 w-5 text-info" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-info">User creation complete</p>
+                          <p className="block text-sm text-info mt-1">
+                            <span className="font-medium">Next step:</span> Download the credentials file containing
+                            Virtual Keys and invitation links. Users will need these Virtual Keys to make LLM requests
+                            through LiteLLM.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="max-h-[300px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-20">Row</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Teams</TableHead>
+                          <TableHead>Budget</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {visibleRows.map((record) => (
+                          <TableRow key={record.rowNumber} className={!record.isValid ? "bg-destructive/10" : ""}>
+                            <TableCell>{record.rowNumber}</TableCell>
+                            <TableCell className="whitespace-normal break-words">{record.user_email}</TableCell>
+                            <TableCell className="whitespace-normal break-words">{record.user_role}</TableCell>
+                            <TableCell className="whitespace-normal break-words">{record.teams}</TableCell>
+                            <TableCell>{record.max_budget}</TableCell>
+                            <TableCell className="whitespace-normal break-words">{renderStatusCell(record)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {pageCount > 1 && (
+                    <div className="flex items-center justify-end gap-3 mt-2">
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage + 1} of {pageCount}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex(currentPage - 1)}
+                        disabled={currentPage === 0}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex(currentPage + 1)}
+                        disabled={currentPage >= pageCount - 1}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+
+                  {!parsedData.some((user) => user.status === "success" || user.status === "failed") && (
+                    <div className="flex justify-end mt-4">
+                      <Button variant="outline" onClick={resetParsedData} className="mr-3">
+                        Back
+                      </Button>
+                      <Button
+                        onClick={handleBulkCreate}
+                        disabled={parsedData.filter((d) => d.isValid).length === 0 || isProcessing}
+                      >
+                        {isProcessing ? "Creating..." : `Create ${parsedData.filter((d) => d.isValid).length} Users`}
+                      </Button>
+                    </div>
+                  )}
+
+                  {parsedData.some((user) => user.status === "success" || user.status === "failed") && (
+                    <div className="flex justify-end mt-4">
+                      <Button variant="outline" onClick={resetParsedData} className="mr-3">
+                        Start New Bulk Import
+                      </Button>
+                      <Button onClick={downloadResults}>
+                        <Download className="size-4" />
+                        Download User Credentials
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

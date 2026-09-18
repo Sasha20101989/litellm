@@ -20,7 +20,7 @@ import {
   SidebarMenuSub,
   SidebarSeparator,
   sidebarMenuButtonVariants,
-} from "@/components/ui/sidebar";
+} from "@/components/shared/Sidebar";
 import {
   Activity,
   BarChart3,
@@ -62,6 +62,7 @@ import {
   Workflow,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/cva.config";
 import { rolesWithCapability } from "../utils/capabilities";
@@ -74,18 +75,15 @@ import {
   rolesWithWriteAccess,
 } from "../utils/roles";
 import BetaBadge from "./BetaBadge";
-import NewBadge from "./common_components/NewBadge";
 import SidebarAccountMenu from "./SidebarAccountMenu/SidebarAccountMenu";
 import SidebarUsageCard from "./SidebarUsageCard";
-import { MIGRATED_PAGES, migratedHref, legacyPageHref } from "@/utils/migratedPages";
-import { useDashboardLanguage } from "@/i18n/I18nProvider";
-import { getSidebarTranslations } from "@/i18n/sidebar";
+import { routeSegmentForPathname, uiHref } from "@/utils/uiHref";
 
 const ICON = { strokeWidth: 1.75 } as const;
 
+const LOGO_CLASS_NAME = "h-7 w-auto max-w-[150px] object-contain group-data-[collapsed=true]/sidebar:w-7";
+
 interface SidebarProps {
-  setPage: (page: string) => void;
-  defaultSelectedKey: string;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   enabledPagesInternalUsers?: string[] | null;
@@ -99,8 +97,8 @@ interface SidebarProps {
 interface MenuItem {
   key: string;
   page: string;
-  label: string;
-  badge?: "beta" | "new" | "new-dot";
+  route?: string;
+  label: string | React.ReactNode;
   roles?: string[];
   children?: MenuItem[];
   icon?: React.ReactNode;
@@ -124,6 +122,7 @@ const menuGroups: MenuGroup[] = [
       {
         key: "llm-playground",
         page: "llm-playground",
+        route: "playground",
         label: "Playground",
         icon: <PlayCircle {...ICON} />,
         roles: rolesWithWriteAccess,
@@ -131,6 +130,7 @@ const menuGroups: MenuGroup[] = [
       {
         key: "models",
         page: "models",
+        route: "models-and-endpoints",
         label: "Models + Endpoints",
         icon: <Network {...ICON} />,
         roles: rolesAllowedToViewWriteScopedPages,
@@ -199,6 +199,7 @@ const menuGroups: MenuGroup[] = [
       {
         key: "new_usage",
         page: "new_usage",
+        route: "usage",
         icon: <BarChart3 {...ICON} />,
         roles: [...all_admin_roles, ...internalUserRoles],
         label: "Usage",
@@ -208,8 +209,11 @@ const menuGroups: MenuGroup[] = [
         page: "cost-optimization",
         icon: <PiggyBank {...ICON} />,
         roles: [...all_admin_roles, ...internalUserRoles],
-        label: "Cost Optimization",
-        badge: "beta",
+        label: (
+          <span className="flex items-center gap-2">
+            Cost Optimization <BetaBadge />
+          </span>
+        ),
       },
       { key: "logs", page: "logs", label: "Logs", icon: <Activity {...ICON} /> },
       {
@@ -228,8 +232,11 @@ const menuGroups: MenuGroup[] = [
       {
         key: "projects",
         page: "projects",
-        label: "Projects",
-        badge: "beta",
+        label: (
+          <span className="flex items-center gap-2">
+            Projects <BetaBadge />
+          </span>
+        ),
         icon: <Folder {...ICON} />,
         roles: all_admin_roles,
       },
@@ -254,7 +261,7 @@ const menuGroups: MenuGroup[] = [
   {
     groupLabel: "DEVELOPER TOOLS",
     items: [
-      { key: "api_ref", page: "api_ref", label: "API Reference", icon: <Code2 {...ICON} /> },
+      { key: "api_ref", page: "api_ref", route: "api-reference", label: "API Reference", icon: <Code2 {...ICON} /> },
       { key: "model-hub-table", page: "model-hub-table", label: "AI Hub", icon: <LayoutGrid {...ICON} /> },
       {
         key: "learning-resources",
@@ -300,6 +307,7 @@ const menuGroups: MenuGroup[] = [
           {
             key: "4",
             page: "usage",
+            route: "old-usage",
             label: "Old Usage",
             icon: <BarChart3 {...ICON} />,
             roles: rolesWithCapability("viewGlobalSpend"),
@@ -316,7 +324,6 @@ const menuGroups: MenuGroup[] = [
         key: "settings",
         page: "settings",
         label: "Settings",
-        badge: "new",
         icon: <SettingsIcon {...ICON} />,
         roles: all_admin_roles,
         children: [
@@ -338,7 +345,6 @@ const menuGroups: MenuGroup[] = [
             key: "admin-panel",
             page: "admin-panel",
             label: "Admin Settings",
-            badge: "new-dot",
             icon: <SettingsIcon {...ICON} />,
             roles: all_admin_roles,
           },
@@ -356,24 +362,30 @@ const menuGroups: MenuGroup[] = [
   },
 ];
 
-const findParentKey = (page: string): string | null => {
+const HOME_ROUTE = "api-keys";
+
+const routeOf = (item: MenuItem): string => item.route ?? item.page;
+
+const routeForPathname = (pathname: string): string => routeSegmentForPathname(pathname) || HOME_ROUTE;
+
+const findParentKey = (route: string): string | null => {
   for (const group of menuGroups) {
     for (const item of group.items) {
-      if (item.children?.some((c) => c.page === page || c.key === page)) return item.key;
+      if (item.children?.some((c) => routeOf(c) === route)) return item.key;
     }
   }
   return null;
 };
 
-const findMenuItemKey = (page: string): string => {
+const findMenuItemKey = (route: string): string => {
   for (const group of menuGroups) {
     for (const item of group.items) {
-      if (item.page === page) return item.key;
-      const child = item.children?.find((c) => c.page === page);
+      if (routeOf(item) === route) return item.key;
+      const child = item.children?.find((c) => routeOf(c) === route);
       if (child) return child.key;
     }
   }
-  return "api-keys";
+  return HOME_ROUTE;
 };
 
 const SECTION_DISPLAY: Record<string, string> = {
@@ -390,23 +402,23 @@ const prettify = (key: string): string =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
+const labelText = (item: MenuItem): string => (typeof item.label === "string" ? item.label : prettify(item.key));
+
 // Breadcrumb ("Section" / "Page") for the top bar, derived from the same nav config.
-export const getBreadcrumb = (page: string): { section: string | null; title: string } => {
+export const getBreadcrumb = (pathname: string): { section: string | null; title: string } => {
+  const route = routeForPathname(pathname);
   for (const group of menuGroups) {
     for (const item of group.items) {
       const section = SECTION_DISPLAY[group.groupLabel] ?? group.groupLabel;
-      if (item.page === page)
-        return { section, title: typeof item.label === "string" ? item.label : prettify(item.key) };
-      const child = item.children?.find((c) => c.page === page);
-      if (child) return { section, title: typeof child.label === "string" ? child.label : prettify(child.key) };
+      if (routeOf(item) === route) return { section, title: labelText(item) };
+      const child = item.children?.find((c) => routeOf(c) === route);
+      if (child) return { section, title: labelText(child) };
     }
   }
-  return { section: null, title: prettify(page) };
+  return { section: null, title: prettify(route) };
 };
 
 const Sidebar_: React.FC<SidebarProps> = ({
-  setPage,
-  defaultSelectedKey,
   collapsed = false,
   onToggleCollapsed,
   enabledPagesInternalUsers,
@@ -419,28 +431,28 @@ const Sidebar_: React.FC<SidebarProps> = ({
   const { userId, accessToken, userRole, isViewOnly } = useAuthorized();
   const isOrgAdmin = useIsOrgAdmin();
   const { data: teams } = useTeams();
-  const { logoUrl } = useTheme();
+  const { logoUrl, logoUrlDark } = useTheme();
+  const [erroredDarkLogo, setErroredDarkLogo] = useState<string | null>(null);
   const { data: healthData } = useHealthReadinessDetails(accessToken);
   const logout = useLogout(accessToken);
-  const { language } = useDashboardLanguage();
-  const sidebarText = getSidebarTranslations(language);
 
   const baseUrl = getProxyBaseUrl();
   const version = healthData?.litellm_version;
-  const selectedKey = findMenuItemKey(defaultSelectedKey);
+  const currentRoute = routeForPathname(usePathname());
+  const selectedKey = findMenuItemKey(currentRoute);
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
-    const parent = findParentKey(defaultSelectedKey);
+    const parent = findParentKey(currentRoute);
     return new Set(parent ? [parent] : []);
   });
 
   // Keep the active page's parent group expanded as the user navigates, using the
   // "adjust state during render" pattern rather than an effect (avoids a
   // setState-in-effect render cascade).
-  const [prevSelectedKey, setPrevSelectedKey] = useState(defaultSelectedKey);
-  if (defaultSelectedKey !== prevSelectedKey) {
-    setPrevSelectedKey(defaultSelectedKey);
-    const parent = findParentKey(defaultSelectedKey);
+  const [prevRoute, setPrevRoute] = useState(currentRoute);
+  if (currentRoute !== prevRoute) {
+    setPrevRoute(currentRoute);
+    const parent = findParentKey(currentRoute);
     if (parent && !openGroups.has(parent)) {
       setOpenGroups((prev) => new Set(prev).add(parent));
     }
@@ -509,35 +521,10 @@ const Sidebar_: React.FC<SidebarProps> = ({
     });
   };
 
-  const handleLeafClick = (e: React.MouseEvent, item: MenuItem) => {
-    if (item.external_url) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
-    e.preventDefault();
-    setPage(item.page);
-  };
-
-  const localizedItemLabel = (item: MenuItem): string =>
-    sidebarText.items[item.key as keyof typeof sidebarText.items] ?? item.label;
-
-  const renderItemLabel = (item: MenuItem) => (
-    <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-      <span className="truncate group-data-[collapsed=true]/sidebar:hidden">{localizedItemLabel(item)}</span>
-      {item.badge === "beta" && <BetaBadge label={sidebarText.badges.beta} />}
-      {item.badge === "new" && <NewBadge label={sidebarText.badges.new} />}
-      {item.badge === "new-dot" && (
-        <NewBadge dot label={sidebarText.badges.new}>
-          <span />
-        </NewBadge>
-      )}
-    </span>
-  );
-
   const renderLeaf = (item: MenuItem, isChild: boolean) => {
     const active = selectedKey === item.key;
     const size = isChild ? "sub" : "default";
-    const label = (
-      <span className="flex min-w-0 flex-1 group-data-[collapsed=true]/sidebar:hidden">{renderItemLabel(item)}</span>
-    );
+    const label = <span className="flex-1 truncate group-data-[collapsed=true]/sidebar:hidden">{item.label}</span>;
 
     if (item.external_url) {
       return (
@@ -546,7 +533,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
           href={item.external_url}
           target="_blank"
           rel="noopener noreferrer"
-          title={collapsed ? localizedItemLabel(item) : undefined}
+          title={collapsed ? labelText(item) : undefined}
           data-active={active || undefined}
           className={cn(sidebarMenuButtonVariants({ isActive: active, size }))}
         >
@@ -557,19 +544,17 @@ const Sidebar_: React.FC<SidebarProps> = ({
       );
     }
 
-    const href = MIGRATED_PAGES[item.page] ? migratedHref(MIGRATED_PAGES[item.page]) : legacyPageHref(item.page);
     return (
-      <a
+      <Link
         key={item.key}
-        href={href}
-        onClick={(e) => handleLeafClick(e, item)}
-        title={collapsed ? localizedItemLabel(item) : undefined}
+        href={uiHref(routeOf(item))}
+        title={collapsed ? labelText(item) : undefined}
         data-active={active || undefined}
         className={cn(sidebarMenuButtonVariants({ isActive: active, size }))}
       >
         {item.icon}
         {label}
-      </a>
+      </Link>
     );
   };
 
@@ -585,13 +570,12 @@ const Sidebar_: React.FC<SidebarProps> = ({
       <SidebarMenuItem key={item.key}>
         <SidebarMenuButton
           isActive={active}
+          aria-expanded={open}
           onClick={() => toggleGroup(item.key)}
-          title={collapsed ? localizedItemLabel(item) : undefined}
+          title={collapsed ? labelText(item) : undefined}
         >
           {item.icon}
-          <span className="flex min-w-0 flex-1 group-data-[collapsed=true]/sidebar:hidden">
-            {renderItemLabel(item)}
-          </span>
+          <span className="flex-1 truncate group-data-[collapsed=true]/sidebar:hidden">{item.label}</span>
           <ChevronRight
             className={cn(
               "size-4 shrink-0 transition-transform group-data-[collapsed=true]/sidebar:hidden",
@@ -611,17 +595,22 @@ const Sidebar_: React.FC<SidebarProps> = ({
   };
 
   const logoSrc = logoUrl || `${baseUrl}/get_image`;
+  const reachableDarkLogo = logoUrlDark === erroredDarkLogo ? null : logoUrlDark;
+  const darkLogoSrc = reachableDarkLogo || logoUrl || `${baseUrl}/get_image?theme=dark`;
 
   return (
     <Sidebar collapsed={collapsed}>
       <SidebarHeader className="h-14 border-b border-border group-data-[collapsed=true]/sidebar:h-auto">
         <div className="flex items-center justify-between gap-2 group-data-[collapsed=true]/sidebar:flex-col">
           <div className="flex min-w-0 items-center gap-2">
-            <Link href={migratedHref("")} className="flex min-w-0 items-center" aria-label={sidebarText.controls.home}>
+            <Link href={uiHref("")} className="flex min-w-0 items-center" aria-label="LiteLLM home">
+              <img src={logoSrc} alt="LiteLLM" className={cn(LOGO_CLASS_NAME, "dark:hidden")} />
               <img
-                src={logoSrc}
-                alt="Nexoplane"
-                className="h-7 w-auto max-w-[150px] object-contain group-data-[collapsed=true]/sidebar:w-7"
+                src={darkLogoSrc}
+                alt=""
+                aria-hidden
+                onError={() => setErroredDarkLogo(logoUrlDark)}
+                className={cn(LOGO_CLASS_NAME, "hidden dark:block")}
               />
             </Link>
             {version && (
@@ -639,7 +628,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
               variant="ghost"
               size="icon-sm"
               onClick={onToggleCollapsed}
-              aria-label={collapsed ? sidebarText.controls.expand : sidebarText.controls.collapse}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               className="flex-none text-muted-foreground"
             >
               {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
@@ -653,9 +642,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
           {visibleGroups.map((group, gi) => (
             <SidebarGroup key={group.groupLabel}>
               {gi > 0 && <SidebarSeparator className="hidden group-data-[collapsed=true]/sidebar:block" />}
-              <SidebarGroupLabel>
-                {sidebarText.groups[group.groupLabel as keyof typeof sidebarText.groups] ?? group.groupLabel}
-              </SidebarGroupLabel>
+              <SidebarGroupLabel>{group.groupLabel}</SidebarGroupLabel>
               <SidebarMenu>{group.items.map((item) => renderItem(item))}</SidebarMenu>
             </SidebarGroup>
           ))}

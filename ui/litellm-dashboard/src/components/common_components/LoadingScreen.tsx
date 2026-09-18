@@ -1,21 +1,14 @@
 import { cx } from "@/lib/cva.config";
-import { LANGUAGE_STORAGE_KEY, resolveLanguage } from "@/i18n/language";
-import { getLocalStorageItem } from "@/utils/localStorageUtils";
 import { UiLoadingSpinner } from "../ui/ui-loading-spinner";
 
 export default function LoadingScreen() {
-  const browserLanguage = typeof navigator === "undefined" ? "en" : navigator.language;
-  const language = resolveLanguage(getLocalStorageItem(LANGUAGE_STORAGE_KEY), browserLanguage);
-
   return (
     <div className={cx("h-screen", "flex items-center justify-center gap-4")}>
-      <div className="text-lg font-medium py-2 pr-4 border-r border-r-gray-200">Nexoplane</div>
+      <div className="text-lg font-medium py-2 pr-4 border-r border-r-gray-200">🚅 LiteLLM</div>
 
       <div className="flex items-center justify-center gap-2">
         <UiLoadingSpinner className="size-4" />
-        <span className="text-gray-600 text-sm" suppressHydrationWarning>
-          {language === "ru" ? "Загрузка…" : "Loading..."}
-        </span>
+        <span className="text-muted-foreground text-sm">Loading...</span>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import AddAgentForm from "./add_agent_form";
 import { isAdminRole } from "@/utils/roles";
 import AgentInfoView from "./agent_info";
 import AgentsTable from "./AgentsTable";
-import NotificationsManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import { Agent } from "@/components/agents/types";
 import { Team } from "@/components/key_team_helpers/key_list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shared/Alert";
@@ -19,7 +19,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "react-i18next";
 
 interface AgentsPanelProps {
   accessToken: string | null;
@@ -32,7 +31,6 @@ interface AgentsResponse {
 }
 
 const AgentsPanel: React.FC<AgentsPanelProps> = ({ accessToken, userRole, teams }) => {
-  const { t } = useTranslation("gateway");
   const [agentsList, setAgentsList] = useState<Agent[]>([]);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,11 +120,11 @@ const AgentsPanel: React.FC<AgentsPanelProps> = ({ accessToken, userRole, teams 
     setIsDeleting(true);
     try {
       await deleteAgentCall(accessToken, agentToDelete.id);
-      NotificationsManager.success(t("agents.deleted", { name: agentToDelete.name }));
+      toast.success(`Agent "${agentToDelete.name}" deleted successfully`);
       await refetchAgents(healthCheckEnabled);
     } catch (error) {
       console.error("Error deleting agent:", error);
-      NotificationsManager.fromBackend(t("agents.deleteFailed"));
+      toast.fromError("Failed to delete agent");
     } finally {
       setIsDeleting(false);
       setAgentToDelete(null);
@@ -140,18 +138,24 @@ const AgentsPanel: React.FC<AgentsPanelProps> = ({ accessToken, userRole, teams 
   return (
     <div className="w-full mx-auto flex-auto overflow-y-auto m-8 p-2">
       <div className="flex flex-col gap-2 mb-4">
-        <h1 className="text-2xl font-bold">{t("agents.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("agents.description")}</p>
+        <h1 className="text-2xl font-bold">Agents</h1>
+        <p className="text-sm text-muted-foreground">
+          List of A2A-spec agents that are available to be used in your organization. Go to AI Hub, to make agents
+          public.
+        </p>
         <Alert className="mb-3">
           <Info />
-          <AlertTitle>{t("agents.whyKeys")}</AlertTitle>
-          <AlertDescription>{t("agents.whyKeysDescription")}</AlertDescription>
+          <AlertTitle>Why do agents need keys?</AlertTitle>
+          <AlertDescription>
+            Keys scope access to an agent and allow it to call MCP tools. Assign a key when creating an agent or from
+            the Virtual Keys page.
+          </AlertDescription>
         </Alert>
         {isAdmin && (
           <div className="mt-2 flex items-center gap-4">
             <Button onClick={handleAddAgent} disabled={!accessToken}>
               <Plus />
-              {t("agents.add")}
+              Add New Agent
             </Button>
           </div>
         )}
@@ -194,15 +198,15 @@ const AgentsPanel: React.FC<AgentsPanelProps> = ({ accessToken, userRole, teams 
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{t("agents.deleteTitle")}</AlertDialogTitle>
+              <AlertDialogTitle>Delete Agent</AlertDialogTitle>
               <AlertDialogDescription>
-                {t("agents.deleteConfirmation", { name: agentToDelete.name })}
+                Are you sure you want to delete agent: {agentToDelete.name}? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{t("agents.cancel")}</AlertDialogCancel>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
               <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
-                {t("agents.delete")}
+                Delete
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

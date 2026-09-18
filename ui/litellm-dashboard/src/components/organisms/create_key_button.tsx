@@ -7,33 +7,54 @@ import { useUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUISettings"
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import useCan from "@/app/(dashboard)/hooks/useCan";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
-import { InfoCircleOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { Accordion, AccordionBody, AccordionHeader, Button, Col, Grid, Text, TextInput, Title } from "@tremor/react";
-import { Button as Button2, Form, Input, Modal, Radio, Select, Switch, Tag, Tooltip, Typography } from "antd";
-import { useDebouncedCallback } from "@tanstack/react-pacer/debouncer";
-import { DEBOUNCE_WAIT_MS } from "@/utils/debounceConstants";
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { SimpleTooltip } from "@/components/ui/tooltip";
+import { MultiSelect, type MultiSelectOption } from "@/components/shared/MultiSelect";
+import { PaginatedSearchSelect } from "@/components/shared/PaginatedSearchSelect";
+import { SearchSelect, type SearchSelectOption } from "@/components/shared/SearchSelect";
+import { TagsInput } from "@/app/(dashboard)/guardrails/_components/content_filter/TagsInput";
+import { ChevronDown, Info } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { type Control, useForm, useWatch, type UseFormSetValue } from "react-hook-form";
 import { rolesWithWriteAccess } from "../../utils/roles";
 import AgentSelector from "../agent_management/AgentSelector";
-import { mapDisplayToInternalNames } from "../callback_info_helpers";
+import SkillSelector from "../skills/SkillSelector";
 import AccessGroupSelector from "../common_components/AccessGroupSelector";
 import BudgetDurationDropdown from "../common_components/budget_duration_dropdown";
 import SchemaFormFields from "../common_components/check_openapi_schema";
 import KeyLifecycleSettings from "../common_components/KeyLifecycleSettings";
 import ModelAliasManager from "../common_components/ModelAliasManager";
+import {
+  MountedFormField,
+  MountedFormProvider,
+  projectMountedValues,
+  useMountRegistry,
+  type MountedFormValues,
+} from "../common_components/MountedFormField";
 import PassThroughRoutesSelector from "../common_components/PassThroughRoutesSelector";
 import PremiumLoggingSettings from "../common_components/PremiumLoggingSettings";
 import RateLimitTypeFormItem from "../common_components/RateLimitTypeFormItem";
-import RouterSettingsAccordion, { RouterSettingsAccordionValue } from "../common_components/RouterSettingsAccordion";
+import RouterSettingsAccordion, {
+  RouterSettingsAccordionRef,
+  RouterSettingsAccordionValue,
+} from "../common_components/RouterSettingsAccordion";
 import TeamDropdown from "../common_components/team_dropdown";
 import OrganizationDropdown from "../common_components/OrganizationDropdown";
 import ProjectDropdown from "../common_components/ProjectDropdown";
 import { CreateUserButton } from "../CreateUserButton";
 import { BudgetFallbacksEditor } from "../key_team_helpers/BudgetFallbacksEditor";
 import { BudgetWindowEntry, BudgetWindowsEditor } from "../key_team_helpers/BudgetWindowsEditor";
-import { TagRateLimitEditor, TagRateLimitEntry, tagRowsToLimits } from "../key_team_helpers/TagRateLimitEditor";
+import { ModelMaxBudget, ModelMaxBudgetEditor } from "../key_team_helpers/ModelMaxBudgetEditor";
+import { TagRateLimitEditor, TagRateLimitEntry } from "../key_team_helpers/TagRateLimitEditor";
 import {
   excludeProxyWideSentinel,
   getModelDisplayName,
@@ -41,9 +62,8 @@ import {
 } from "../key_team_helpers/fetch_available_models_team_key";
 import { Team } from "../key_team_helpers/key_list";
 import MCPServerSelector from "../mcp_server_management/MCPServerSelector";
-import { NO_MCP_SERVERS_SENTINEL } from "../mcp_tools/constants";
 import MCPToolPermissions from "../mcp_server_management/MCPToolPermissions";
-import NotificationsManager from "../molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import {
   getAgentsList,
   getGuardrailsList,
@@ -59,9 +79,64 @@ import {
 import CreatedKeyDisplay from "../shared/CreatedKeyDisplay";
 import NumericalInput from "../shared/numerical_input";
 import VectorStoreSelector from "../vector_store_management/VectorStoreSelector";
+import { buildKeyCreatePayload, type KeyCreateInput } from "./createKeyPayload";
 import { simplifyKeyGenerateError } from "./utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const { Option } = Select;
+const KEY_TYPE_OPTIONS = [
+  { value: "llm_api", label: "AI APIs", hint: "Can call only AI API routes (chat/completions, embeddings, etc.)" },
+  { value: "management", label: "Management", hint: "Can call only management routes (user/team/key management)" },
+  { value: "default", label: "Full Access", hint: "Can call all routes (AI APIs, Management, and read-only)" },
+];
+
+const KEY_OWNER_LABEL_CLASS = "flex items-center gap-2 text-sm font-normal text-foreground";
+
+const SECTION_HEADER_CLASS = "group/section flex w-full items-center justify-between px-4 py-3 text-left";
+const SECTION_CHEVRON_CLASS =
+  "size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180";
+
+type FieldWrite = (value: unknown) => void;
+
+type McpSelectorValue = { servers: string[]; accessGroups: string[]; toolsets?: string[] };
+
+type AgentSelectorValue = { agents: string[]; accessGroups: string[] };
+
+const isBlank = (value: unknown): boolean => value === undefined || value === null || value === "";
+
+const requiredRule = (required: boolean, message: string) => ({
+  validate: (value: unknown) => (required && isBlank(value) ? message : true),
+});
+
+const ceilingRule = (ceiling: number | null | undefined, message: (limit: number) => string) => ({
+  validate: (value: unknown) =>
+    value && ceiling !== null && ceiling !== undefined && (value as number) > ceiling ? message(ceiling) : true,
+});
+
+interface McpToolPermissionsFieldProps {
+  readonly accessToken: string;
+  readonly control: Control<MountedFormValues>;
+  readonly setValue: UseFormSetValue<MountedFormValues>;
+}
+
+const McpToolPermissionsField: React.FC<McpToolPermissionsFieldProps> = ({ accessToken, control, setValue }) => {
+  const selection = useWatch({ control, name: "allowed_mcp_servers_and_groups" }) as
+    | { servers?: string[]; accessGroups?: string[]; toolsets?: string[] }
+    | undefined;
+  const toolPermissions = useWatch({ control, name: "mcp_tool_permissions" }) as Record<string, string[]> | undefined;
+
+  return (
+    <div className="mt-6">
+      <MCPToolPermissions
+        accessToken={accessToken}
+        selectedServers={selection?.servers || []}
+        selectedAccessGroups={selection?.accessGroups || []}
+        selectedToolsets={selection?.toolsets || []}
+        toolPermissions={toolPermissions || {}}
+        onChange={(toolPerms) => setValue("mcp_tool_permissions", toolPerms)}
+      />
+    </div>
+  );
+};
 
 /**
  * Interface for pre-filling the create key form from URL parameters
@@ -81,19 +156,12 @@ interface CreateKeyProps {
   addKey: (data: any) => void;
   autoOpenCreate?: boolean;
   prefillData?: CreateKeyPrefillData;
-  buttonLabel?: string;
 }
 
 interface User {
   user_id: string;
   user_email: string;
   role?: string;
-}
-
-interface UserOption {
-  label: string;
-  value: string;
-  user: User;
 }
 
 export const fetchTeamModels = async (
@@ -147,16 +215,7 @@ export const fetchUserModels = async (
  * Please contribute to the new refactor.
  * ─────────────────────────────────────────────────────────────────────────
  */
-const CreateKey: React.FC<CreateKeyProps> = ({
-  team,
-  teams,
-  data,
-  addKey,
-  autoOpenCreate,
-  prefillData,
-  buttonLabel,
-}) => {
-  const { t } = useTranslation("gateway");
+const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOpenCreate, prefillData }) => {
   const { accessToken, userId: userID, userRole, premiumUser } = useAuthorized();
   const canEditGuardrails = premiumUser || (userRole != null && rolesWithWriteAccess.includes(userRole));
   const canViewPolicies = useCan("viewPolicies");
@@ -169,7 +228,21 @@ const CreateKey: React.FC<CreateKeyProps> = ({
   const disableCustomApiKeys = Boolean(uiSettingsData?.values?.disable_custom_api_keys);
   const tagOptions = tagsData ? Object.values(tagsData).map((tag) => ({ value: tag.name, label: tag.name })) : [];
   const queryClient = useQueryClient();
-  const [form] = Form.useForm();
+  const [formDefaults] = useState<MountedFormValues>(() => ({
+    team_id: team ? team.team_id : null,
+    key_type: "llm_api",
+    tpm_limit_type: null,
+    rpm_limit_type: null,
+    mcp_tool_permissions: {},
+    duration: "",
+  }));
+  const form = useForm<MountedFormValues>({
+    mode: "onChange",
+    shouldUnregister: false,
+    defaultValues: formDefaults,
+  });
+  const registry = useMountRegistry();
+  const mountedForm = useMemo(() => ({ control: form.control, registry }), [form.control, registry]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [apiKey, setApiKey] = useState(null);
   const [userModels, setUserModels] = useState<string[]>([]);
@@ -186,47 +259,30 @@ const CreateKey: React.FC<CreateKeyProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isCreateUserModalVisible, setIsCreateUserModalVisible] = useState(false);
   const [possibleUIRoles, setPossibleUIRoles] = useState<Record<string, Record<string, string>>>({});
-  const [userOptions, setUserOptions] = useState<UserOption[]>([]);
+  const [userOptions, setUserOptions] = useState<SearchSelectOption[]>([]);
   const [userSearchLoading, setUserSearchLoading] = useState<boolean>(false);
+  const latestUserSearchRef = useRef(0);
   const [disabledCallbacks, setDisabledCallbacks] = useState<string[]>([]);
   const [keyType, setKeyType] = useState<string>("llm_api");
   const [modelAliases, setModelAliases] = useState<{ [key: string]: string }>({});
   const [autoRotationEnabled, setAutoRotationEnabled] = useState<boolean>(false);
   const [rotationInterval, setRotationInterval] = useState<string>("30d");
   const [routerSettings, setRouterSettings] = useState<RouterSettingsAccordionValue | null>(null);
+  const routerSettingsRef = useRef<RouterSettingsAccordionRef>(null);
   const [budgetLimits, setBudgetLimits] = useState<BudgetWindowEntry[]>([]);
+  const [modelMaxBudget, setModelMaxBudget] = useState<ModelMaxBudget>({});
   const [tagRateLimits, setTagRateLimits] = useState<TagRateLimitEntry[]>([]);
   const [budgetFallbacks, setBudgetFallbacks] = useState<Record<string, string[]>>({});
   const [budgetFallbacksKey, setBudgetFallbacksKey] = useState<number>(0);
   const [routerSettingsKey, setRouterSettingsKey] = useState<number>(0);
   const [agentsList, setAgentsList] = useState<{ agent_id: string; agent_name: string }[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const selectedModels: string[] = Form.useWatch("models", form) ?? [];
-  const handleOk = () => {
-    setIsModalVisible(false);
-    form.resetFields();
-    setLoggingSettings([]);
-    setDisabledCallbacks([]);
-    setKeyType("llm_api");
-    setModelAliases({});
-    setAutoRotationEnabled(false);
-    setRotationInterval("30d");
-    setRouterSettings(null);
-    setRouterSettingsKey((prev) => prev + 1);
-    setSelectedAgentId(null);
-    setSelectedOrganizationId(null);
-    setSelectedProjectId(null);
-    setBudgetLimits([]);
-    setTagRateLimits([]);
-    setBudgetFallbacks({});
-    setBudgetFallbacksKey((k) => k + 1);
-  };
-
+  const selectedModels: string[] = (useWatch({ control: form.control, name: "models" }) as string[] | undefined) ?? [];
   const handleCancel = () => {
     setIsModalVisible(false);
     setApiKey(null);
     setSelectedCreateKeyTeam(null);
-    form.resetFields();
+    form.reset(formDefaults);
     setLoggingSettings([]);
     setDisabledCallbacks([]);
     setKeyType("llm_api");
@@ -282,7 +338,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({
     const fetchPrompts = async () => {
       try {
         const response = await getPromptsList(accessToken);
-        setPromptsList(response.prompts.map((prompt) => prompt.prompt_id));
+        setPromptsList(Array.from(new Set(response.prompts.map((prompt) => prompt.prompt_id))));
       } catch (error) {
         console.error("Failed to fetch prompts:", error);
       }
@@ -341,14 +397,14 @@ const CreateKey: React.FC<CreateKeyProps> = ({
           const selectedTeam = teams?.find((t) => t.team_id === prefillData.team_id) || null;
           if (selectedTeam) {
             setSelectedCreateKeyTeam(selectedTeam);
-            form.setFieldsValue({ team_id: prefillData.team_id });
+            form.setValue("team_id", prefillData.team_id);
           }
           // Silently ignore invalid team_id - don't prefill with a team user doesn't have access to
         }
 
         // Set key alias
         if (prefillData.key_alias) {
-          form.setFieldsValue({ key_alias: prefillData.key_alias });
+          form.setValue("key_alias", prefillData.key_alias);
         }
 
         // Defer model selection until we load the allowed model list.
@@ -359,7 +415,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({
         // Set key type
         if (prefillData.key_type) {
           setKeyType(prefillData.key_type);
-          form.setFieldsValue({ key_type: prefillData.key_type });
+          form.setValue("key_type", prefillData.key_type);
         }
       }
     }
@@ -369,194 +425,45 @@ const CreateKey: React.FC<CreateKeyProps> = ({
   const isTeamSelectionRequired = modelsToPick.includes("no-default-models");
   const isFormDisabled = isTeamSelectionRequired && !selectedCreateKeyTeam;
 
-  const handleCreate = async (formValues: Record<string, any>) => {
+  const handleCreate = async (formValues: MountedFormValues) => {
     try {
-      const newKeyAlias = formValues?.key_alias ?? "";
-      const newKeyTeamId = formValues?.team_id ?? null;
-
-      const existingKeyAliases = data?.filter((k) => k.team_id === newKeyTeamId).map((k) => k.key_alias) ?? [];
-
-      if (existingKeyAliases.includes(newKeyAlias)) {
-        throw new Error(t("virtualKeys.createKey.aliasExists", { alias: newKeyAlias, teamId: newKeyTeamId }));
+      const input: KeyCreateInput = {
+        formValues,
+        existingKeys: data,
+        keyOwner,
+        userID,
+        selectedAgentId,
+        loggingSettings,
+        disabledCallbacks,
+        autoRotationEnabled,
+        rotationInterval,
+        modelAliases,
+        routerSettings: routerSettingsRef.current?.getValue() ?? routerSettings,
+        budgetLimits,
+        modelMaxBudget,
+        tagRateLimits,
+        budgetFallbacks,
+      };
+      const built = buildKeyCreatePayload(input);
+      if (built.kind === "duplicate_alias") {
+        throw new Error(
+          `Key alias ${built.alias} already exists for team with ID ${built.teamId}, please provide another key alias`,
+        );
       }
 
-      NotificationsManager.info(t("virtualKeys.createKey.sendingRequest"));
+      toast.info("Making API Call");
       setIsModalVisible(true);
 
-      if (keyOwner === "you") {
-        formValues.user_id = userID;
-      } else if (keyOwner === "agent") {
-        if (!selectedAgentId) {
-          NotificationsManager.fromBackend(t("virtualKeys.createKey.selectAgentError"));
-          return;
-        }
-        formValues.agent_id = selectedAgentId;
+      if (built.kind === "agent_not_selected") {
+        toast.fromError("Please select an agent");
+        return;
       }
+      const { payload, endpoint } = built;
 
-      // Handle metadata for all key types
-      let metadata: Record<string, any> = {};
-      try {
-        metadata = JSON.parse(formValues.metadata || "{}");
-      } catch (error) {
-        console.error("Error parsing metadata:", error);
-      }
-
-      // If it's a service account, add the service_account_id to the metadata
-      if (keyOwner === "service_account") {
-        metadata["service_account_id"] = formValues.key_alias;
-      }
-
-      // Add logging settings to the metadata
-      if (loggingSettings.length > 0) {
-        metadata = {
-          ...metadata,
-          logging: loggingSettings.filter((config) => config.callback_name),
-        };
-      }
-
-      // Add disabled callbacks to the metadata
-      if (disabledCallbacks.length > 0) {
-        // Map display names to internal callback values
-        const mappedDisabledCallbacks = mapDisplayToInternalNames(disabledCallbacks);
-        metadata = {
-          ...metadata,
-          litellm_disabled_callbacks: mappedDisabledCallbacks,
-        };
-      }
-
-      // Add auto-rotation settings as top-level fields
-      if (autoRotationEnabled) {
-        formValues.auto_rotate = true;
-        formValues.rotation_interval = rotationInterval;
-      }
-
-      // Handle duration field for key expiry - convert empty string to null
-      if (!formValues.duration || formValues.duration.trim() === "") {
-        formValues.duration = null;
-      }
-
-      // Update the formValues with the final metadata
-      formValues.metadata = JSON.stringify(metadata);
-
-      // disable_global_guardrails is premium-gated server-side; only send it when enabled
-      // so non-premium key creation isn't blocked by that gate.
-      if (!formValues.disable_global_guardrails) {
-        delete formValues.disable_global_guardrails;
-      }
-
-      // Transform allowed_vector_store_ids and allowed_mcp_servers_and_groups into object_permission format
-      if (formValues.allowed_vector_store_ids && formValues.allowed_vector_store_ids.length > 0) {
-        formValues.object_permission = {
-          vector_stores: formValues.allowed_vector_store_ids,
-        };
-        // Remove the original field as it's now part of object_permission
-        delete formValues.allowed_vector_store_ids;
-      }
-
-      // Transform allowed_mcp_servers_and_groups into object_permission format
-      if (
-        formValues.allowed_mcp_servers_and_groups &&
-        (formValues.allowed_mcp_servers_and_groups.servers?.length > 0 ||
-          formValues.allowed_mcp_servers_and_groups.accessGroups?.length > 0 ||
-          formValues.allowed_mcp_servers_and_groups.toolsets?.length > 0)
-      ) {
-        if (!formValues.object_permission) {
-          formValues.object_permission = {};
-        }
-        const { servers, accessGroups, toolsets } = formValues.allowed_mcp_servers_and_groups;
-        if (servers && servers.length > 0) {
-          formValues.object_permission.mcp_servers = servers;
-        }
-        if (accessGroups && accessGroups.length > 0) {
-          formValues.object_permission.mcp_access_groups = accessGroups;
-        }
-        if (toolsets && toolsets.length > 0) {
-          formValues.object_permission.mcp_toolsets = toolsets;
-        }
-        // Remove the original field as it's now part of object_permission
-        delete formValues.allowed_mcp_servers_and_groups;
-      }
-
-      // Add MCP tool permissions to object_permission
-      const mcpToolPermissions = formValues.mcp_tool_permissions || {};
-      if (Object.keys(mcpToolPermissions).length > 0) {
-        if (!formValues.object_permission) {
-          formValues.object_permission = {};
-        }
-        formValues.object_permission.mcp_tool_permissions = mcpToolPermissions;
-      }
-      delete formValues.mcp_tool_permissions;
-
-      // Transform allowed_mcp_access_groups into object_permission format
-      if (formValues.allowed_mcp_access_groups && formValues.allowed_mcp_access_groups.length > 0) {
-        if (!formValues.object_permission) {
-          formValues.object_permission = {};
-        }
-        formValues.object_permission.mcp_access_groups = formValues.allowed_mcp_access_groups;
-        // Remove the original field as it's now part of object_permission
-        delete formValues.allowed_mcp_access_groups;
-      }
-
-      // Transform allowed_agents_and_groups into object_permission format
-      if (
-        formValues.allowed_agents_and_groups &&
-        (formValues.allowed_agents_and_groups.agents?.length > 0 ||
-          formValues.allowed_agents_and_groups.accessGroups?.length > 0)
-      ) {
-        if (!formValues.object_permission) {
-          formValues.object_permission = {};
-        }
-        const { agents, accessGroups } = formValues.allowed_agents_and_groups;
-        if (agents && agents.length > 0) {
-          formValues.object_permission.agents = agents;
-        }
-        if (accessGroups && accessGroups.length > 0) {
-          formValues.object_permission.agent_access_groups = accessGroups;
-        }
-        // Remove the original field as it's now part of object_permission
-        delete formValues.allowed_agents_and_groups;
-      }
-
-      // Add model_aliases if any are defined
-      if (Object.keys(modelAliases).length > 0) {
-        formValues.aliases = JSON.stringify(modelAliases);
-      }
-
-      // Add router_settings if any are defined
-      if (routerSettings?.router_settings) {
-        // Only include router_settings if it has at least one non-null value
-        const hasValues = Object.values(routerSettings.router_settings).some(
-          (value) => value !== null && value !== undefined && value !== "",
-        );
-        if (hasValues) {
-          formValues.router_settings = routerSettings.router_settings;
-        }
-      }
-
-      // Add multi-window budget limits (filter out incomplete entries)
-      const validWindows = budgetLimits.filter(
-        (w) => w.budget_duration && w.max_budget !== null && w.max_budget !== undefined,
-      );
-      if (validWindows.length > 0) {
-        formValues.budget_limits = validWindows;
-      }
-
-      // Add per-tag rate limits (only when at least one row is configured)
-      const { tag_rpm_limit } = tagRowsToLimits(tagRateLimits);
-      if (Object.keys(tag_rpm_limit).length > 0) {
-        formValues.tag_rpm_limit = tag_rpm_limit;
-      }
-
-      if (Object.keys(budgetFallbacks).length > 0) {
-        formValues.budget_fallbacks = budgetFallbacks;
-      }
-
-      let response;
-      if (keyOwner === "service_account") {
-        response = await keyCreateServiceAccountCall(accessToken, formValues);
-      } else {
-        response = await keyCreateCall(accessToken, userID, formValues);
-      }
+      const response =
+        endpoint === "service_account"
+          ? await keyCreateServiceAccountCall(accessToken, payload)
+          : await keyCreateCall(accessToken, userID, payload);
 
       // Add the data to the state in the parent component
       // Also directly update the keys list in VirtualKeysTable without an API call
@@ -567,8 +474,8 @@ const CreateKey: React.FC<CreateKeyProps> = ({
       queryClient.invalidateQueries({ queryKey: keyKeys.lists() });
 
       setApiKey(response["key"]);
-      NotificationsManager.success(t("virtualKeys.createKey.createdSuccess"));
-      form.resetFields();
+      toast.success("Virtual Key Created");
+      form.reset(formDefaults);
       setBudgetLimits([]);
       setTagRateLimits([]);
       setBudgetFallbacks({});
@@ -576,9 +483,12 @@ const CreateKey: React.FC<CreateKeyProps> = ({
       localStorage.removeItem("userData" + userID);
     } catch (error) {
       const simplifiedError = simplifyKeyGenerateError(error);
-      NotificationsManager.fromBackend(simplifiedError);
+      toast.fromError(simplifiedError);
     }
   };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) =>
+    void form.handleSubmit(() => handleCreate(projectMountedValues(registry, form.getValues)))(event);
 
   // Fetch available models when team or auth changes.
   // Note: Model prefill from URL params is handled by the useEffect below, which
@@ -589,7 +499,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({
       const project = projects?.find((p) => p.project_id === selectedProjectId);
       const projectModels = project?.models ?? [];
       setModelsToPick(projectModels);
-      form.setFieldValue("models", []);
+      form.setValue("models", []);
       return;
     }
     if (userID && userRole && accessToken) {
@@ -602,10 +512,10 @@ const CreateKey: React.FC<CreateKeyProps> = ({
     }
     // Only clear models if we don't have pending prefill models
     if (!pendingPrefillModels) {
-      form.setFieldValue("models", []);
+      form.setValue("models", []);
     }
     // Clear MCP server selection when team changes (available servers may differ)
-    form.setFieldValue("allowed_mcp_servers_and_groups", { servers: [], accessGroups: [] });
+    form.setValue("allowed_mcp_servers_and_groups", { servers: [], accessGroups: [] });
   }, [selectedCreateKeyTeam, selectedProjectId, accessToken, userID, userRole, form]);
 
   // Apply deferred model prefill once the available model list arrives.
@@ -620,7 +530,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({
 
     const validModels = pendingPrefillModels.filter((model) => modelsToPick.includes(model));
     if (validModels.length > 0) {
-      form.setFieldsValue({ models: validModels });
+      form.setValue("models", validModels);
     }
     setPendingPrefillModels(null);
   }, [pendingPrefillModels, modelsToPick, form]);
@@ -635,19 +545,24 @@ const CreateKey: React.FC<CreateKeyProps> = ({
     const projectTeam = teams.find((t) => t.team_id === project.team_id) || null;
     if (projectTeam) {
       setSelectedCreateKeyTeam(projectTeam);
-      form.setFieldValue("team_id", projectTeam.team_id);
+      form.setValue("team_id", projectTeam.team_id);
     }
   }, [teams, selectedProjectId, projects]);
 
   // Add a callback function to handle user creation
   const handleUserCreated = (userId: string) => {
-    form.setFieldsValue({ user_id: userId });
+    form.setValue("user_id", userId);
     setIsCreateUserModalVisible(false);
   };
 
   const fetchUsers = async (searchText: string): Promise<void> => {
+    const searchId = latestUserSearchRef.current + 1;
+    latestUserSearchRef.current = searchId;
+    const isLatestSearch = (): boolean => searchId === latestUserSearchRef.current;
+
     if (!searchText) {
       setUserOptions([]);
+      setUserSearchLoading(false);
       return;
     }
 
@@ -659,1359 +574,1270 @@ const CreateKey: React.FC<CreateKeyProps> = ({
         return;
       }
       const response = await userFilterUICall(accessToken, params);
+      if (!isLatestSearch()) return;
 
       const data: User[] = response;
-      const options: UserOption[] = data.map((user) => ({
+      const options: SearchSelectOption[] = data.map((user) => ({
         label: `${user.user_email} (${user.user_id})`,
         value: user.user_id,
-        user,
       }));
 
       setUserOptions(options);
     } catch (error) {
       console.error("Error fetching users:", error);
-      NotificationsManager.fromBackend(t("virtualKeys.createKey.userSearchError"));
+      if (isLatestSearch()) toast.fromError("Failed to search for users");
     } finally {
-      setUserSearchLoading(false);
+      if (isLatestSearch()) setUserSearchLoading(false);
     }
   };
 
-  const handleUserSearch = useDebouncedCallback((text: string) => fetchUsers(text), { wait: DEBOUNCE_WAIT_MS });
+  const changeOrganization = (write: FieldWrite) => (orgId: string | null) => {
+    write(orgId);
+    setSelectedOrganizationId(orgId);
+    // Clear team and project when org changes
+    setSelectedCreateKeyTeam(null);
+    setSelectedProjectId(null);
+    form.setValue("team_id", null);
+    form.setValue("project_id", null);
+  };
 
-  const handleUserSelect = (_value: string, option: UserOption): void => {
-    const selectedUser = option.user;
-    form.setFieldsValue({
-      user_id: selectedUser.user_id,
-    });
+  const selectTeam = (team: Team | null) => {
+    setSelectedCreateKeyTeam(team);
+    setSelectedProjectId(null);
+    form.setValue("project_id", null);
+    // Auto-populate org from team for non-admin users
+    if (team?.organization_id) {
+      setSelectedOrganizationId(team.organization_id);
+      form.setValue("organization_id", team.organization_id);
+    } else if (!team) {
+      setSelectedOrganizationId(null);
+      form.setValue("organization_id", null);
+    }
+  };
+
+  const changeProject = (write: FieldWrite) => (projectId: string | null) => {
+    write(projectId);
+    if (!projectId) {
+      setSelectedProjectId(null);
+      setSelectedCreateKeyTeam(null);
+      form.setValue("team_id", null);
+      return;
+    }
+    setSelectedProjectId(projectId);
+  };
+
+  const modelOptions: MultiSelectOption[] = [
+    ...(selectedProjectId === null && selectedCreateKeyTeam
+      ? [{ value: "all-team-models", label: "All Team Models" }]
+      : []),
+    ...(selectedProjectId === null && !selectedCreateKeyTeam
+      ? [{ value: "all-proxy-models", label: "All Proxy Models" }]
+      : []),
+    ...modelsToPick.map((model) => ({
+      value: model,
+      label: getModelDisplayName(model),
+      disabled: hasAllModelsSentinel(selectedModels),
+    })),
+  ];
+
+  const changeKeyType = (write: FieldWrite) => (value: string) => {
+    write(value);
+    setKeyType(value);
+    // Clear models field and disable if management or read_only
+    if (value === "management" || value === "read_only") {
+      form.setValue("models", []);
+    }
   };
 
   return (
     <div>
       {userRole && rolesWithWriteAccess.includes(userRole) && (
         <Button className="mx-auto" onClick={() => setIsModalVisible(true)} data-testid="create-key-button">
-          {buttonLabel ?? t("virtualKeys.createAction")}
+          + Create New Key
         </Button>
       )}
-      <Modal open={isModalVisible} width={1000} footer={null} onOk={handleOk} onCancel={handleCancel}>
-        <Form form={form} onFinish={handleCreate} labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} labelAlign="left">
-          {/* Section 1: Key Ownership */}
-          <div className="mb-8">
-            <Title className="mb-4">{t("virtualKeys.createKey.ownership")}</Title>
-            <Form.Item
-              label={
-                <span>
-                  {t("virtualKeys.createKey.ownedBy")}{" "}
-                  <Tooltip title={t("virtualKeys.createKey.ownedByTooltip")}>
-                    <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                  </Tooltip>
-                </span>
-              }
-              className="mb-4"
-            >
-              <Radio.Group onChange={(e) => setKeyOwner(e.target.value)} value={keyOwner}>
-                <Radio value="you">{t("virtualKeys.createKey.ownerYou")}</Radio>
-                <Radio value="service_account">{t("virtualKeys.createKey.ownerServiceAccount")}</Radio>
-                {userRole === "Admin" && (
-                  <Radio value="another_user">{t("virtualKeys.createKey.ownerAnotherUser")}</Radio>
-                )}
-                <Radio value="agent">
-                  {t("virtualKeys.createKey.ownerAgent")}{" "}
-                  <Tag color="purple">{t("virtualKeys.createKey.newBadge")}</Tag>
-                </Radio>
-              </Radio.Group>
-            </Form.Item>
+      <Dialog open={isModalVisible} onOpenChange={(open) => !open && handleCancel()}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[1000px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-foreground">Create New Key</DialogTitle>
+          </DialogHeader>
+          <MountedFormProvider value={mountedForm}>
+            <form onSubmit={handleSubmit}>
+              {/* Section 1: Key Ownership */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-foreground mb-4">Key Ownership</h3>
+                <Field className="mb-4">
+                  <FieldLabel>
+                    <span>
+                      Owned By{" "}
+                      <SimpleTooltip content="Select who will own this Virtual Key">
+                        <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                      </SimpleTooltip>
+                    </span>
+                  </FieldLabel>
+                  <RadioGroup
+                    className="flex flex-wrap items-center gap-4"
+                    value={keyOwner}
+                    onValueChange={(value: unknown) => setKeyOwner(String(value))}
+                  >
+                    <label className={KEY_OWNER_LABEL_CLASS}>
+                      <RadioGroupItem value="you" />
+                      You
+                    </label>
+                    <label className={KEY_OWNER_LABEL_CLASS}>
+                      <RadioGroupItem value="service_account" />
+                      Service Account
+                    </label>
+                    {userRole === "Admin" && (
+                      <label className={KEY_OWNER_LABEL_CLASS}>
+                        <RadioGroupItem value="another_user" />
+                        Another User
+                      </label>
+                    )}
+                    <label className={KEY_OWNER_LABEL_CLASS}>
+                      <RadioGroupItem value="agent" />
+                      Agent <Badge>New</Badge>
+                    </label>
+                  </RadioGroup>
+                </Field>
 
-            {keyOwner === "another_user" && (
-              <Form.Item
-                label={
-                  <span>
-                    {t("virtualKeys.createKey.userId")}{" "}
-                    <Tooltip title={t("virtualKeys.createKey.userIdTooltip")}>
-                      <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                    </Tooltip>
-                  </span>
-                }
-                name="user_id"
-                className="mt-4"
-                rules={[
-                  {
-                    required: keyOwner === "another_user",
-                    message: t("virtualKeys.createKey.userIdRequired"),
-                  },
-                ]}
-              >
-                <div>
-                  <div style={{ display: "flex", marginBottom: "8px" }}>
-                    <Select
-                      showSearch
-                      placeholder={t("virtualKeys.createKey.userSearchPlaceholder")}
-                      filterOption={false}
-                      onSearch={handleUserSearch}
-                      onSelect={(value, option) => handleUserSelect(value, option as UserOption)}
-                      options={userOptions}
-                      loading={userSearchLoading}
-                      allowClear
-                      style={{ width: "100%" }}
-                      notFoundContent={
-                        userSearchLoading ? t("virtualKeys.createKey.searching") : t("virtualKeys.createKey.noUsers")
-                      }
-                    />
-                    <Button2 onClick={() => setIsCreateUserModalVisible(true)} style={{ marginLeft: "8px" }}>
-                      {t("virtualKeys.createKey.createUser")}
-                    </Button2>
-                  </div>
-                  <div className="text-xs text-gray-500">{t("virtualKeys.createKey.userSearchHint")}</div>
-                </div>
-              </Form.Item>
-            )}
-            {keyOwner === "agent" && (
-              <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-md">
-                <div className="mb-3">
-                  <span className="text-sm font-medium text-gray-700">
-                    {t("virtualKeys.createKey.selectAgent")} <span className="text-red-500">*</span>
-                  </span>
-                </div>
-                <Select
-                  showSearch
-                  placeholder={t("virtualKeys.createKey.selectAgentPlaceholder")}
-                  style={{ width: "100%" }}
-                  value={selectedAgentId}
-                  onChange={(value) => setSelectedAgentId(value)}
-                  filterOption={(input, option) =>
-                    (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={agentsList.map((a) => ({
-                    label: a.agent_name || a.agent_id,
-                    value: a.agent_id,
-                  }))}
-                />
-                <div className="text-xs text-gray-500 mt-2">{t("virtualKeys.createKey.agentHint")}</div>
-              </div>
-            )}
-            <Form.Item
-              label={
-                <span>
-                  {t("virtualKeys.createKey.organization")}{" "}
-                  <Tooltip title={t("virtualKeys.createKey.organizationTooltip")}>
-                    <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                  </Tooltip>
-                </span>
-              }
-              name="organization_id"
-              className="mt-4"
-            >
-              <OrganizationDropdown
-                organizations={organizations}
-                loading={isOrganizationsLoading}
-                disabled={userRole !== "Admin"}
-                placeholder={t("virtualKeys.createKey.allOrganizations")}
-                onChange={(orgId) => {
-                  setSelectedOrganizationId(orgId || null);
-                  // Clear team and project when org changes
-                  setSelectedCreateKeyTeam(null);
-                  setSelectedProjectId(null);
-                  form.setFieldValue("team_id", undefined);
-                  form.setFieldValue("project_id", undefined);
-                }}
-              />
-            </Form.Item>
-            <Form.Item
-              label={
-                <span>
-                  {t("virtualKeys.createKey.team")}{" "}
-                  <Tooltip title={t("virtualKeys.createKey.teamTooltip")}>
-                    <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                  </Tooltip>
-                </span>
-              }
-              name="team_id"
-              initialValue={team ? team.team_id : null}
-              className="mt-4"
-              rules={[
-                {
-                  required: keyOwner === "service_account",
-                  message: t("virtualKeys.createKey.teamRequired"),
-                },
-              ]}
-              help={keyOwner === "service_account" ? t("virtualKeys.createKey.required") : ""}
-            >
-              <TeamDropdown
-                disabled={selectedProjectId !== null}
-                organizationId={selectedOrganizationId}
-                placeholder={t("virtualKeys.createKey.searchTeam")}
-                emptyLabel={t("virtualKeys.createKey.noTeams")}
-                onTeamSelect={(team) => {
-                  setSelectedCreateKeyTeam(team);
-                  setSelectedProjectId(null);
-                  form.setFieldValue("project_id", undefined);
-                  // Auto-populate org from team for non-admin users
-                  if (team?.organization_id) {
-                    setSelectedOrganizationId(team.organization_id);
-                    form.setFieldValue("organization_id", team.organization_id);
-                  } else if (!team) {
-                    setSelectedOrganizationId(null);
-                    form.setFieldValue("organization_id", undefined);
-                  }
-                }}
-              />
-            </Form.Item>
-            {enableProjectsUI && (
-              <Form.Item
-                label={
-                  <span>
-                    {t("virtualKeys.createKey.project")}{" "}
-                    <Tooltip title={t("virtualKeys.createKey.projectTooltip")}>
-                      <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                    </Tooltip>
-                  </span>
-                }
-                name="project_id"
-                className="mt-4"
-              >
-                <ProjectDropdown
-                  projects={projects}
-                  teamId={selectedCreateKeyTeam?.team_id}
-                  loading={isProjectsLoading || !teams}
-                  onChange={(projectId) => {
-                    if (!projectId) {
-                      setSelectedProjectId(null);
-                      setSelectedCreateKeyTeam(null);
-                      form.setFieldValue("team_id", undefined);
-                      return;
-                    }
-                    setSelectedProjectId(projectId);
-                  }}
-                />
-              </Form.Item>
-            )}
-          </div>
-
-          {/* Show message when team selection is required */}
-          {isFormDisabled && (
-            <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <Text className="text-blue-800 text-sm">{t("virtualKeys.createKey.selectTeamMessage")}</Text>
-            </div>
-          )}
-
-          {/* Section 2: Key Details */}
-          {!isFormDisabled && (
-            <div className="mb-8">
-              <Title className="mb-4">{t("virtualKeys.createKey.details")}</Title>
-              <Form.Item
-                label={
-                  <span>
-                    {keyOwner === "you" || keyOwner === "another_user"
-                      ? t("virtualKeys.createKey.keyName")
-                      : t("virtualKeys.createKey.serviceAccountId")}{" "}
-                    <Tooltip
-                      title={
-                        keyOwner === "you" || keyOwner === "another_user"
-                          ? t("virtualKeys.createKey.keyNameTooltip")
-                          : t("virtualKeys.createKey.serviceAccountIdTooltip")
-                      }
-                    >
-                      <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                    </Tooltip>
-                  </span>
-                }
-                name="key_alias"
-                rules={[
-                  {
-                    required: true,
-                    message:
-                      keyOwner === "you" || keyOwner === "another_user"
-                        ? t("virtualKeys.createKey.keyNameRequired")
-                        : t("virtualKeys.createKey.serviceAccountIdRequired"),
-                  },
-                ]}
-                help={t("virtualKeys.createKey.required")}
-              >
-                <TextInput placeholder="" />
-              </Form.Item>
-
-              <Form.Item
-                label={
-                  <span>
-                    {t("virtualKeys.createKey.models")}{" "}
-                    <Tooltip title={t("virtualKeys.createKey.modelsTooltip")}>
-                      <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                    </Tooltip>
-                  </span>
-                }
-                name="models"
-                rules={[]}
-                help={
-                  keyType === "management" || keyType === "read_only"
-                    ? t("virtualKeys.createKey.modelsDisabled")
-                    : t("virtualKeys.createKey.modelsOptional")
-                }
-                className="mt-4"
-              >
-                <Select
-                  mode="multiple"
-                  placeholder={t("virtualKeys.createKey.selectModels")}
-                  style={{ width: "100%" }}
-                  disabled={keyType === "management" || keyType === "read_only"}
-                  onChange={(values) => {
-                    if (values.includes("all-team-models")) {
-                      form.setFieldsValue({ models: ["all-team-models"] });
-                    } else if (values.includes("all-proxy-models")) {
-                      form.setFieldsValue({ models: ["all-proxy-models"] });
-                    }
-                  }}
-                >
-                  {!selectedProjectId && selectedCreateKeyTeam && (
-                    <Option key="all-team-models" value="all-team-models">
-                      {t("virtualKeys.createKey.allTeamModels")}
-                    </Option>
-                  )}
-                  {!selectedProjectId && !selectedCreateKeyTeam && (
-                    <Option key="all-proxy-models" value="all-proxy-models">
-                      {t("virtualKeys.createKey.allProxyModels")}
-                    </Option>
-                  )}
-                  {modelsToPick.map((model: string) => (
-                    <Option key={model} value={model} disabled={hasAllModelsSentinel(selectedModels)}>
-                      {getModelDisplayName(model)}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                label={
-                  <span>
-                    {t("virtualKeys.createKey.keyType")}{" "}
-                    <Tooltip title={t("virtualKeys.createKey.keyTypeTooltip")}>
-                      <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                    </Tooltip>
-                  </span>
-                }
-                name="key_type"
-                initialValue="llm_api"
-                className="mt-4"
-              >
-                <Select
-                  defaultValue="llm_api"
-                  placeholder={t("virtualKeys.createKey.selectKeyType")}
-                  style={{ width: "100%" }}
-                  optionLabelProp="label"
-                  onChange={(value) => {
-                    setKeyType(value);
-                    // Clear models field and disable if management or read_only
-                    if (value === "management" || value === "read_only") {
-                      form.setFieldsValue({ models: [] });
-                    }
-                  }}
-                >
-                  <Option value="llm_api" label={t("virtualKeys.createKey.aiApis")}>
-                    <div style={{ padding: "4px 0" }}>
-                      <Typography.Text strong>{t("virtualKeys.createKey.aiApis")}</Typography.Text>
-                      <Typography.Paragraph type="secondary" style={{ fontSize: 11, margin: "2px 0 0" }}>
-                        {t("virtualKeys.createKey.aiApisDescription")}
-                      </Typography.Paragraph>
-                    </div>
-                  </Option>
-                  <Option value="management" label={t("virtualKeys.createKey.management")}>
-                    <div style={{ padding: "4px 0" }}>
-                      <Typography.Text strong>{t("virtualKeys.createKey.management")}</Typography.Text>
-                      <Typography.Paragraph type="secondary" style={{ fontSize: 11, margin: "2px 0 0" }}>
-                        {t("virtualKeys.createKey.managementDescription")}
-                      </Typography.Paragraph>
-                    </div>
-                  </Option>
-                  <Option value="default" label={t("virtualKeys.createKey.fullAccess")}>
-                    <div style={{ padding: "4px 0" }}>
-                      <Typography.Text strong>{t("virtualKeys.createKey.fullAccess")}</Typography.Text>
-                      <Typography.Paragraph type="secondary" style={{ fontSize: 11, margin: "2px 0 0" }}>
-                        {t("virtualKeys.createKey.fullAccessDescription")}
-                      </Typography.Paragraph>
-                    </div>
-                  </Option>
-                </Select>
-              </Form.Item>
-            </div>
-          )}
-
-          {/* Section 3: Optional Settings */}
-          {!isFormDisabled && (
-            <div className="mb-8">
-              <Accordion className="mt-4 mb-4">
-                <AccordionHeader>
-                  <Title className="m-0">{t("virtualKeys.createKey.optionalSettings")}</Title>
-                </AccordionHeader>
-                <AccordionBody>
-                  <Form.Item
-                    className="mt-4"
+                {keyOwner === "another_user" && (
+                  <MountedFormField
                     label={
                       <span>
-                        {t("virtualKeys.createKey.optional.maxBudget")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.maxBudgetTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
+                        User ID{" "}
+                        <SimpleTooltip content="The user who will own this key and be responsible for its usage">
+                          <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                        </SimpleTooltip>
                       </span>
                     }
-                    name="max_budget"
-                    help={t("virtualKeys.createKey.optional.teamMaxBudget", {
-                      value:
-                        team?.max_budget !== null && team?.max_budget !== undefined
-                          ? team.max_budget
-                          : t("virtualKeys.createKey.optional.unlimited"),
-                    })}
-                    rules={[
-                      {
-                        validator: async (_, value) => {
-                          if (value && team && team.max_budget !== null && value > team.max_budget) {
-                            throw new Error(
-                              `Budget cannot exceed team max budget: $${formatNumberWithCommas(team.max_budget, 4)}`,
-                            );
-                          }
-                        },
-                      },
-                    ]}
+                    name="user_id"
+                    className="mt-4"
+                    required
+                    rules={requiredRule(
+                      keyOwner === "another_user",
+                      `Please input the user ID of the user you are assigning the key to`,
+                    )}
                   >
-                    <NumericalInput step={0.01} precision={2} width={200} />
-                  </Form.Item>
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.resetBudget")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.resetBudgetTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="budget_duration"
-                    help={t("virtualKeys.createKey.optional.teamResetBudget", {
-                      value:
-                        team?.budget_duration !== null && team?.budget_duration !== undefined
-                          ? team.budget_duration
-                          : t("virtualKeys.createKey.optional.none"),
-                    })}
-                  >
-                    <BudgetDurationDropdown
-                      placeholder={t("virtualKeys.createKey.optional.neverResets")}
-                      onChange={(value) => form.setFieldValue("budget_duration", value)}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.budgetWindows")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.budgetWindowsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                  >
-                    <BudgetWindowsEditor
-                      value={budgetLimits}
-                      onChange={setBudgetLimits}
-                      labels={{
-                        hourly: t("virtualKeys.createKey.optional.budgetWindowHourly"),
-                        hourlyHint: t("virtualKeys.createKey.optional.budgetWindowHourlyHint"),
-                        daily: t("virtualKeys.createKey.optional.budgetWindowDaily"),
-                        dailyHint: t("virtualKeys.createKey.optional.budgetWindowDailyHint"),
-                        weekly: t("virtualKeys.createKey.optional.budgetWindowWeekly"),
-                        weeklyHint: t("virtualKeys.createKey.optional.budgetWindowWeeklyHint"),
-                        monthly: t("virtualKeys.createKey.optional.budgetWindowMonthly"),
-                        monthlyHint: t("virtualKeys.createKey.optional.budgetWindowMonthlyHint"),
-                        maxSpend: t("virtualKeys.createKey.optional.budgetWindowMaxSpend"),
-                        addWindow: t("virtualKeys.createKey.optional.addBudgetWindow"),
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.budgetFallbacks")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.budgetFallbacksTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                  >
-                    <BudgetFallbacksEditor
-                      key={budgetFallbacksKey}
-                      value={budgetFallbacks}
-                      onChange={setBudgetFallbacks}
-                      availableModels={modelsToPick}
-                      labels={{
-                        description: t("virtualKeys.createKey.optional.budgetFallbackDescription"),
-                        addFallback: t("virtualKeys.createKey.optional.addBudgetFallback"),
-                        primaryModel: t("virtualKeys.createKey.optional.primaryModel"),
-                        selectModel: t("virtualKeys.createKey.optional.selectModel"),
-                        budgetExceeded: t("virtualKeys.createKey.optional.budgetExceededTry"),
-                        fallbackModels: t("virtualKeys.createKey.optional.fallbackModels"),
-                        selectFallbackModels: t("virtualKeys.createKey.optional.selectFallbackModels"),
-                        selectPrimaryFirst: t("virtualKeys.createKey.optional.selectPrimaryFirst"),
-                        more: t("virtualKeys.createKey.optional.more"),
-                        triedInOrder: t("virtualKeys.createKey.optional.fallbackOrderHint"),
-                        removeFallback: t("virtualKeys.createKey.optional.removeFallback"),
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.tpm")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.tpmTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="tpm_limit"
-                    help={t("virtualKeys.createKey.optional.teamTpm", {
-                      value:
-                        team?.tpm_limit !== null && team?.tpm_limit !== undefined
-                          ? team.tpm_limit
-                          : t("virtualKeys.createKey.optional.unlimited"),
-                    })}
-                    rules={[
-                      {
-                        validator: async (_, value) => {
-                          if (value && team && team.tpm_limit !== null && value > team.tpm_limit) {
-                            throw new Error(
-                              t("virtualKeys.createKey.optional.tpmValidation", { value: team.tpm_limit }),
-                            );
-                          }
-                        },
-                      },
-                    ]}
-                  >
-                    <NumericalInput step={1} width={400} />
-                  </Form.Item>
-                  <RateLimitTypeFormItem
-                    type="tpm"
-                    name="tpm_limit_type"
-                    className="mt-4"
-                    initialValue={null}
-                    form={form}
-                    showDetailedDescriptions={true}
-                    labels={{
-                      fieldLabel: t("virtualKeys.createKey.optional.rateLimitType", { type: "TPM" }),
-                      tooltip: t("virtualKeys.createKey.optional.rateLimitTypeTooltip", { type: "TPM" }),
-                      placeholder: t("virtualKeys.createKey.optional.selectRateLimitType"),
-                      defaultLabel: t("virtualKeys.createKey.optional.defaultRateLimit"),
-                      defaultDescription: t("virtualKeys.createKey.optional.defaultRateLimitDescription"),
-                      guaranteedLabel: t("virtualKeys.createKey.optional.guaranteedRateLimit"),
-                      guaranteedDescription: t("virtualKeys.createKey.optional.guaranteedRateLimitDescription"),
-                      dynamicLabel: t("virtualKeys.createKey.optional.dynamicRateLimit"),
-                      dynamicDescription: t("virtualKeys.createKey.optional.dynamicRateLimitDescription"),
-                      bestEffortLabel: t("virtualKeys.createKey.optional.bestEffortRateLimit"),
-                    }}
-                  />
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.rpm")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.rpmTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="rpm_limit"
-                    help={t("virtualKeys.createKey.optional.teamRpm", {
-                      value:
-                        team?.rpm_limit !== null && team?.rpm_limit !== undefined
-                          ? team.rpm_limit
-                          : t("virtualKeys.createKey.optional.unlimited"),
-                    })}
-                    rules={[
-                      {
-                        validator: async (_, value) => {
-                          if (value && team && team.rpm_limit !== null && value > team.rpm_limit) {
-                            throw new Error(
-                              t("virtualKeys.createKey.optional.rpmValidation", { value: team.rpm_limit }),
-                            );
-                          }
-                        },
-                      },
-                    ]}
-                  >
-                    <NumericalInput step={1} width={400} />
-                  </Form.Item>
-                  <RateLimitTypeFormItem
-                    type="rpm"
-                    name="rpm_limit_type"
-                    className="mt-4"
-                    initialValue={null}
-                    form={form}
-                    showDetailedDescriptions={true}
-                    labels={{
-                      fieldLabel: t("virtualKeys.createKey.optional.rateLimitType", { type: "RPM" }),
-                      tooltip: t("virtualKeys.createKey.optional.rateLimitTypeTooltip", { type: "RPM" }),
-                      placeholder: t("virtualKeys.createKey.optional.selectRateLimitType"),
-                      defaultLabel: t("virtualKeys.createKey.optional.defaultRateLimit"),
-                      defaultDescription: t("virtualKeys.createKey.optional.defaultRateLimitDescription"),
-                      guaranteedLabel: t("virtualKeys.createKey.optional.guaranteedRateLimit"),
-                      guaranteedDescription: t("virtualKeys.createKey.optional.guaranteedRateLimitDescription"),
-                      dynamicLabel: t("virtualKeys.createKey.optional.dynamicRateLimit"),
-                      dynamicDescription: t("virtualKeys.createKey.optional.dynamicRateLimitDescription"),
-                      bestEffortLabel: t("virtualKeys.createKey.optional.bestEffortRateLimit"),
-                    }}
-                  />
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.perTagLimits")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.perTagLimitsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                  >
-                    <TagRateLimitEditor
-                      value={tagRateLimits}
-                      onChange={setTagRateLimits}
-                      labels={{
-                        tagPlaceholder: t("virtualKeys.createKey.optional.tagPlaceholder"),
-                        rpmPlaceholder: t("virtualKeys.createKey.optional.tagRpmPlaceholder"),
-                        addLimit: t("virtualKeys.createKey.optional.addTagLimit"),
-                        removeLimit: t("virtualKeys.createKey.optional.removeTagLimit"),
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    className="mt-4"
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.throttle")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.throttleTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="throttle_on_budget_exceeded"
-                    valuePropName="checked"
-                  >
-                    <Switch
-                      checkedChildren={t("virtualKeys.createKey.optional.yes")}
-                      unCheckedChildren={t("virtualKeys.createKey.optional.no")}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.guardrails")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.guardrailsTooltip")}>
-                          <a
-                            href="https://docs.litellm.ai/docs/proxy/guardrails/quick_start"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
-                          >
-                            <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                          </a>
-                        </Tooltip>
-                      </span>
-                    }
-                    name="guardrails"
-                    className="mt-4"
-                    help={
-                      canEditGuardrails
-                        ? t("virtualKeys.createKey.optional.guardrailsHelp")
-                        : t("virtualKeys.createKey.optional.guardrailsPremium")
-                    }
-                  >
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      disabled={!canEditGuardrails}
-                      placeholder={
-                        !canEditGuardrails
-                          ? t("virtualKeys.createKey.optional.guardrailsPremium")
-                          : t("virtualKeys.createKey.optional.selectGuardrails")
-                      }
-                      options={guardrailsList.map((name) => ({ value: name, label: name }))}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.disableGlobalGuardrails")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.disableGlobalGuardrailsTooltip")}>
-                          <a
-                            href="https://docs.litellm.ai/docs/proxy/guardrails/quick_start"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
-                          >
-                            <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                          </a>
-                        </Tooltip>
-                      </span>
-                    }
-                    name="disable_global_guardrails"
-                    className="mt-4"
-                    valuePropName="checked"
-                    help={
-                      canEditGuardrails
-                        ? t("virtualKeys.createKey.optional.bypassGlobalGuardrails")
-                        : t("virtualKeys.createKey.optional.disableGlobalGuardrailsPremium")
-                    }
-                  >
-                    <Switch
-                      disabled={!canEditGuardrails}
-                      checkedChildren={t("virtualKeys.createKey.optional.yes")}
-                      unCheckedChildren={t("virtualKeys.createKey.optional.no")}
-                    />
-                  </Form.Item>
-                  {canViewPolicies && (
-                    <Form.Item
-                      label={
-                        <span>
-                          {t("virtualKeys.createKey.optional.policies")}{" "}
-                          <Tooltip title={t("virtualKeys.createKey.optional.policiesTooltip")}>
-                            <a
-                              href="https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
-                            >
-                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                            </a>
-                          </Tooltip>
-                        </span>
-                      }
-                      name="policies"
-                      className="mt-4"
-                      help={
-                        premiumUser
-                          ? t("virtualKeys.createKey.optional.policiesHelp")
-                          : t("virtualKeys.createKey.optional.policiesPremium")
-                      }
-                    >
-                      <Select
-                        mode="tags"
-                        style={{ width: "100%" }}
-                        disabled={!premiumUser}
-                        placeholder={
-                          !premiumUser
-                            ? t("virtualKeys.createKey.optional.policiesPremium")
-                            : t("virtualKeys.createKey.optional.selectPolicies")
-                        }
-                        options={policiesList.map((name) => ({ value: name, label: name }))}
-                      />
-                    </Form.Item>
-                  )}
-                  {canViewPrompts && (
-                    <Form.Item
-                      label={
-                        <span>
-                          {t("virtualKeys.createKey.optional.prompts")}{" "}
-                          <Tooltip title={t("virtualKeys.createKey.optional.promptsTooltip")}>
-                            <a
-                              href="https://docs.litellm.ai/docs/proxy/prompt_management"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
-                            >
-                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                            </a>
-                          </Tooltip>
-                        </span>
-                      }
-                      name="prompts"
-                      className="mt-4"
-                      help={
-                        premiumUser
-                          ? t("virtualKeys.createKey.optional.promptsHelp")
-                          : t("virtualKeys.createKey.optional.promptsPremium")
-                      }
-                    >
-                      <Select
-                        mode="tags"
-                        style={{ width: "100%" }}
-                        disabled={!premiumUser}
-                        placeholder={
-                          !premiumUser
-                            ? t("virtualKeys.createKey.optional.promptsPremium")
-                            : t("virtualKeys.createKey.optional.selectPrompts")
-                        }
-                        options={promptsList.map((name) => ({ value: name, label: name }))}
-                      />
-                    </Form.Item>
-                  )}
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.accessGroups")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.accessGroupsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="access_group_ids"
-                    className="mt-4"
-                    help={t("virtualKeys.createKey.optional.accessGroupsHelp")}
-                  >
-                    <AccessGroupSelector placeholder={t("virtualKeys.createKey.optional.selectAccessGroups")} />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.passThroughRoutes")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.passThroughRoutesTooltip")}>
-                          <a
-                            href="https://docs.litellm.ai/docs/proxy/pass_through"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
-                          >
-                            <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                          </a>
-                        </Tooltip>
-                      </span>
-                    }
-                    name="allowed_passthrough_routes"
-                    className="mt-4"
-                    help={
-                      premiumUser
-                        ? t("virtualKeys.createKey.optional.passThroughRoutesHelp")
-                        : t("virtualKeys.createKey.optional.passThroughRoutesPremium")
-                    }
-                  >
-                    <PassThroughRoutesSelector
-                      accessToken={accessToken}
-                      placeholder={
-                        !premiumUser
-                          ? t("virtualKeys.createKey.optional.passThroughRoutesPremium")
-                          : t("virtualKeys.createKey.optional.selectPassThroughRoutes")
-                      }
-                      disabled={!premiumUser}
-                      teamId={selectedCreateKeyTeam ? selectedCreateKeyTeam.team_id : null}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.vectorStores")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.vectorStoresTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="allowed_vector_store_ids"
-                    className="mt-4"
-                    help={t("virtualKeys.createKey.optional.vectorStoresHelp")}
-                  >
-                    <VectorStoreSelector
-                      onChange={(values: string[]) => form.setFieldValue("allowed_vector_store_ids", values)}
-                      value={form.getFieldValue("allowed_vector_store_ids")}
-                      accessToken={accessToken}
-                      placeholder={t("virtualKeys.createKey.optional.selectVectorStores")}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.metadata")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.metadataTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="metadata"
-                    className="mt-4"
-                  >
-                    <Input.TextArea rows={4} placeholder={t("virtualKeys.createKey.optional.metadataPlaceholder")} />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("virtualKeys.createKey.optional.tags")}{" "}
-                        <Tooltip title={t("virtualKeys.createKey.optional.tagsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="tags"
-                    className="mt-4"
-                    help={t("virtualKeys.createKey.optional.tagsHelp")}
-                  >
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      placeholder={t("virtualKeys.createKey.optional.selectTags")}
-                      tokenSeparators={[","]}
-                      options={tagOptions}
-                    />
-                  </Form.Item>
-                  <Accordion className="mt-4 mb-4">
-                    <AccordionHeader>
-                      <b>{t("virtualKeys.createKey.optional.mcpSettings")}</b>
-                    </AccordionHeader>
-                    <AccordionBody>
-                      <Form.Item
-                        label={
-                          <span>
-                            {t("virtualKeys.createKey.optional.allowedMcpServers")}{" "}
-                            <Tooltip title={t("virtualKeys.createKey.optional.allowedMcpServersTooltip")}>
-                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                            </Tooltip>
-                          </span>
-                        }
-                        name="allowed_mcp_servers_and_groups"
-                        help={t("virtualKeys.createKey.optional.allowedMcpServersHelp")}
-                      >
-                        <MCPServerSelector
-                          onChange={(val: any) => form.setFieldValue("allowed_mcp_servers_and_groups", val)}
-                          value={form.getFieldValue("allowed_mcp_servers_and_groups")}
-                          accessToken={accessToken}
-                          teamId={selectedCreateKeyTeam?.team_id ?? null}
-                          placeholder={t("virtualKeys.createKey.optional.selectMcpServers")}
-                          allowNoMcpServers
-                        />
-                      </Form.Item>
-
-                      {/* Hidden field to register mcp_tool_permissions with the form */}
-                      <Form.Item name="mcp_tool_permissions" initialValue={{}} hidden>
-                        <Input type="hidden" />
-                      </Form.Item>
-
-                      <Form.Item
-                        noStyle
-                        shouldUpdate={(prevValues, currentValues) =>
-                          prevValues.allowed_mcp_servers_and_groups !== currentValues.allowed_mcp_servers_and_groups ||
-                          prevValues.mcp_tool_permissions !== currentValues.mcp_tool_permissions
-                        }
-                      >
-                        {() => (
-                          <div className="mt-6">
-                            <MCPToolPermissions
-                              accessToken={accessToken}
-                              selectedServers={(
-                                form.getFieldValue("allowed_mcp_servers_and_groups")?.servers || []
-                              ).filter((s: string) => s !== NO_MCP_SERVERS_SENTINEL)}
-                              toolPermissions={form.getFieldValue("mcp_tool_permissions") || {}}
-                              onChange={(toolPerms) => form.setFieldsValue({ mcp_tool_permissions: toolPerms })}
-                            />
-                          </div>
-                        )}
-                      </Form.Item>
-                    </AccordionBody>
-                  </Accordion>
-
-                  <Accordion className="mt-4 mb-4">
-                    <AccordionHeader>
-                      <b>{t("virtualKeys.createKey.optional.agentSettings")}</b>
-                    </AccordionHeader>
-                    <AccordionBody>
-                      <Form.Item
-                        label={
-                          <span>
-                            {t("virtualKeys.createKey.optional.allowedAgents")}{" "}
-                            <Tooltip title={t("virtualKeys.createKey.optional.allowedAgentsTooltip")}>
-                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                            </Tooltip>
-                          </span>
-                        }
-                        name="allowed_agents_and_groups"
-                        help={t("virtualKeys.createKey.optional.allowedAgentsHelp")}
-                      >
-                        <AgentSelector
-                          onChange={(val: any) => form.setFieldValue("allowed_agents_and_groups", val)}
-                          value={form.getFieldValue("allowed_agents_and_groups")}
-                          accessToken={accessToken}
-                          placeholder={t("virtualKeys.createKey.optional.selectAgents")}
-                        />
-                      </Form.Item>
-                    </AccordionBody>
-                  </Accordion>
-
-                  {premiumUser ? (
-                    <Accordion className="mt-4 mb-4">
-                      <AccordionHeader>
-                        <b>{t("virtualKeys.createKey.optional.loggingSettings")}</b>
-                      </AccordionHeader>
-                      <AccordionBody>
-                        <div className="mt-4">
-                          <PremiumLoggingSettings
-                            value={loggingSettings}
-                            onChange={setLoggingSettings}
-                            premiumUser={true}
-                            disabledCallbacks={disabledCallbacks}
-                            onDisabledCallbacksChange={setDisabledCallbacks}
+                    {(control) => (
+                      <div>
+                        <div className="mb-2 flex">
+                          <PaginatedSearchSelect
+                            options={userOptions}
+                            value={typeof control.value === "string" ? control.value : undefined}
+                            onValueChange={control.onChange}
+                            onSearchChange={fetchUsers}
+                            isLoading={userSearchLoading}
+                            placeholder="Type email to search for users"
+                            emptyText="No users found"
+                            loadingText="Searching..."
+                            inputId={control.id}
+                            aria-required={control["aria-required"] === "true" ? true : undefined}
+                            aria-invalid={control["aria-invalid"] === "true" ? true : undefined}
+                            aria-describedby={control["aria-describedby"]}
                           />
+                          <Button variant="outline" className="ml-2" onClick={() => setIsCreateUserModalVisible(true)}>
+                            Create User
+                          </Button>
                         </div>
-                      </AccordionBody>
-                    </Accordion>
-                  ) : (
-                    <Tooltip
-                      title={
-                        <span>
-                          {t("virtualKeys.createKey.optional.loggingPremium")} —
-                          <a href="https://www.litellm.ai/enterprise" target="_blank">
-                            https://www.litellm.ai/enterprise
-                          </a>
-                        </span>
-                      }
-                      placement="top"
-                    >
-                      <div style={{ position: "relative" }}>
-                        <div style={{ opacity: 0.5 }}>
-                          <Accordion className="mt-4 mb-4">
-                            <AccordionHeader>
-                              <b>{t("virtualKeys.createKey.optional.loggingSettings")}</b>
-                            </AccordionHeader>
-                            <AccordionBody>
-                              <div className="mt-4">
-                                <PremiumLoggingSettings
-                                  value={loggingSettings}
-                                  onChange={setLoggingSettings}
-                                  premiumUser={false}
-                                  disabledCallbacks={disabledCallbacks}
-                                  onDisabledCallbacksChange={setDisabledCallbacks}
-                                />
-                              </div>
-                            </AccordionBody>
-                          </Accordion>
-                        </div>
-                        <div style={{ position: "absolute", inset: 0, cursor: "not-allowed" }} />
+                        <div className="text-xs text-muted-foreground">Search by email to find users</div>
                       </div>
-                    </Tooltip>
+                    )}
+                  </MountedFormField>
+                )}
+                {keyOwner === "agent" && (
+                  <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-md dark:bg-purple-950 dark:border-purple-800">
+                    <div className="mb-3">
+                      <label htmlFor="create-key-agent" className="text-sm font-medium text-foreground">
+                        Select Agent <span className="text-destructive">*</span>
+                      </label>
+                    </div>
+                    <SearchSelect
+                      inputId="create-key-agent"
+                      placeholder="Select an agent"
+                      emptyText="No agents found"
+                      value={selectedAgentId}
+                      onValueChange={setSelectedAgentId}
+                      options={agentsList.map((a) => ({
+                        label: a.agent_name || a.agent_id,
+                        value: a.agent_id,
+                      }))}
+                    />
+                    <div className="text-xs text-muted-foreground mt-2">
+                      This key will be used by the selected agent to make requests to LiteLLM
+                    </div>
+                  </div>
+                )}
+                <MountedFormField
+                  label={
+                    <span>
+                      Organization{" "}
+                      <SimpleTooltip content="The organization this key belongs to. Selecting an organization filters the available teams.">
+                        <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                      </SimpleTooltip>
+                    </span>
+                  }
+                  name="organization_id"
+                  className="mt-4"
+                >
+                  {(control) => (
+                    <OrganizationDropdown
+                      id={control.id}
+                      value={typeof control.value === "string" ? control.value : null}
+                      organizations={organizations}
+                      loading={isOrganizationsLoading}
+                      disabled={userRole !== "Admin"}
+                      onChange={changeOrganization(control.onChange)}
+                    />
                   )}
+                </MountedFormField>
+                <MountedFormField
+                  label={
+                    <span>
+                      Team{" "}
+                      <SimpleTooltip content="The team this key belongs to, which determines available models and budget limits">
+                        <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                      </SimpleTooltip>
+                    </span>
+                  }
+                  name="team_id"
+                  className="mt-4"
+                  required={keyOwner === "service_account"}
+                  rules={requiredRule(keyOwner === "service_account", "Please select a team for the service account")}
+                  help={keyOwner === "service_account" ? "required" : ""}
+                >
+                  {(control) => (
+                    <TeamDropdown
+                      id={control.id}
+                      value={typeof control.value === "string" ? control.value : null}
+                      onChange={control.onChange}
+                      disabled={selectedProjectId !== null}
+                      organizationId={selectedOrganizationId}
+                      onTeamSelect={selectTeam}
+                    />
+                  )}
+                </MountedFormField>
+                {enableProjectsUI && (
+                  <MountedFormField
+                    label={
+                      <span>
+                        Project{" "}
+                        <SimpleTooltip content="Assign this key to a project. Selecting a project will lock the team to the project's team.">
+                          <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                        </SimpleTooltip>
+                      </span>
+                    }
+                    name="project_id"
+                    className="mt-4"
+                  >
+                    {(control) => (
+                      <ProjectDropdown
+                        id={control.id}
+                        value={typeof control.value === "string" ? control.value : null}
+                        projects={projects}
+                        teamId={selectedCreateKeyTeam?.team_id}
+                        loading={isProjectsLoading || !teams}
+                        onChange={changeProject(control.onChange)}
+                      />
+                    )}
+                  </MountedFormField>
+                )}
+              </div>
 
-                  <Accordion key={`router-settings-accordion-${routerSettingsKey}`} className="mt-4 mb-4">
-                    <AccordionHeader>
-                      <b>{t("virtualKeys.createKey.optional.routerSettings")}</b>
-                    </AccordionHeader>
-                    <AccordionBody>
-                      <div className="mt-4 w-full">
-                        <RouterSettingsAccordion
-                          key={routerSettingsKey}
-                          accessToken={accessToken || ""}
-                          value={routerSettings || undefined}
-                          onChange={setRouterSettings}
-                          modelData={
-                            userModels.length > 0
-                              ? { data: userModels.map((model) => ({ model_name: model })) }
-                              : undefined
+              {/* Show message when team selection is required */}
+              {isFormDisabled && (
+                <div className="mb-8 p-4 bg-info/10 border border-info/20 rounded-md">
+                  <p className="text-info text-sm">
+                    Please select a team to continue configuring your Virtual Key. If you do not see any teams, please
+                    contact your Proxy Admin to either provide you with access to models or to add you to a team.
+                  </p>
+                </div>
+              )}
+
+              {/* Section 2: Key Details */}
+              {!isFormDisabled && (
+                <div className="mb-8">
+                  <h3 className="text-lg font-medium text-foreground mb-4">Key Details</h3>
+                  <MountedFormField
+                    label={
+                      <span>
+                        {keyOwner === "you" || keyOwner === "another_user" ? "Key Name" : "Service Account ID"}{" "}
+                        <SimpleTooltip
+                          content={
+                            keyOwner === "you" || keyOwner === "another_user"
+                              ? "A descriptive name to identify this key"
+                              : "Unique identifier for this service account"
                           }
-                          labels={{
-                            loadBalancing: t("virtualKeys.createKey.optional.loadBalancing"),
-                            fallbacks: t("virtualKeys.createKey.optional.routerFallbacks"),
-                            routingSettings: t("virtualKeys.createKey.optional.routingSettings"),
-                            routingDescription: t("virtualKeys.createKey.optional.routingDescription"),
-                            routingStrategy: t("virtualKeys.createKey.optional.routingStrategy"),
-                            routingStrategyDescription: t("virtualKeys.createKey.optional.routingStrategyDescription"),
-                            tagFiltering: t("virtualKeys.createKey.optional.tagFiltering"),
-                            tagFilteringDescription: t("virtualKeys.createKey.optional.tagFilteringDescription"),
-                            learnMore: t("virtualKeys.createKey.optional.learnMore"),
-                            reliability: t("virtualKeys.createKey.optional.reliability"),
-                            reliabilityDescription: t("virtualKeys.createKey.optional.reliabilityDescription"),
-                            fieldLabels: {
-                              allowed_fails: t("virtualKeys.createKey.optional.allowedFails"),
-                              cooldown_time: t("virtualKeys.createKey.optional.cooldownTime"),
-                              num_retries: t("virtualKeys.createKey.optional.numRetries"),
-                              timeout: t("virtualKeys.createKey.optional.timeout"),
-                              retry_after: t("virtualKeys.createKey.optional.retryAfter"),
-                              model_group_alias: t("virtualKeys.createKey.optional.modelGroupAlias"),
-                            },
-                            fieldDescriptions: {
-                              allowed_fails: t("virtualKeys.createKey.optional.allowedFailsDescription"),
-                              cooldown_time: t("virtualKeys.createKey.optional.cooldownTimeDescription"),
-                              num_retries: t("virtualKeys.createKey.optional.numRetriesDescription"),
-                              timeout: t("virtualKeys.createKey.optional.timeoutDescription"),
-                              retry_after: t("virtualKeys.createKey.optional.retryAfterDescription"),
-                              model_group_alias: t("virtualKeys.createKey.optional.modelGroupAliasDescription"),
-                            },
-                            fallbackLabels: {
-                              group: t("virtualKeys.createKey.optional.fallbackGroup"),
-                              atLeastOne: t("virtualKeys.createKey.optional.fallbackAtLeastOne"),
-                              empty: t("virtualKeys.createKey.optional.fallbackGroupsEmpty"),
-                              createFirst: t("virtualKeys.createKey.optional.fallbackCreateFirst"),
-                              primaryModel: t("virtualKeys.createKey.optional.primaryModel"),
-                              selectPrimary: t("virtualKeys.createKey.optional.fallbackSelectPrimary"),
-                              selectPrimaryHint: t("virtualKeys.createKey.optional.fallbackSelectPrimaryHint"),
-                              ifFails: t("virtualKeys.createKey.optional.fallbackIfFails"),
-                              fallbackChain: t("virtualKeys.createKey.optional.fallbackChain"),
-                              maxFallbacks: t("virtualKeys.createKey.optional.fallbackMax"),
-                              selectFallbacks: t("virtualKeys.createKey.optional.fallbackSelect"),
-                              maxReached: t("virtualKeys.createKey.optional.fallbackMaxReached"),
-                              more: t("virtualKeys.createKey.optional.more"),
-                              selectionHint: t("virtualKeys.createKey.optional.fallbackSelectionHint"),
-                              maxReachedHint: t("virtualKeys.createKey.optional.fallbackMaxReachedHint"),
-                              noFallbacks: t("virtualKeys.createKey.optional.fallbackNone"),
-                              addFromDropdown: t("virtualKeys.createKey.optional.fallbackAddFromDropdown"),
-                              removeFallback: t("virtualKeys.createKey.optional.removeFallback"),
-                            },
-                          }}
-                        />
-                      </div>
-                    </AccordionBody>
-                  </Accordion>
+                        >
+                          <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                        </SimpleTooltip>
+                      </span>
+                    }
+                    name="key_alias"
+                    required
+                    rules={requiredRule(
+                      true,
+                      `Please input a ${keyOwner === "you" ? "key name" : "service account ID"}`,
+                    )}
+                    help="required"
+                  >
+                    {(control) => <Input {...control} value={(control.value as string | undefined) ?? ""} />}
+                  </MountedFormField>
 
-                  <Accordion className="mt-4 mb-4">
-                    <AccordionHeader>
-                      <b>{t("virtualKeys.createKey.optional.modelAliases")}</b>
-                    </AccordionHeader>
-                    <AccordionBody>
-                      <div className="mt-4">
-                        <Text className="text-sm text-gray-600 mb-4">
-                          {t("virtualKeys.createKey.optional.modelAliasesDescription")}
-                        </Text>
-                        <ModelAliasManager
-                          accessToken={accessToken}
-                          initialModelAliases={modelAliases}
-                          onAliasUpdate={setModelAliases}
-                          showExampleConfig={false}
-                          labels={{
-                            addNew: t("virtualKeys.createKey.optional.aliasAddNew"),
-                            aliasName: t("virtualKeys.createKey.optional.aliasName"),
-                            targetModel: t("virtualKeys.createKey.optional.aliasTargetModel"),
-                            aliasPlaceholder: t("virtualKeys.createKey.optional.aliasPlaceholder"),
-                            selectTarget: t("virtualKeys.createKey.optional.aliasSelectTarget"),
-                            add: t("virtualKeys.createKey.optional.aliasAdd"),
-                            manage: t("virtualKeys.createKey.optional.aliasManage"),
-                            actions: t("virtualKeys.createKey.optional.actions"),
-                            empty: t("virtualKeys.createKey.optional.aliasEmpty"),
-                            save: t("virtualKeys.createKey.optional.save"),
-                            cancel: t("virtualKeys.createKey.optional.cancel"),
-                            requiredError: t("virtualKeys.createKey.optional.aliasRequiredError"),
-                            duplicateError: t("virtualKeys.createKey.optional.aliasDuplicateError"),
-                            added: t("virtualKeys.createKey.optional.aliasAdded"),
-                            updated: t("virtualKeys.createKey.optional.aliasUpdated"),
-                            deleted: t("virtualKeys.createKey.optional.aliasDeleted"),
-                          }}
-                        />
-                      </div>
-                    </AccordionBody>
-                  </Accordion>
+                  <MountedFormField
+                    label={
+                      <span>
+                        Models{" "}
+                        <SimpleTooltip content="Select which models this key can access. Choose 'All Team Models' to grant access to all models available to the team. Leave empty to allow access to all models.">
+                          <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                        </SimpleTooltip>
+                      </span>
+                    }
+                    name="models"
+                    help={
+                      keyType === "management" || keyType === "read_only"
+                        ? "Models field is disabled for this key type"
+                        : "optional - leave empty to allow access to all models"
+                    }
+                    className="mt-4"
+                  >
+                    {(control) => (
+                      <MultiSelect
+                        id={control.id}
+                        options={modelOptions}
+                        value={(control.value as string[] | undefined) ?? []}
+                        placeholder="Select models"
+                        disabled={keyType === "management" || keyType === "read_only"}
+                        onValueChange={(values) => {
+                          control.onChange(values);
+                          if (values.includes("all-team-models")) {
+                            form.setValue("models", ["all-team-models"]);
+                          } else if (values.includes("all-proxy-models")) {
+                            form.setValue("models", ["all-proxy-models"]);
+                          }
+                        }}
+                      />
+                    )}
+                  </MountedFormField>
 
-                  <Accordion className="mt-4 mb-4">
-                    <AccordionHeader>
-                      <b>{t("virtualKeys.createKey.optional.keyLifecycle")}</b>
-                    </AccordionHeader>
-                    <AccordionBody>
-                      <div className="mt-4">
-                        <KeyLifecycleSettings
-                          form={form}
-                          autoRotationEnabled={autoRotationEnabled}
-                          onAutoRotationChange={setAutoRotationEnabled}
-                          rotationInterval={rotationInterval}
-                          onRotationIntervalChange={setRotationInterval}
-                          isCreateMode={true}
-                          labels={{
-                            expirySettings: t("virtualKeys.createKey.optional.expirySettings"),
-                            expireKey: t("virtualKeys.createKey.optional.expireKey"),
-                            expiryTooltip: t("virtualKeys.createKey.optional.expiryTooltip"),
-                            neverExpire: t("virtualKeys.createKey.optional.neverExpire"),
-                            createPlaceholder: t("virtualKeys.createKey.optional.expiryCreatePlaceholder"),
-                            editPlaceholder: t("virtualKeys.createKey.optional.expiryEditPlaceholder"),
-                            rotationSettings: t("virtualKeys.createKey.optional.rotationSettings"),
-                            enableRotation: t("virtualKeys.createKey.optional.enableRotation"),
-                            rotationTooltip: t("virtualKeys.createKey.optional.rotationTooltip"),
-                            rotationInterval: t("virtualKeys.createKey.optional.rotationInterval"),
-                            rotationIntervalTooltip: t("virtualKeys.createKey.optional.rotationIntervalTooltip"),
-                            selectInterval: t("virtualKeys.createKey.optional.selectInterval"),
-                            days: t("virtualKeys.createKey.optional.days"),
-                            customInterval: t("virtualKeys.createKey.optional.customInterval"),
-                            customPlaceholder: t("virtualKeys.createKey.optional.customIntervalPlaceholder"),
-                            supportedFormats: t("virtualKeys.createKey.optional.supportedFormats"),
-                            rotationNotice: t("virtualKeys.createKey.optional.rotationNotice"),
-                          }}
+                  <MountedFormField
+                    label={
+                      <span>
+                        Key Type{" "}
+                        <SimpleTooltip content="Select the type of key to determine what routes and operations this key can access">
+                          <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                        </SimpleTooltip>
+                      </span>
+                    }
+                    name="key_type"
+                    className="mt-4"
+                  >
+                    {(control) => (
+                      <Select
+                        items={KEY_TYPE_OPTIONS}
+                        value={control.value as string | undefined}
+                        onValueChange={(value: string | null) =>
+                          value != null && changeKeyType(control.onChange)(value)
+                        }
+                      >
+                        <SelectTrigger
+                          id={control.id}
+                          className="w-full"
+                          aria-invalid={control["aria-invalid"]}
+                          aria-describedby={control["aria-describedby"]}
+                        >
+                          <SelectValue placeholder="Select key type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {KEY_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <div className="py-1">
+                                <div className="font-medium">{option.label}</div>
+                                <div className="mt-0.5 text-[11px] text-muted-foreground">{option.hint}</div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </MountedFormField>
+                </div>
+              )}
+
+              {/* Section 3: Optional Settings */}
+              {!isFormDisabled && (
+                <div className="mb-8">
+                  <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                    <h3 className="m-0 text-lg font-medium text-foreground">
+                      <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                        Optional Settings
+                        <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                      </CollapsibleTrigger>
+                    </h3>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <MountedFormField
+                        className="mt-4"
+                        label={
+                          <span>
+                            Max Budget (USD){" "}
+                            <SimpleTooltip content="Maximum amount in USD this key can spend. When reached, the key will be blocked from making further requests">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="max_budget"
+                        help={`Budget cannot exceed team max budget: $${team?.max_budget !== null && team?.max_budget !== undefined ? team?.max_budget : "unlimited"}`}
+                        rules={ceilingRule(
+                          team?.max_budget,
+                          (limit) => `Budget cannot exceed team max budget: $${formatNumberWithCommas(limit, 4)}`,
+                        )}
+                      >
+                        {(control) => (
+                          <NumericalInput
+                            {...control}
+                            value={control.value as number | string | undefined}
+                            step={0.01}
+                            precision={2}
+                            width={200}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        className="mt-4"
+                        label={
+                          <span>
+                            Reset Budget{" "}
+                            <SimpleTooltip content="How often the budget should reset. For example, setting 'daily' will reset the budget every 24 hours">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="budget_duration"
+                        help={`Team Reset Budget: ${team?.budget_duration !== null && team?.budget_duration !== undefined ? team?.budget_duration : "None"}`}
+                      >
+                        {(control) => (
+                          <BudgetDurationDropdown
+                            id={control.id}
+                            value={control.value as string | null | undefined}
+                            showNeverResets
+                            placeholder="Not set"
+                            onChange={(next) => control.onChange(next ?? undefined)}
+                          />
+                        )}
+                      </MountedFormField>
+                      <Field className="mt-4">
+                        <FieldLabel>
+                          <span>
+                            Budget Windows{" "}
+                            <SimpleTooltip content="Set multiple independent budget windows (e.g., hourly $10 AND monthly $200). Each window tracks spend separately and resets on its own schedule.">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        </FieldLabel>
+                        <BudgetWindowsEditor value={budgetLimits} onChange={setBudgetLimits} />
+                      </Field>
+                      <Field className="mt-4">
+                        <FieldLabel>
+                          <span>
+                            Per-Model Budgets{" "}
+                            <SimpleTooltip content="Cap spend on individual models, each with its own reset window. Enforced across every request this key makes; usage is reported on the key's info page.">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        </FieldLabel>
+                        <ModelMaxBudgetEditor
+                          value={modelMaxBudget}
+                          onChange={setModelMaxBudget}
+                          availableModels={modelsToPick}
+                          premiumUser={premiumUser === true}
                         />
-                      </div>
-                    </AccordionBody>
-                  </Accordion>
-                  <Accordion className="mt-4 mb-4">
-                    <AccordionHeader>
-                      <div className="flex items-center gap-2">
-                        <b>{t("virtualKeys.createKey.optional.advancedSettings")}</b>
-                        <Tooltip
-                          title={
-                            <span>
-                              {t("virtualKeys.createKey.optional.advancedHelpPrefix")}{" "}
+                      </Field>
+                      <Field className="mt-4">
+                        <FieldLabel>
+                          <span>
+                            Budget Fallbacks{" "}
+                            <SimpleTooltip content="When a model exceeds its per-model budget (model_max_budget), requests automatically reroute to fallback models instead of failing. Configure per-model budgets in Advanced Settings.">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        </FieldLabel>
+                        <BudgetFallbacksEditor
+                          key={budgetFallbacksKey}
+                          value={budgetFallbacks}
+                          onChange={setBudgetFallbacks}
+                          availableModels={modelsToPick}
+                        />
+                      </Field>
+                      <MountedFormField
+                        className="mt-4"
+                        label={
+                          <span>
+                            Tokens per minute Limit (TPM){" "}
+                            <SimpleTooltip content="Maximum number of tokens this key can process per minute. Helps control usage and costs">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="tpm_limit"
+                        help={`TPM cannot exceed team TPM limit: ${team?.tpm_limit !== null && team?.tpm_limit !== undefined ? team?.tpm_limit : "unlimited"}`}
+                        rules={ceilingRule(
+                          team?.tpm_limit,
+                          (limit) => `TPM limit cannot exceed team TPM limit: ${limit}`,
+                        )}
+                      >
+                        {(control) => (
+                          <NumericalInput
+                            {...control}
+                            value={control.value as number | string | undefined}
+                            step={1}
+                            width={400}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField name="tpm_limit_type" bare>
+                        {(control) => (
+                          <RateLimitTypeFormItem
+                            type="tpm"
+                            name="tpm_limit_type"
+                            className="mt-4"
+                            showDetailedDescriptions
+                            id={control.id}
+                            value={control.value as string | null | undefined}
+                            onChange={control.onChange}
+                            aria-invalid={control["aria-invalid"] ? true : undefined}
+                            aria-describedby={control["aria-describedby"]}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        className="mt-4"
+                        label={
+                          <span>
+                            Requests per minute Limit (RPM){" "}
+                            <SimpleTooltip content="Maximum number of API requests this key can make per minute. Helps prevent abuse and manage load">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="rpm_limit"
+                        help={`RPM cannot exceed team RPM limit: ${team?.rpm_limit !== null && team?.rpm_limit !== undefined ? team?.rpm_limit : "unlimited"}`}
+                        rules={ceilingRule(
+                          team?.rpm_limit,
+                          (limit) => `RPM limit cannot exceed team RPM limit: ${limit}`,
+                        )}
+                      >
+                        {(control) => (
+                          <NumericalInput
+                            {...control}
+                            value={control.value as number | string | undefined}
+                            step={1}
+                            width={400}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField name="rpm_limit_type" bare>
+                        {(control) => (
+                          <RateLimitTypeFormItem
+                            type="rpm"
+                            name="rpm_limit_type"
+                            className="mt-4"
+                            showDetailedDescriptions
+                            id={control.id}
+                            value={control.value as string | null | undefined}
+                            onChange={control.onChange}
+                            aria-invalid={control["aria-invalid"] ? true : undefined}
+                            aria-describedby={control["aria-describedby"]}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        className="mt-4"
+                        label={
+                          <span>
+                            Tokens per day Limit (TPD){" "}
+                            <SimpleTooltip content="Daily token budget for batch submissions (/v1/batches). When set, batch input files are charged against this 24h window instead of the key's TPM/RPM limits. Online requests keep using TPM/RPM.">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="tpd_limit"
+                        help={`TPD cannot exceed team TPD limit: ${team?.tpd_limit !== null && team?.tpd_limit !== undefined ? team?.tpd_limit : "unlimited"}`}
+                        rules={ceilingRule(
+                          team?.tpd_limit,
+                          (limit) => `TPD limit cannot exceed team TPD limit: ${limit}`,
+                        )}
+                      >
+                        {(control) => (
+                          <NumericalInput
+                            {...control}
+                            value={control.value as number | string | undefined}
+                            step={1}
+                            width={400}
+                          />
+                        )}
+                      </MountedFormField>
+                      <Field className="mt-4">
+                        <FieldLabel>
+                          <span>
+                            Per-Tag Rate Limits{" "}
+                            <SimpleTooltip content="Scope rate limits to a request tag so each tag (e.g. a cell or group) gets its own RPM counter. Requests without a matching tag fall back to the key-level limit.">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        </FieldLabel>
+                        <TagRateLimitEditor value={tagRateLimits} onChange={setTagRateLimits} />
+                      </Field>
+                      <MountedFormField
+                        className="mt-4"
+                        label={
+                          <span>
+                            Throttle on budget exceeded{" "}
+                            <SimpleTooltip content="When this key exceeds its max budget, throttle its TPM/RPM to the globally configured percentage instead of blocking access entirely. Requires budget_exceeded_throttle_percentage in litellm_settings and a TPM/RPM limit on the key.">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="throttle_on_budget_exceeded"
+                      >
+                        {(control) => (
+                          <Switch
+                            id={control.id}
+                            checked={control.value === true}
+                            onCheckedChange={control.onChange}
+                            aria-describedby={control["aria-describedby"]}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        className="mt-4"
+                        label={
+                          <span>
+                            Enable Prompt Caching{" "}
+                            <SimpleTooltip content="Automatically add prompt caching breakpoints (cache_control markers) to requests made with this key, cutting input cost on repeated prompts. Applies to Anthropic and Bedrock Claude models; requests that already set their own cache_control markers are left untouched.">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="enable_prompt_caching"
+                      >
+                        {(control) => (
+                          <Switch
+                            id={control.id}
+                            checked={control.value === true}
+                            onCheckedChange={control.onChange}
+                            aria-describedby={control["aria-describedby"]}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        label={
+                          <span>
+                            Guardrails{" "}
+                            <SimpleTooltip content="Apply safety guardrails to this key to filter content or enforce policies">
                               <a
-                                href={
-                                  proxyBaseUrl
-                                    ? `${proxyBaseUrl}/#/key%20management/generate_key_fn_key_generate_post`
-                                    : `/#/key%20management/generate_key_fn_key_generate_post`
-                                }
+                                href="https://docs.litellm.ai/docs/proxy/guardrails/quick_start"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300"
+                                onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
                               >
-                                {t("virtualKeys.createKey.optional.documentation")}
+                                <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                              </a>
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="guardrails"
+                        className="mt-4"
+                        help={
+                          canEditGuardrails
+                            ? "Select existing guardrails or enter new ones"
+                            : "Premium feature - Upgrade to set guardrails by key"
+                        }
+                      >
+                        {(control) => (
+                          <TagsInput
+                            id={control.id}
+                            value={(control.value as string[] | undefined) ?? []}
+                            onValueChange={control.onChange}
+                            disabled={!canEditGuardrails}
+                            placeholder={
+                              !canEditGuardrails
+                                ? "Premium feature - Upgrade to set guardrails by key"
+                                : "Select or enter guardrails"
+                            }
+                            options={guardrailsList.map((name) => ({ value: name, label: name }))}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        label={
+                          <span>
+                            Disable Global Guardrails{" "}
+                            <SimpleTooltip content="When enabled, this key will bypass any guardrails configured to run on every request (global guardrails)">
+                              <a
+                                href="https://docs.litellm.ai/docs/proxy/guardrails/quick_start"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
+                              >
+                                <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                              </a>
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="disable_global_guardrails"
+                        className="mt-4"
+                        help={
+                          canEditGuardrails
+                            ? "Bypass global guardrails for this key"
+                            : "Premium feature - Upgrade to disable global guardrails by key"
+                        }
+                      >
+                        {(control) => (
+                          <Switch
+                            id={control.id}
+                            checked={control.value === true}
+                            onCheckedChange={control.onChange}
+                            disabled={!canEditGuardrails}
+                            aria-describedby={control["aria-describedby"]}
+                          />
+                        )}
+                      </MountedFormField>
+                      {canViewPolicies && (
+                        <MountedFormField
+                          label={
+                            <span>
+                              Policies{" "}
+                              <SimpleTooltip content="Apply policies to this key to control guardrails and other settings">
+                                <a
+                                  href="https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
+                                >
+                                  <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                                </a>
+                              </SimpleTooltip>
+                            </span>
+                          }
+                          name="policies"
+                          className="mt-4"
+                          help={
+                            premiumUser
+                              ? "Select existing policies or enter new ones"
+                              : "Premium feature - Upgrade to set policies by key"
+                          }
+                        >
+                          {(control) => (
+                            <TagsInput
+                              id={control.id}
+                              value={(control.value as string[] | undefined) ?? []}
+                              onValueChange={control.onChange}
+                              disabled={!premiumUser}
+                              placeholder={
+                                !premiumUser
+                                  ? "Premium feature - Upgrade to set policies by key"
+                                  : "Select or enter policies"
+                              }
+                              options={policiesList.map((name) => ({ value: name, label: name }))}
+                            />
+                          )}
+                        </MountedFormField>
+                      )}
+                      {canViewPrompts && (
+                        <MountedFormField
+                          label={
+                            <span>
+                              Prompts{" "}
+                              <SimpleTooltip content="Allow this key to use specific prompt templates">
+                                <a
+                                  href="https://docs.litellm.ai/docs/proxy/prompt_management"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
+                                >
+                                  <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                                </a>
+                              </SimpleTooltip>
+                            </span>
+                          }
+                          name="prompts"
+                          className="mt-4"
+                          help={
+                            premiumUser
+                              ? "Select existing prompts or enter new ones"
+                              : "Premium feature - Upgrade to set prompts by key"
+                          }
+                        >
+                          {(control) => (
+                            <TagsInput
+                              id={control.id}
+                              value={(control.value as string[] | undefined) ?? []}
+                              onValueChange={control.onChange}
+                              disabled={!premiumUser}
+                              placeholder={
+                                !premiumUser
+                                  ? "Premium feature - Upgrade to set prompts by key"
+                                  : "Select or enter prompts"
+                              }
+                              options={promptsList.map((name) => ({ value: name, label: name }))}
+                            />
+                          )}
+                        </MountedFormField>
+                      )}
+                      <MountedFormField
+                        label={
+                          <span>
+                            Access Groups{" "}
+                            <SimpleTooltip content="Assign access groups to this key. Access groups control which models, MCP servers, and agents this key can use">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="access_group_ids"
+                        className="mt-4"
+                        help="Select access groups to assign to this key"
+                      >
+                        {(control) => (
+                          <AccessGroupSelector
+                            value={control.value as string[] | undefined}
+                            onChange={control.onChange}
+                            placeholder="Select access groups (optional)"
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        label={
+                          <span>
+                            Allowed Pass Through Routes{" "}
+                            <SimpleTooltip content="Allow this key to use specific pass through routes">
+                              <a
+                                href="https://docs.litellm.ai/docs/proxy/pass_through"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()} // Prevent accordion from collapsing when clicking link
+                              >
+                                <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                              </a>
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="allowed_passthrough_routes"
+                        className="mt-4"
+                        help={
+                          premiumUser
+                            ? "Select existing pass through routes or enter new ones"
+                            : "Premium feature - Upgrade to set pass through routes by key"
+                        }
+                      >
+                        {(control) => (
+                          <PassThroughRoutesSelector
+                            value={control.value as string[] | undefined}
+                            onChange={control.onChange}
+                            accessToken={accessToken}
+                            placeholder={
+                              !premiumUser
+                                ? "Premium feature - Upgrade to set pass through routes by key"
+                                : "Select or enter pass through routes"
+                            }
+                            disabled={!premiumUser}
+                            teamId={selectedCreateKeyTeam ? selectedCreateKeyTeam.team_id : null}
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        label={
+                          <span>
+                            Allowed Vector Stores{" "}
+                            <SimpleTooltip content="Select which vector stores this key can access. If none selected, the key will have access to all available vector stores">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="allowed_vector_store_ids"
+                        className="mt-4"
+                        help="Select vector stores this key can access. Leave empty for access to all vector stores"
+                      >
+                        {(control) => (
+                          <VectorStoreSelector
+                            onChange={control.onChange}
+                            value={control.value as string[] | undefined}
+                            accessToken={accessToken}
+                            placeholder="Select vector stores (optional)"
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        label={
+                          <span>
+                            Metadata{" "}
+                            <SimpleTooltip content="JSON object with additional information about this key. Used for tracking or custom logic">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="metadata"
+                        className="mt-4"
+                      >
+                        {(control) => (
+                          <Textarea
+                            {...control}
+                            value={(control.value as string | undefined) ?? ""}
+                            rows={4}
+                            placeholder="Enter metadata as JSON"
+                          />
+                        )}
+                      </MountedFormField>
+                      <MountedFormField
+                        label={
+                          <span>
+                            Tags{" "}
+                            <SimpleTooltip content="Tags for tracking spend and/or doing tag-based routing. Used for analytics and filtering">
+                              <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                            </SimpleTooltip>
+                          </span>
+                        }
+                        name="tags"
+                        className="mt-4"
+                        help={`Tags for tracking spend and/or doing tag-based routing.`}
+                      >
+                        {(control) => (
+                          <TagsInput
+                            id={control.id}
+                            value={(control.value as string[] | undefined) ?? []}
+                            onValueChange={control.onChange}
+                            placeholder="Select or enter tags"
+                            tokenSeparators={[","]}
+                            options={tagOptions}
+                          />
+                        )}
+                      </MountedFormField>
+                      <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                        <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                          <b>MCP Settings</b>
+                          <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-3">
+                          <MountedFormField
+                            label={
+                              <span>
+                                Allowed MCP Servers{" "}
+                                <SimpleTooltip content="Select which MCP servers or access groups this key can access">
+                                  <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                                </SimpleTooltip>
+                              </span>
+                            }
+                            name="allowed_mcp_servers_and_groups"
+                            help="Select MCP servers or access groups this key can access"
+                          >
+                            {(control) => (
+                              <MCPServerSelector
+                                onChange={control.onChange}
+                                value={control.value as McpSelectorValue | undefined}
+                                accessToken={accessToken}
+                                teamId={selectedCreateKeyTeam?.team_id ?? null}
+                                placeholder="Select MCP servers or access groups (optional)"
+                                allowNoMcpServers
+                              />
+                            )}
+                          </MountedFormField>
+
+                          {/* Hidden field to register mcp_tool_permissions with the form */}
+                          <MountedFormField name="mcp_tool_permissions" bare>
+                            {(control) => <input type="hidden" id={control.id} name={control.name} />}
+                          </MountedFormField>
+
+                          <McpToolPermissionsField
+                            accessToken={accessToken}
+                            control={form.control}
+                            setValue={form.setValue}
+                          />
+                        </CollapsibleContent>
+                      </Collapsible>
+
+                      <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                        <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                          <b>Agent Settings</b>
+                          <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-3">
+                          <MountedFormField
+                            label={
+                              <span>
+                                Allowed Agents{" "}
+                                <SimpleTooltip content="Select which agents or access groups this key can access">
+                                  <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                                </SimpleTooltip>
+                              </span>
+                            }
+                            name="allowed_agents_and_groups"
+                            help="Select agents or access groups this key can access"
+                          >
+                            {(control) => (
+                              <AgentSelector
+                                onChange={control.onChange}
+                                value={control.value as AgentSelectorValue | undefined}
+                                accessToken={accessToken}
+                                placeholder="Select agents or access groups (optional)"
+                              />
+                            )}
+                          </MountedFormField>
+                        </CollapsibleContent>
+                      </Collapsible>
+
+                      <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                        <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                          <b>Skill Settings</b>
+                          <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-3">
+                          <MountedFormField
+                            label={
+                              <span>
+                                Allowed Skills{" "}
+                                <SimpleTooltip content="Enabled skills are visible to every key. Grant disabled (private) Claude Code plugins to this key here">
+                                  <Info className="ml-1 inline size-3.5 align-text-bottom" />
+                                </SimpleTooltip>
+                              </span>
+                            }
+                            name="allowed_skills"
+                            help="Select private skills this key can access in the Claude Code marketplace"
+                          >
+                            {(control) => (
+                              <SkillSelector
+                                onChange={control.onChange}
+                                value={control.value as string[] | undefined}
+                                accessToken={accessToken}
+                                placeholder="Select skills (optional)"
+                              />
+                            )}
+                          </MountedFormField>
+                        </CollapsibleContent>
+                      </Collapsible>
+
+                      {premiumUser ? (
+                        <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                          <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                            <b>Logging Settings</b>
+                            <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="px-4 pb-3">
+                            <div className="mt-4">
+                              <PremiumLoggingSettings
+                                value={loggingSettings}
+                                onChange={setLoggingSettings}
+                                premiumUser={true}
+                                disabledCallbacks={disabledCallbacks}
+                                onDisabledCallbacksChange={setDisabledCallbacks}
+                              />
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ) : (
+                        <SimpleTooltip
+                          className="w-full"
+                          content={
+                            <span>
+                              Key-level logging settings is an enterprise feature, get in touch -
+                              <a href="https://www.litellm.ai/enterprise" target="_blank">
+                                https://www.litellm.ai/enterprise
                               </a>
                             </span>
                           }
+                          side="top"
                         >
-                          <InfoCircleOutlined className="text-gray-400 hover:text-gray-300 cursor-help" />
-                        </Tooltip>
-                      </div>
-                    </AccordionHeader>
-                    <AccordionBody>
-                      <SchemaFormFields
-                        schemaComponent="GenerateKeyRequest"
-                        form={form}
-                        overrideLabels={{
-                          spend: t("virtualKeys.createKey.optional.advancedSpend"),
-                          user_id: t("virtualKeys.createKey.optional.advancedUserId"),
-                          agent_id: t("virtualKeys.createKey.optional.advancedAgentId"),
-                          max_parallel_requests: t("virtualKeys.createKey.optional.advancedMaxParallelRequests"),
-                          budget_limits: t("virtualKeys.createKey.optional.advancedBudgetLimits"),
-                          allowed_cache_controls: t("virtualKeys.createKey.optional.advancedAllowedCacheControls"),
-                          config: t("virtualKeys.createKey.optional.advancedConfig"),
-                          permissions: t("virtualKeys.createKey.optional.advancedPermissions"),
-                          model_max_budget: t("virtualKeys.createKey.optional.advancedModelMaxBudget"),
-                          model_rpm_limit: t("virtualKeys.createKey.optional.advancedModelRpmLimit"),
-                          model_tpm_limit: t("virtualKeys.createKey.optional.advancedModelTpmLimit"),
-                          mcp_rpm_limit: t("virtualKeys.createKey.optional.advancedMcpRpmLimit"),
-                          blocked: t("virtualKeys.createKey.optional.advancedBlocked"),
-                          aliases: t("virtualKeys.createKey.optional.advancedAliases"),
-                          object_permission: t("virtualKeys.createKey.optional.advancedObjectPermission"),
-                          key: t("virtualKeys.createKey.optional.advancedCustomKey"),
-                          budget_id: t("virtualKeys.createKey.optional.advancedBudgetId"),
-                          enforced_params: t("virtualKeys.createKey.optional.advancedEnforcedParams"),
-                          allowed_routes: t("virtualKeys.createKey.optional.advancedAllowedRoutes"),
-                          allowed_vector_store_indexes: t("virtualKeys.createKey.optional.advancedVectorStoreIndexes"),
-                          soft_budget: t("virtualKeys.createKey.optional.advancedSoftBudget"),
-                          send_invite_email: t("virtualKeys.createKey.optional.advancedSendInviteEmail"),
-                        }}
-                        overrideTooltips={{
-                          spend: t("virtualKeys.createKey.optional.advancedSpendTooltip"),
-                          user_id: t("virtualKeys.createKey.optional.advancedUserIdTooltip"),
-                          agent_id: t("virtualKeys.createKey.optional.advancedAgentIdTooltip"),
-                          max_parallel_requests: t("virtualKeys.createKey.optional.advancedMaxParallelRequestsTooltip"),
-                          budget_limits: t("virtualKeys.createKey.optional.advancedBudgetLimitsTooltip"),
-                          allowed_cache_controls: t(
-                            "virtualKeys.createKey.optional.advancedAllowedCacheControlsTooltip",
-                          ),
-                          config: t("virtualKeys.createKey.optional.advancedConfigTooltip"),
-                          permissions: t("virtualKeys.createKey.optional.advancedPermissionsTooltip"),
-                          model_max_budget: t("virtualKeys.createKey.optional.advancedModelMaxBudgetTooltip"),
-                          model_rpm_limit: t("virtualKeys.createKey.optional.advancedModelRpmLimitTooltip"),
-                          model_tpm_limit: t("virtualKeys.createKey.optional.advancedModelTpmLimitTooltip"),
-                          mcp_rpm_limit: t("virtualKeys.createKey.optional.advancedMcpRpmLimitTooltip"),
-                          blocked: t("virtualKeys.createKey.optional.advancedBlockedTooltip"),
-                          aliases: t("virtualKeys.createKey.optional.advancedAliasesTooltip"),
-                          object_permission: t("virtualKeys.createKey.optional.advancedObjectPermissionTooltip"),
-                          key: t("virtualKeys.createKey.optional.advancedCustomKeyTooltip"),
-                          budget_id: t("virtualKeys.createKey.optional.advancedBudgetIdTooltip"),
-                          enforced_params: t("virtualKeys.createKey.optional.advancedEnforcedParamsTooltip"),
-                          allowed_routes: t("virtualKeys.createKey.optional.advancedAllowedRoutesTooltip"),
-                          allowed_vector_store_indexes: t(
-                            "virtualKeys.createKey.optional.advancedVectorStoreIndexesTooltip",
-                          ),
-                          soft_budget: t("virtualKeys.createKey.optional.advancedSoftBudgetTooltip"),
-                          send_invite_email: t("virtualKeys.createKey.optional.advancedSendInviteEmailTooltip"),
-                        }}
-                        overrideHelpTexts={{
-                          spend: t("virtualKeys.createKey.optional.numericInput"),
-                          user_id: t("virtualKeys.createKey.optional.textInput"),
-                          agent_id: t("virtualKeys.createKey.optional.textInput"),
-                          max_parallel_requests: t("virtualKeys.createKey.optional.numericInput"),
-                          budget_limits: t("virtualKeys.createKey.optional.textInput"),
-                          allowed_cache_controls: t("virtualKeys.createKey.optional.textInput"),
-                          config: t("virtualKeys.createKey.optional.jsonInput"),
-                          permissions: t("virtualKeys.createKey.optional.advancedPermissionsHelp"),
-                          model_max_budget: t("virtualKeys.createKey.optional.numericInput"),
-                          model_rpm_limit: t("virtualKeys.createKey.optional.textInput"),
-                          model_tpm_limit: t("virtualKeys.createKey.optional.textInput"),
-                          mcp_rpm_limit: t("virtualKeys.createKey.optional.textInput"),
-                          blocked: t("virtualKeys.createKey.optional.advancedBlockedHelp"),
-                          aliases: t("virtualKeys.createKey.optional.jsonInput"),
-                          object_permission: t("virtualKeys.createKey.optional.textInput"),
-                          key: t("virtualKeys.createKey.optional.textInput"),
-                          budget_id: t("virtualKeys.createKey.optional.textInput"),
-                          enforced_params: t("virtualKeys.createKey.optional.jsonInput"),
-                          allowed_routes: t("virtualKeys.createKey.optional.textInput"),
-                          allowed_vector_store_indexes: t("virtualKeys.createKey.optional.textInput"),
-                          soft_budget: t("virtualKeys.createKey.optional.numericInput"),
-                          send_invite_email: t("virtualKeys.createKey.optional.advancedBooleanInput"),
-                        }}
-                        jsonPlaceholder={t("virtualKeys.createKey.optional.jsonPlaceholder")}
-                        validJsonError={t("virtualKeys.createKey.optional.validJsonError")}
-                        requiredError={t("virtualKeys.createKey.optional.requiredError")}
-                        errorPrefix={t("virtualKeys.createKey.optional.errorPrefix")}
-                        excludedFields={[
-                          "key_alias",
-                          "team_id",
-                          "organization_id",
-                          "models",
-                          "duration",
-                          "metadata",
-                          "tags",
-                          "guardrails",
-                          "max_budget",
-                          "budget_duration",
-                          "tpm_limit",
-                          "rpm_limit",
-                          "budget_fallbacks",
-                          "tag_rpm_limit",
-                          "policies",
-                          "prompts",
-                          "disable_global_guardrails",
-                          "throttle_on_budget_exceeded",
-                          "allowed_passthrough_routes",
-                          "rpm_limit_type",
-                          "tpm_limit_type",
-                          "router_settings",
-                          "access_group_ids",
-                          "key_type",
-                          "auto_rotate",
-                          "rotation_interval",
-                          "project_id",
-                          ...(disableCustomApiKeys ? ["key"] : []),
-                        ]}
-                      />
-                    </AccordionBody>
-                  </Accordion>
-                </AccordionBody>
-              </Accordion>
-            </div>
-          )}
+                          <div style={{ position: "relative" }}>
+                            <div style={{ opacity: 0.5 }}>
+                              <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                                <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                                  <b>Logging Settings</b>
+                                  <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="px-4 pb-3">
+                                  <div className="mt-4">
+                                    <PremiumLoggingSettings
+                                      value={loggingSettings}
+                                      onChange={setLoggingSettings}
+                                      premiumUser={false}
+                                      disabledCallbacks={disabledCallbacks}
+                                      onDisabledCallbacksChange={setDisabledCallbacks}
+                                    />
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            </div>
+                            <div style={{ position: "absolute", inset: 0, cursor: "not-allowed" }} />
+                          </div>
+                        </SimpleTooltip>
+                      )}
 
-          <div style={{ textAlign: "right", marginTop: "10px" }}>
-            <Button2 htmlType="submit" disabled={isFormDisabled} style={{ opacity: isFormDisabled ? 0.5 : 1 }}>
-              {t("virtualKeys.createKey.create")}
-            </Button2>
-          </div>
-        </Form>
-      </Modal>
+                      <Collapsible
+                        key={`router-settings-accordion-${routerSettingsKey}`}
+                        className="mt-4 mb-4 overflow-hidden rounded-lg border"
+                      >
+                        <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                          <b>Router Settings</b>
+                          <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-3">
+                          <div className="mt-4 w-full">
+                            <RouterSettingsAccordion
+                              key={routerSettingsKey}
+                              ref={routerSettingsRef}
+                              accessToken={accessToken || ""}
+                              value={routerSettings || undefined}
+                              onChange={setRouterSettings}
+                              modelData={
+                                userModels.length > 0
+                                  ? { data: userModels.map((model) => ({ model_name: model })) }
+                                  : undefined
+                              }
+                            />
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+
+                      <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                        <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                          <b>Model Aliases</b>
+                          <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-3">
+                          <div className="mt-4">
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Create custom aliases for models that can be used in API calls. This allows you to create
+                              shortcuts for specific models.
+                            </p>
+                            <ModelAliasManager
+                              accessToken={accessToken}
+                              initialModelAliases={modelAliases}
+                              onAliasUpdate={setModelAliases}
+                              showExampleConfig={false}
+                            />
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+
+                      <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                        <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                          <b>Key Lifecycle</b>
+                          <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-3">
+                          <div className="mt-4">
+                            <MountedFormField name="duration" bare>
+                              {(control) => (
+                                <KeyLifecycleSettings
+                                  id={control.id}
+                                  value={control.value as string | undefined}
+                                  onChange={control.onChange}
+                                  autoRotationEnabled={autoRotationEnabled}
+                                  onAutoRotationChange={setAutoRotationEnabled}
+                                  rotationInterval={rotationInterval}
+                                  onRotationIntervalChange={setRotationInterval}
+                                  isCreateMode={true}
+                                />
+                              )}
+                            </MountedFormField>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                      <Collapsible className="mt-4 mb-4 overflow-hidden rounded-lg border">
+                        <CollapsibleTrigger className={SECTION_HEADER_CLASS}>
+                          <div className="flex items-center gap-2">
+                            <b>Advanced Settings</b>
+                            <SimpleTooltip
+                              content={
+                                <span>
+                                  Learn more about advanced settings in our{" "}
+                                  <a
+                                    href={
+                                      proxyBaseUrl
+                                        ? `${proxyBaseUrl}/#/key%20management/generate_key_fn_key_generate_post`
+                                        : `/#/key%20management/generate_key_fn_key_generate_post`
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-info hover:text-info/80"
+                                  >
+                                    documentation
+                                  </a>
+                                </span>
+                              }
+                            >
+                              <Info className="size-4 text-muted-foreground hover:text-foreground cursor-help" />
+                            </SimpleTooltip>
+                          </div>
+                          <ChevronDown className={SECTION_CHEVRON_CLASS} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-3">
+                          <SchemaFormFields
+                            schemaComponent="GenerateKeyRequest"
+                            setValue={form.setValue}
+                            excludedFields={[
+                              "key_alias",
+                              "team_id",
+                              "organization_id",
+                              "models",
+                              "duration",
+                              "metadata",
+                              "tags",
+                              "guardrails",
+                              "max_budget",
+                              "budget_duration",
+                              "tpm_limit",
+                              "rpm_limit",
+                              "tpd_limit",
+                              ...(disableCustomApiKeys ? ["key"] : []),
+                            ]}
+                          />
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              )}
+
+              <div style={{ textAlign: "right", marginTop: "10px" }}>
+                <Button type="submit" disabled={isFormDisabled}>
+                  Create Key
+                </Button>
+              </div>
+            </form>
+          </MountedFormProvider>
+        </DialogContent>
+      </Dialog>
 
       {/* Add the Create User Modal */}
       {isCreateUserModalVisible && (
-        <Modal
-          title={t("virtualKeys.createKey.createNewUser")}
-          open={isCreateUserModalVisible}
-          onCancel={() => setIsCreateUserModalVisible(false)}
-          footer={null}
-          width={800}
-        >
-          <CreateUserButton
-            userID={userID}
-            accessToken={accessToken}
-            teams={teams}
-            possibleUIRoles={possibleUIRoles}
-            onUserCreated={handleUserCreated}
-            isEmbedded={true}
-          />
-        </Modal>
+        <Dialog open={isCreateUserModalVisible} onOpenChange={(open) => !open && setIsCreateUserModalVisible(false)}>
+          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[800px]">
+            <DialogHeader>
+              <DialogTitle>Create New User</DialogTitle>
+            </DialogHeader>
+            <CreateUserButton
+              userID={userID}
+              accessToken={accessToken}
+              possibleUIRoles={possibleUIRoles}
+              onUserCreated={handleUserCreated}
+              isEmbedded={true}
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
       {apiKey && (
-        <Modal open={isModalVisible} onOk={handleOk} onCancel={handleCancel} footer={null}>
-          <Grid numItems={1} className="gap-2 w-full">
-            <Title>{t("virtualKeys.createKey.saveKey")}</Title>
-            <Col numColSpan={1}>
+        <Dialog open={isModalVisible} onOpenChange={(open) => !open && handleCancel()}>
+          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+            <div className="grid grid-cols-1 gap-2 w-full">
+              <DialogTitle className="text-lg font-medium text-foreground">Save your Key</DialogTitle>
               {apiKey != null ? (
                 <CreatedKeyDisplay apiKey={apiKey} />
               ) : (
-                <Text>{t("virtualKeys.createKey.creating")}</Text>
+                <p className="text-sm">Key being created, this might take 30s</p>
               )}
-            </Col>
-          </Grid>
-        </Modal>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

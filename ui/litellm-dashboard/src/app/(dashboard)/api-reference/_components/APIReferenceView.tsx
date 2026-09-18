@@ -45,7 +45,7 @@ const APIReferenceView: React.FC<ApiRefProps> = ({ proxySettings }) => {
               Langchain Py
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="openai">
+          <TabsContent value="openai" keepMounted>
             <CodeBlock
               language="python"
               code={`import openai
@@ -68,7 +68,7 @@ print(response)`}
             />
           </TabsContent>
 
-          <TabsContent value="llamaindex">
+          <TabsContent value="llamaindex" keepMounted>
             <CodeBlock
               language="python"
               code={`import os, dotenv
@@ -102,7 +102,7 @@ print(response)`}
             />
           </TabsContent>
 
-          <TabsContent value="langchain">
+          <TabsContent value="langchain" keepMounted>
             <CodeBlock
               language="python"
               code={`from langchain.chat_models import ChatOpenAI

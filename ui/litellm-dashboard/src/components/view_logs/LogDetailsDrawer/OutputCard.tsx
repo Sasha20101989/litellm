@@ -4,14 +4,11 @@
  */
 
 import { useState } from "react";
-import { Typography } from "antd";
-import MessageManager from "@/components/molecules/message_manager";
+import { toast } from "@/lib/toast";
+import { COLOR_BORDER } from "./constants";
 import { ParsedMessage } from "./prettyMessagesTypes";
 import { SectionHeader } from "./SectionHeader";
 import { SimpleMessageBlock } from "./SimpleMessageBlock";
-import { useTranslation } from "react-i18next";
-
-const { Text } = Typography;
 
 interface OutputCardProps {
   message: ParsedMessage | null;
@@ -20,61 +17,17 @@ interface OutputCardProps {
 }
 
 export function OutputCard({ message, completionTokens, outputCost }: OutputCardProps) {
-  const { t } = useTranslation("logs");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleCopy = () => {
     if (!message) return;
 
-    const content = message.content || "";
-    navigator.clipboard.writeText(content);
-    MessageManager.success(t("details.outputCopied"));
+    navigator.clipboard.writeText(message.content || "");
+    toast.success("Output copied");
   };
 
-  if (!message) {
-    return (
-      <div
-        style={{
-          border: "1px solid #f0f0f0",
-          borderRadius: 6,
-          overflow: "hidden",
-        }}
-      >
-        <SectionHeader
-          type="output"
-          tokens={completionTokens}
-          cost={outputCost}
-          onCopy={handleCopy}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        />
-        <div
-          style={{
-            maxHeight: isCollapsed ? "0px" : "10000px",
-            overflow: "hidden",
-            transition: "max-height 0.3s ease-out, opacity 0.3s ease-out",
-            opacity: isCollapsed ? 0 : 1,
-          }}
-        >
-          <div style={{ padding: "12px 16px" }}>
-            <Text type="secondary" style={{ fontSize: 13, fontStyle: "italic" }}>
-              {t("details.noResponseData")}
-            </Text>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div
-      style={{
-        border: "1px solid #f0f0f0",
-        borderRadius: 6,
-        overflow: "hidden",
-      }}
-    >
-      {/* Datadog-style Header */}
+    <div className="overflow-hidden rounded-md" style={{ border: `1px solid ${COLOR_BORDER}` }}>
       <SectionHeader
         type="output"
         tokens={completionTokens}
@@ -84,17 +37,16 @@ export function OutputCard({ message, completionTokens, outputCost }: OutputCard
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
 
-      {/* Content */}
       <div
-        style={{
-          maxHeight: isCollapsed ? "0px" : "10000px",
-          overflow: "hidden",
-          transition: "max-height 0.3s ease-out, opacity 0.3s ease-out",
-          opacity: isCollapsed ? 0 : 1,
-        }}
+        className="overflow-hidden transition-[max-height,opacity] duration-300 ease-out"
+        style={{ maxHeight: isCollapsed ? "0px" : "10000px", opacity: isCollapsed ? 0 : 1 }}
       >
-        <div style={{ padding: "12px 16px" }}>
-          <SimpleMessageBlock label={t("details.assistant")} content={message.content} toolCalls={message.toolCalls} />
+        <div className="px-4 py-3">
+          {message ? (
+            <SimpleMessageBlock label="ASSISTANT" content={message.content} toolCalls={message.toolCalls} />
+          ) : (
+            <span className="text-[13px] text-muted-foreground italic">No response data available</span>
+          )}
         </div>
       </div>
     </div>

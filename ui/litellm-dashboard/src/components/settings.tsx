@@ -1,32 +1,28 @@
-import {
-  Button,
-  Card,
-  Grid,
-  SelectItem,
-  Switch,
-  Tab,
-  TabGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Text,
-  TextInput,
-} from "@tremor/react";
 import React, { useEffect, useState } from "react";
+import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form";
 
-import { Button as Button2, Form, Input, Modal, Select } from "antd";
-import { useTranslation } from "react-i18next";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EmailSettings from "./email_settings";
+import MSTeamsSettings from "./MSTeamsSettings";
 import { Logo } from "@/components/molecules/logo/Logo";
-import NotificationsManager from "./molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 
-import FormItem from "antd/es/form/FormItem";
 import AlertingSettings from "./alerting/alerting_settings";
 import CloudZeroCostTracking from "./CloudZeroCostTracking/CloudZeroCostTracking";
 import DeleteResourceModal from "./common_components/DeleteResourceModal";
@@ -47,6 +43,8 @@ interface SettingsPageProps {
   premiumUser: boolean;
 }
 
+type CallbackFormValues = Record<string, string>;
+
 const assetsLogoFolder = "/ui/assets/logos/";
 
 export const backendCallbackLogoSrc = (logo: string | null | undefined): string | undefined => {
@@ -62,67 +60,107 @@ interface DynamicParamsFieldsProps {
 }
 
 const DynamicParamsFields: React.FC<DynamicParamsFieldsProps> = ({ params, callbackConfigs, selectedCallback }) => {
-  const { t } = useTranslation("settings");
+  const { register, control, formState } = useFormContext<CallbackFormValues>();
+  const fieldIdPrefix = React.useId();
 
   if (!params || params.length === 0) {
     return null;
   }
 
+  const callbackConfig = findCallbackConfig(callbackConfigs, selectedCallback);
   return (
-    <div className="space-y-4 mt-6 p-4 bg-gray-50 rounded-lg border">
+    <div className="space-y-4 mt-6 p-4 bg-muted rounded-lg border">
       {params.map((param) => {
-        const callbackConfig = callbackConfigs.find((config) => config.id === selectedCallback);
         const paramConfig = callbackConfig?.dynamic_params?.[param] || {};
         const paramType = paramConfig.type || "text";
         const fieldLabel = paramConfig.ui_name || param.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
         const isRequired = paramConfig.required || false;
+        const selectOptions: string[] = Array.isArray(paramConfig.options) ? paramConfig.options : [];
+        const isSelect = paramType === "select" && selectOptions.length > 0;
+        const isBoolean = paramType === "boolean";
+        const fieldId = `${fieldIdPrefix}-${param}`;
+        const validationRules = isRequired ? { required: `Please enter the ${fieldLabel.toLowerCase()}` } : undefined;
+        const registration = isSelect || isBoolean ? undefined : register(param, validationRules);
 
         return (
-          <FormItem
-            label={<span className="text-sm font-medium text-gray-700">{fieldLabel} </span>}
-            name={param}
-            key={param}
-            className="mb-4"
-            rules={
-              isRequired
-                ? [
-                    {
-                      required: true,
-                      message: t("logging.callbacks.enterRequired", { field: fieldLabel.toLowerCase() }),
-                    },
-                  ]
-                : undefined
-            }
-          >
-            {paramType === "password" ? (
-              <Input.Password
-                size="large"
-                placeholder={t("logging.callbacks.enterYour", { field: fieldLabel.toLowerCase() })}
-                className="w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500"
-              />
-            ) : paramType === "number" ? (
-              <Input
-                type="number"
-                size="large"
-                placeholder={t("logging.callbacks.enter", { field: fieldLabel.toLowerCase() })}
-                className="w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500"
-                min={0}
-                max={1}
-                step={0.1}
-              />
-            ) : (
-              <Input
-                size="large"
-                placeholder={t("logging.callbacks.enterYour", { field: fieldLabel.toLowerCase() })}
-                className="w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500"
+          <Field key={param} className="mb-4">
+            <FieldLabel htmlFor={fieldId}>
+              <span className="text-sm font-medium text-foreground">{fieldLabel} </span>
+            </FieldLabel>
+            {isSelect && (
+              <Controller
+                control={control}
+                name={param}
+                rules={validationRules}
+                render={({ field }) => (
+                  <Select
+                    items={selectOptions.map((option) => ({ label: option, value: option }))}
+                    value={field.value || null}
+                    onValueChange={(selected: string | null) => field.onChange(selected ?? "")}
+                  >
+                    <SelectTrigger id={fieldId} className="w-full" onBlur={field.onBlur}>
+                      <SelectValue placeholder={`Select ${fieldLabel.toLowerCase()}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
             )}
-          </FormItem>
+            {isBoolean && (
+              <Controller
+                control={control}
+                name={param}
+                render={({ field }) => (
+                  <Switch
+                    id={fieldId}
+                    checked={/^(true|1)$/i.test(String(field.value ?? ""))}
+                    onCheckedChange={(checked: boolean) => field.onChange(checked ? "true" : "false")}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+            )}
+            {!isSelect &&
+              !isBoolean &&
+              (paramType === "password" ? (
+                <Input
+                  id={fieldId}
+                  type="password"
+                  placeholder={`Enter your ${fieldLabel.toLowerCase()}`}
+                  {...registration}
+                />
+              ) : paramType === "number" ? (
+                <Input
+                  id={fieldId}
+                  type="number"
+                  placeholder={`Enter ${fieldLabel.toLowerCase()}`}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  {...registration}
+                />
+              ) : (
+                <Input id={fieldId} placeholder={`Enter your ${fieldLabel.toLowerCase()}`} {...registration} />
+              ))}
+            <FieldError errors={[formState.errors[param]]} />
+          </Field>
         );
       })}
     </div>
   );
 };
+
+interface CallbackConfigOption {
+  id: string;
+  displayName: string;
+  logo?: string | null;
+}
 
 // Shared component for rendering callback selector
 interface CallbackSelectorProps {
@@ -138,45 +176,90 @@ export const CallbackSelector: React.FC<CallbackSelectorProps> = ({
   onCallbackChange,
   disabled = false,
 }) => {
-  const { t } = useTranslation("settings");
+  const { control } = useFormContext<CallbackFormValues>();
+  const inputId = React.useId();
+  const selectedConfig = findCallbackConfig(callbackConfigs, selectedCallback) ?? null;
 
   return (
-    <FormItem
-      label={t("logging.callbacks.callback")}
+    <Controller
+      control={control}
       name="callback"
-      rules={disabled ? undefined : [{ required: true, message: t("logging.callbacks.selectRequired") }]}
-    >
-      <Select
-        placeholder={t("logging.callbacks.select")}
-        size="large"
-        className="w-full"
-        showSearch
-        disabled={disabled}
-        value={selectedCallback}
-        filterOption={(input, option) => {
-          return (option?.value?.toString() ?? "").toLowerCase().includes(input.toLowerCase());
-        }}
-        onChange={onCallbackChange}
-      >
-        {callbackConfigs.map((callbackConfig) => {
-          return (
-            <SelectItem key={callbackConfig.id} value={callbackConfig.id}>
-              <div className="flex items-center space-x-3 py-1">
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <Logo
-                    src={backendCallbackLogoSrc(callbackConfig.logo)}
-                    label={callbackConfig.displayName}
-                    className="w-6 h-6 rounded-sm object-contain"
-                  />
-                </div>
-                <span className="font-medium text-gray-900">{callbackConfig.displayName}</span>
-              </div>
-            </SelectItem>
-          );
-        })}
-      </Select>
-    </FormItem>
+      rules={disabled ? undefined : { required: "Please select a callback" }}
+      render={({ field, fieldState }) => (
+        <Field>
+          <FieldLabel htmlFor={inputId}>Callback</FieldLabel>
+          <Combobox
+            items={callbackConfigs}
+            value={selectedConfig}
+            onValueChange={(config: CallbackConfigOption | null) => {
+              field.onChange(config?.id ?? "");
+              onCallbackChange(config?.id ?? "");
+            }}
+            isItemEqualToValue={(a: CallbackConfigOption, b: CallbackConfigOption) => a.id === b.id}
+            itemToStringLabel={(config: CallbackConfigOption) => config.displayName}
+            filter={(config: CallbackConfigOption, query: string) =>
+              config.id.toLowerCase().includes(query.trim().toLowerCase())
+            }
+            disabled={disabled}
+          >
+            <ComboboxInput
+              id={inputId}
+              placeholder="Choose a logging callback..."
+              className="w-full"
+              disabled={disabled}
+              onBlur={field.onBlur}
+              aria-invalid={fieldState.error !== undefined || undefined}
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>No results</ComboboxEmpty>
+              <ComboboxList>
+                {(callbackConfig: CallbackConfigOption) => (
+                  <ComboboxItem key={callbackConfig.id} value={callbackConfig}>
+                    <div className="flex items-center space-x-3 py-1">
+                      <div className="w-6 h-6 flex items-center justify-center">
+                        <Logo
+                          src={backendCallbackLogoSrc(callbackConfig.logo)}
+                          label={callbackConfig.displayName}
+                          className="w-6 h-6 rounded-sm object-contain"
+                        />
+                      </div>
+                      <span className="font-medium text-foreground">{callbackConfig.displayName}</span>
+                    </div>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          <FieldError errors={[fieldState.error]} />
+        </Field>
+      )}
+    />
   );
+};
+
+const CALLBACK_CONFIG_ALIASES: Record<string, string> = { s3_v2: "s3" };
+
+interface DynamicParamConfig {
+  type?: string;
+  ui_name?: string;
+  required?: boolean;
+  options?: string[];
+}
+
+interface CallbackConfigWithParams {
+  id: string;
+  dynamic_params?: Record<string, DynamicParamConfig>;
+}
+
+const findCallbackConfig = <T extends { id: string }>(
+  callbackConfigs: readonly T[],
+  callbackName: string | null,
+): T | undefined => {
+  if (!callbackName) {
+    return undefined;
+  }
+  const configId = CALLBACK_CONFIG_ALIASES[callbackName] ?? callbackName;
+  return callbackConfigs.find((config) => config.id === configId);
 };
 
 // Shared helper function to get dynamic params for a callback
@@ -189,7 +272,7 @@ const getDynamicParamsForCallback = (
     return fallbackVariables ? Object.keys(fallbackVariables) : [];
   }
 
-  const callbackConfig = callbackConfigs.find((config) => config.id === callbackName);
+  const callbackConfig = findCallbackConfig(callbackConfigs, callbackName);
   if (callbackConfig?.dynamic_params) {
     return Object.keys(callbackConfig.dynamic_params);
   }
@@ -208,12 +291,11 @@ const buildCallbackPayload = (formValues: Record<string, any>, callbackName: str
 };
 
 const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, premiumUser }) => {
-  const { t } = useTranslation("settings");
   const [callbacks, setCallbacks] = useState<AlertingObject[]>([]);
   const [isLoadingCallbacks, setIsLoadingCallbacks] = useState(true);
   const [alerts, setAlerts] = useState<any[]>([]);
-  const [addForm] = Form.useForm();
-  const [editForm] = Form.useForm();
+  const addForm = useForm<CallbackFormValues>({ shouldUnregister: true });
+  const editForm = useForm<CallbackFormValues>({ shouldUnregister: true });
   const [selectedCallback, setSelectedCallback] = useState<string | null>(null);
   const [catchAllWebhookURL, setCatchAllWebhookURL] = useState<string>("");
   const [alertToWebhooks, setAlertToWebhooks] = useState<Record<string, string>>({});
@@ -251,21 +333,28 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
         setCallbackConfigs(data || []);
       })
       .catch((error) => {
-        NotificationsManager.fromBackend(t("logging.callbacks.loadFailed", { error: parseErrorMessage(error) }));
+        toast.fromError("Failed to load callback configs: " + parseErrorMessage(error));
       });
   }, [accessToken]);
 
   useEffect(() => {
     if (showEditCallback && selectedEditCallback) {
-      const normalized = Object.fromEntries(
-        Object.entries(selectedEditCallback.variables || {}).map(([k, v]) => [k, v ?? ""]),
+      const params = getDynamicParamsForCallback(
+        selectedEditCallback.name,
+        callbackConfigs,
+        selectedEditCallback.variables,
       );
-      editForm.setFieldsValue({
+      const fieldNameFor = (variable: string) =>
+        params.find((param) => param.toUpperCase() === variable.toUpperCase()) ?? variable;
+      const normalized = Object.fromEntries(
+        Object.entries(selectedEditCallback.variables || {}).map(([k, v]) => [fieldNameFor(k), v ?? ""]),
+      );
+      editForm.reset({
         ...normalized,
         callback: selectedEditCallback.name,
       });
     }
-  }, [showEditCallback, selectedEditCallback, editForm]);
+  }, [showEditCallback, selectedEditCallback, editForm, callbackConfigs]);
 
   const handleSwitchChange = (alertName: string) => {
     if (activeAlerts.includes(alertName)) {
@@ -275,14 +364,17 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
     }
   };
   const alerts_to_UI_NAME: Record<string, string> = {
-    llm_exceptions: t("logging.alerts.types.llm_exceptions"),
-    llm_too_slow: t("logging.alerts.types.llm_too_slow"),
-    llm_requests_hanging: t("logging.alerts.types.llm_requests_hanging"),
-    budget_alerts: t("logging.alerts.types.budget_alerts"),
-    db_exceptions: t("logging.alerts.types.db_exceptions"),
-    daily_reports: t("logging.alerts.types.daily_reports"),
-    outage_alerts: t("logging.alerts.types.outage_alerts"),
-    region_outage_alerts: t("logging.alerts.types.region_outage_alerts"),
+    llm_exceptions: "LLM Exceptions",
+    llm_too_slow: "LLM Responses Too Slow",
+    llm_requests_hanging: "LLM Requests Hanging",
+    budget_alerts: "Budget Alerts (API Keys, Users)",
+    user_spend_thresholds: "User Spend Thresholds (Daily/Monthly)",
+    user_spend_anomalies: "User Spend Anomaly Detection",
+    db_exceptions: "Database Exceptions (Read/Write)",
+    daily_reports: "Weekly/Monthly Spend Reports",
+    outage_alerts: "Outage Alerts",
+    region_outage_alerts: "Region Outage Alerts",
+    model_deprecation_warnings: "Model Deprecation Warnings",
   };
 
   useEffect(() => {
@@ -337,17 +429,15 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
 
     try {
       await setCallbacksCall(accessToken, payload);
-      NotificationsManager.success(
-        isEdit ? t("logging.callbacks.updated") : t("logging.callbacks.added", { name: callbackName }),
-      );
+      toast.success(isEdit ? "Callback updated successfully" : `Callback ${callbackName} added successfully`);
 
       if (isEdit) {
         setShowEditCallback(false);
-        editForm.resetFields();
+        editForm.reset();
         setSelectedEditCallback(null);
       } else {
         setShowAddCallbacksModal(false);
-        addForm.resetFields();
+        addForm.reset();
         setSelectedCallback(null);
         setSelectedCallbackParams([]);
       }
@@ -358,7 +448,7 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
         setCallbacks(updatedData.callbacks);
       }
     } catch (error) {
-      NotificationsManager.fromBackend(error);
+      toast.fromError(error);
     } finally {
       if (isEdit) {
         setIsUpdatingCallback(false);
@@ -389,6 +479,23 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
     setSelectedCallbackParams(params);
   };
 
+  const closeAddCallbackModal = () => {
+    setShowAddCallbacksModal(false);
+    setSelectedCallback(null);
+    setSelectedCallbackParams([]);
+  };
+
+  const cancelAddCallback = () => {
+    closeAddCallbackModal();
+    addForm.reset();
+  };
+
+  const closeEditCallbackModal = () => {
+    setShowEditCallback(false);
+    setSelectedEditCallback(null);
+    editForm.reset();
+  };
+
   const handleSaveAlerts = async () => {
     if (!accessToken) {
       return;
@@ -411,9 +518,9 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
     try {
       await setCallbacksCall(accessToken, payload);
     } catch (error) {
-      NotificationsManager.fromBackend(error);
+      toast.fromError(error);
     }
-    NotificationsManager.success(t("logging.alerts.updated"));
+    toast.success("Alerts updated successfully");
   };
 
   const handleDeleteCallback = (callback: any) => {
@@ -429,7 +536,7 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
     try {
       setIsDeletingCallback(true);
       await deleteCallback(accessToken, callbackToDelete.name);
-      NotificationsManager.success(t("logging.callbacks.deleted", { name: callbackToDelete.name }));
+      toast.success(`Callback ${callbackToDelete.name} deleted successfully`);
 
       // Refresh the callbacks list
       if (userID && userRole) {
@@ -441,7 +548,7 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
       setCallbackToDelete(null);
     } catch (error) {
       console.error("Failed to delete callback:", error);
-      NotificationsManager.fromBackend(error);
+      toast.fromError(error);
     } finally {
       setIsDeletingCallback(false);
     }
@@ -453,264 +560,230 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
 
   return (
     <div className="mx-4">
-      <Grid numItems={1} className="gap-2 p-8 w-full mt-2">
-        <TabGroup>
-          <TabList variant="line" defaultValue="1">
-            <Tab value="1">{t("logging.tabs.callbacks")}</Tab>
-            <Tab value="2">{t("logging.tabs.cloudZero")}</Tab>
-            <Tab value="2">{t("logging.tabs.alertTypes")}</Tab>
-            <Tab value="3">{t("logging.tabs.alertSettings")}</Tab>
-            <Tab value="4">{t("logging.tabs.email")}</Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel>
-              <LoggingCallbacksTable
-                callbacks={callbacks}
-                availableCallbacks={allCallbacks}
-                isLoading={isLoadingCallbacks}
-                onAdd={() => setShowAddCallbacksModal(true)}
-                onEdit={(cb) => {
-                  setSelectedEditCallback(cb);
-                  setShowEditCallback(true);
-                }}
-                onDelete={(cb) => handleDeleteCallback(cb)}
-                onTest={async (cb) => {
-                  try {
-                    await serviceHealthCheck(accessToken, cb.name);
-                    NotificationsManager.success(t("logging.callbacks.healthTriggered"));
-                  } catch (error) {
-                    NotificationsManager.fromBackend(parseErrorMessage(error));
-                  }
-                }}
-              />
-            </TabPanel>
-            <TabPanel>
-              <div className="p-8">
-                <CloudZeroCostTracking />
-              </div>
-            </TabPanel>
-            <TabPanel>
-              <Card>
-                <Text className="my-2">
-                  {t("logging.alerts.slackOnlyBefore")}{" "}
-                  <a href="https://api.slack.com/messaging/webhooks" target="_blank" style={{ color: "blue" }}>
-                    {t("logging.alerts.slackOnlyLink")}
-                  </a>
-                </Text>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeaderCell></TableHeaderCell>
-                      <TableHeaderCell></TableHeaderCell>
-                      <TableHeaderCell>{t("logging.alerts.webhook")}</TableHeaderCell>
-                    </TableRow>
-                  </TableHead>
+      <div className="grid grid-cols-1 gap-2 p-8 w-full mt-2">
+        <Tabs defaultValue="logging-callbacks">
+          <TabsList variant="line">
+            <TabsTrigger value="logging-callbacks">Logging Callbacks</TabsTrigger>
+            <TabsTrigger value="cloudzero-cost-tracking">CloudZero Cost Tracking</TabsTrigger>
+            <TabsTrigger value="alerting-types">Alerting Types</TabsTrigger>
+            <TabsTrigger value="alerting-settings">Alerting Settings</TabsTrigger>
+            <TabsTrigger value="email-alerts">Email Alerts</TabsTrigger>
+            <TabsTrigger value="ms-teams-alerts">MS Teams Alerts</TabsTrigger>
+          </TabsList>
+          <TabsContent value="logging-callbacks" keepMounted>
+            <LoggingCallbacksTable
+              callbacks={callbacks}
+              availableCallbacks={allCallbacks}
+              isLoading={isLoadingCallbacks}
+              onAdd={() => setShowAddCallbacksModal(true)}
+              onEdit={(cb) => {
+                setSelectedEditCallback(cb);
+                setShowEditCallback(true);
+              }}
+              onDelete={(cb) => handleDeleteCallback(cb)}
+              onTest={async (cb) => {
+                try {
+                  await serviceHealthCheck(accessToken, cb.name);
+                  toast.success("Health check triggered");
+                } catch (error) {
+                  toast.fromError(parseErrorMessage(error));
+                }
+              }}
+            />
+          </TabsContent>
+          <TabsContent value="cloudzero-cost-tracking" keepMounted>
+            <div className="p-8">
+              <CloudZeroCostTracking />
+            </div>
+          </TabsContent>
+          <TabsContent value="alerting-types" keepMounted>
+            <Card className="p-6">
+              <p className="my-2">
+                Alerts are sent to any Slack-compatible incoming webhook URL (Slack, Rocket.Chat, Mattermost, etc.). Get
+                Slack webhook urls from{" "}
+                <a href="https://api.slack.com/messaging/webhooks" target="_blank" style={{ color: "blue" }}>
+                  here
+                </a>
+              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead></TableHead>
+                    <TableHead></TableHead>
+                    <TableHead>Webhook URL (Slack-compatible)</TableHead>
+                  </TableRow>
+                </TableHeader>
 
-                  <TableBody>
-                    {Object.entries(alerts_to_UI_NAME).map(([key, value], index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          {key == "region_outage_alerts" ? (
-                            premiumUser ? (
-                              <Switch
-                                id="switch"
-                                name="switch"
-                                checked={isAlertOn(key)}
-                                onChange={() => handleSwitchChange(key)}
-                              />
-                            ) : (
-                              <Button className="flex items-center justify-center">
-                                <a href="https://forms.gle/W3U4PZpJGFHWtHyA9" target="_blank">
-                                  ✨ {t("logging.alerts.enterprise")}
-                                </a>
-                              </Button>
-                            )
-                          ) : (
+                <TableBody>
+                  {Object.entries(alerts_to_UI_NAME).map(([key, value], index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        {key == "region_outage_alerts" ? (
+                          premiumUser ? (
                             <Switch
                               id="switch"
                               name="switch"
                               checked={isAlertOn(key)}
-                              onChange={() => handleSwitchChange(key)}
+                              onCheckedChange={() => handleSwitchChange(key)}
                             />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Text>{value}</Text>
-                        </TableCell>
-                        <TableCell>
-                          <TextInput
-                            name={key}
-                            type="password"
-                            defaultValue={
-                              alertToWebhooks && alertToWebhooks[key]
-                                ? alertToWebhooks[key]
-                                : (catchAllWebhookURL as string)
-                            }
-                          ></TextInput>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <Button size="xs" className="mt-2" onClick={handleSaveAlerts}>
-                  {t("logging.alerts.save")}
-                </Button>
+                          ) : (
+                            <Button className="flex items-center justify-center">
+                              <a href="https://forms.gle/W3U4PZpJGFHWtHyA9" target="_blank">
+                                ✨ Enterprise Feature
+                              </a>
+                            </Button>
+                          )
+                        ) : (
+                          <Switch
+                            id="switch"
+                            name="switch"
+                            checked={isAlertOn(key)}
+                            onCheckedChange={() => handleSwitchChange(key)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-normal break-words">
+                        <p>{value}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          name={key}
+                          type="password"
+                          defaultValue={
+                            alertToWebhooks && alertToWebhooks[key]
+                              ? alertToWebhooks[key]
+                              : (catchAllWebhookURL as string)
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Button size="xs" className="mt-2" onClick={handleSaveAlerts}>
+                Save Changes
+              </Button>
 
-                <Button
-                  onClick={async () => {
-                    try {
-                      await serviceHealthCheck(accessToken, "slack");
-                      NotificationsManager.success(t("logging.alerts.testTriggered"));
-                    } catch (error) {
-                      NotificationsManager.fromBackend(parseErrorMessage(error));
-                    }
-                  }}
-                  className="mx-2"
-                >
-                  {t("logging.alerts.test")}
-                </Button>
-              </Card>
-            </TabPanel>
-            <TabPanel>
-              <AlertingSettings accessToken={accessToken} premiumUser={premiumUser} />
-            </TabPanel>
-            <TabPanel>
-              <EmailSettings accessToken={accessToken} premiumUser={premiumUser} alerts={alerts} />
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
-      </Grid>
+              <Button
+                onClick={async () => {
+                  try {
+                    await serviceHealthCheck(accessToken, "slack");
+                    toast.success(
+                      "Alert test triggered. Test request to slack made - check logs/alerts on slack to verify",
+                    );
+                  } catch (error) {
+                    toast.fromError(parseErrorMessage(error));
+                  }
+                }}
+                className="mx-2"
+              >
+                Test Alerts
+              </Button>
+            </Card>
+          </TabsContent>
+          <TabsContent value="alerting-settings" keepMounted>
+            <AlertingSettings accessToken={accessToken} premiumUser={premiumUser} />
+          </TabsContent>
+          <TabsContent value="email-alerts" keepMounted>
+            <EmailSettings accessToken={accessToken} premiumUser={premiumUser} alerts={alerts} />
+          </TabsContent>
+          <TabsContent value="ms-teams-alerts" keepMounted>
+            <MSTeamsSettings accessToken={accessToken} userID={userID} userRole={userRole} alerts={alerts} />
+          </TabsContent>
+        </Tabs>
+      </div>
 
-      <Modal
-        title={t("logging.callbacks.addTitle")}
-        open={showAddCallbacksModal}
-        width={800}
-        onCancel={() => {
-          setShowAddCallbacksModal(false);
-          setSelectedCallback(null);
-          setSelectedCallbackParams([]);
-        }}
-        footer={null}
-      >
-        <a
-          href="https://docs.litellm.ai/docs/proxy/logging"
-          className="mb-8 mt-4"
-          target="_blank"
-          style={{ color: "blue" }}
-        >
-          {" "}
-          {t("logging.callbacks.docs")}
-        </a>
+      <Dialog open={showAddCallbacksModal} onOpenChange={(open) => !open && closeAddCallbackModal()}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Add Logging Callback</DialogTitle>
+          </DialogHeader>
+          <a
+            href="https://docs.litellm.ai/docs/proxy/logging"
+            className="mb-8 mt-4"
+            target="_blank"
+            style={{ color: "blue" }}
+          >
+            {" "}
+            LiteLLM Docs: Logging
+          </a>
 
-        <Form
-          form={addForm}
-          onFinish={addNewCallbackCall}
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 16 }}
-          labelAlign="left"
-        >
-          <CallbackSelector
-            callbackConfigs={callbackConfigs}
-            selectedCallback={selectedCallback}
-            onCallbackChange={handleSelectedCallbackChange}
-          />
-
-          <DynamicParamsFields
-            params={selectedCallbackParams}
-            callbackConfigs={callbackConfigs}
-            selectedCallback={selectedCallback}
-          />
-
-          <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
-            <Button2
-              onClick={() => {
-                setShowAddCallbacksModal(false);
-                setSelectedCallback(null);
-                setSelectedCallbackParams([]);
-                addForm.resetFields();
-              }}
-              disabled={isAddingCallback}
-            >
-              {t("logging.callbacks.cancel")}
-            </Button2>
-            <Button2 htmlType="submit" loading={isAddingCallback} disabled={isAddingCallback}>
-              {isAddingCallback ? t("logging.callbacks.adding") : t("logging.callbacks.add")}
-            </Button2>
-          </div>
-        </Form>
-      </Modal>
-
-      <Modal
-        open={showEditCallback}
-        width={800}
-        title={t("logging.callbacks.editTitle")}
-        onCancel={() => {
-          setShowEditCallback(false);
-          setSelectedEditCallback(null);
-          editForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={editForm}
-          onFinish={updateCallbackCall}
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 16 }}
-          labelAlign="left"
-        >
-          {selectedEditCallback && (
-            <>
+          <FormProvider {...addForm}>
+            <form onSubmit={addForm.handleSubmit(addNewCallbackCall)}>
               <CallbackSelector
                 callbackConfigs={callbackConfigs}
-                selectedCallback={selectedEditCallback.name}
-                onCallbackChange={() => {}}
-                disabled={true}
+                selectedCallback={selectedCallback}
+                onCallbackChange={handleSelectedCallbackChange}
               />
 
               <DynamicParamsFields
-                params={getDynamicParamsForCallback(
-                  selectedEditCallback.name,
-                  callbackConfigs,
-                  selectedEditCallback.variables,
-                )}
+                params={selectedCallbackParams}
                 callbackConfigs={callbackConfigs}
-                selectedCallback={selectedEditCallback.name}
+                selectedCallback={selectedCallback}
               />
-            </>
-          )}
 
-          <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
-            <Button2
-              onClick={() => {
-                setShowEditCallback(false);
-                setSelectedEditCallback(null);
-                editForm.resetFields();
-              }}
-              disabled={isUpdatingCallback}
-            >
-              {t("logging.callbacks.cancel")}
-            </Button2>
-            <Button2
-              onClick={() => {
-                editForm.submit();
-              }}
-              loading={isUpdatingCallback}
-              disabled={isUpdatingCallback}
-            >
-              {isUpdatingCallback ? t("logging.callbacks.saving") : t("logging.callbacks.save")}
-            </Button2>
-          </div>
-        </Form>
-      </Modal>
+              <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-border">
+                <Button type="button" variant="outline" onClick={cancelAddCallback} disabled={isAddingCallback}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isAddingCallback}>
+                  {isAddingCallback ? "Adding..." : "Add Callback"}
+                </Button>
+              </div>
+            </form>
+          </FormProvider>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditCallback} onOpenChange={(open) => !open && closeEditCallbackModal()}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Edit Callback Settings</DialogTitle>
+          </DialogHeader>
+          <FormProvider {...editForm}>
+            <form onSubmit={editForm.handleSubmit(updateCallbackCall)}>
+              {selectedEditCallback && (
+                <>
+                  <CallbackSelector
+                    callbackConfigs={callbackConfigs}
+                    selectedCallback={selectedEditCallback.name}
+                    onCallbackChange={() => {}}
+                    disabled={true}
+                  />
+
+                  <DynamicParamsFields
+                    params={getDynamicParamsForCallback(
+                      selectedEditCallback.name,
+                      callbackConfigs,
+                      selectedEditCallback.variables,
+                    )}
+                    callbackConfigs={callbackConfigs}
+                    selectedCallback={selectedEditCallback.name}
+                  />
+                </>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-border">
+                <Button type="button" variant="outline" onClick={closeEditCallbackModal} disabled={isUpdatingCallback}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUpdatingCallback}>
+                  {isUpdatingCallback ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </FormProvider>
+        </DialogContent>
+      </Dialog>
 
       <DeleteResourceModal
         isOpen={showDeleteConfirmModal}
-        title={t("logging.callbacks.deleteTitle")}
-        message={t("logging.callbacks.deleteMessage")}
-        resourceInformationTitle={t("logging.callbacks.information")}
+        title="Delete Callback"
+        message="Are you sure you want to delete this callback? This action cannot be undone."
+        resourceInformationTitle="Callback Information"
         resourceInformation={[
-          { label: t("logging.callbacks.name"), value: callbackToDelete?.name },
-          { label: t("logging.callbacks.mode"), value: callbackToDelete?.mode || "success" },
+          { label: "Callback Name", value: callbackToDelete?.name },
+          { label: "Mode", value: callbackToDelete?.mode || "success" },
         ]}
         onCancel={() => {
           setShowDeleteConfirmModal(false);

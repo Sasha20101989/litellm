@@ -4,18 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import NotificationsManager from "../molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import { getEmailEventSettings, updateEmailEventSettings, resetEmailEventSettings } from "../networking";
 import { EmailEvent } from "../../types";
 import { EmailEventSetting } from "./types";
-import { useTranslation } from "react-i18next";
 
 interface EmailEventSettingsProps {
   accessToken: string | null;
 }
 
 const EmailEventSettings: React.FC<EmailEventSettingsProps> = ({ accessToken }) => {
-  const { t } = useTranslation("settings");
   const [loading, setLoading] = useState(true);
   const [eventSettings, setEventSettings] = useState<EmailEventSetting[]>([]);
 
@@ -33,7 +31,7 @@ const EmailEventSettings: React.FC<EmailEventSettingsProps> = ({ accessToken }) 
       setEventSettings(response.settings);
     } catch (error) {
       console.error("Failed to fetch email event settings:", error);
-      NotificationsManager.fromBackend(error);
+      toast.fromError(error);
     } finally {
       setLoading(false);
     }
@@ -51,10 +49,10 @@ const EmailEventSettings: React.FC<EmailEventSettingsProps> = ({ accessToken }) 
 
     try {
       await updateEmailEventSettings(accessToken, { settings: eventSettings });
-      NotificationsManager.success(t("logging.email.eventUpdated"));
+      toast.success("Email event settings updated successfully");
     } catch (error) {
       console.error("Failed to update email event settings:", error);
-      NotificationsManager.fromBackend(error);
+      toast.fromError(error);
     }
   };
 
@@ -63,12 +61,12 @@ const EmailEventSettings: React.FC<EmailEventSettingsProps> = ({ accessToken }) 
 
     try {
       await resetEmailEventSettings(accessToken);
-      NotificationsManager.success(t("logging.email.eventReset"));
+      toast.success("Email event settings reset to defaults");
       // Refresh settings after reset
       fetchEventSettings();
     } catch (error) {
       console.error("Failed to reset email event settings:", error);
-      NotificationsManager.fromBackend(error);
+      toast.fromError(error);
     }
   };
 
@@ -76,30 +74,24 @@ const EmailEventSettings: React.FC<EmailEventSettingsProps> = ({ accessToken }) 
   const getEventDescription = (event: EmailEvent): string => {
     // Convert event name to a sentence with more context
     if (event.includes("Virtual Key Created")) {
-      return t("logging.email.virtualKeyCreated");
+      return "An email will be sent to the user when a new virtual key is created with their user ID";
     } else if (event.includes("New User Invitation")) {
-      return t("logging.email.userInvitation");
+      return "An email will be sent to the email address of the user when a new user is created";
     } else {
       // Handle any other event type from the API
       const words = event
         .split(/(?=[A-Z])/)
         .join(" ")
         .toLowerCase();
-      return t("logging.email.genericEvent", { event: words });
+      return `Receive an email notification when ${words}`;
     }
-  };
-
-  const getEventLabel = (event: EmailEvent): string => {
-    if (event.includes("Virtual Key Created")) return t("logging.email.virtualKeyCreatedLabel");
-    if (event.includes("New User Invitation")) return t("logging.email.userInvitationLabel");
-    return event;
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t("logging.email.notifications")}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t("logging.email.notificationsDescription")}</p>
+        <CardTitle className="text-base">Email Notifications</CardTitle>
+        <p className="text-sm text-muted-foreground">Select which events should trigger email notifications.</p>
       </CardHeader>
 
       <CardContent>
@@ -120,7 +112,7 @@ const EmailEventSettings: React.FC<EmailEventSettingsProps> = ({ accessToken }) 
                   className="mt-1"
                 />
                 <div className="ml-3">
-                  <p className="text-sm">{getEventLabel(setting.event)}</p>
+                  <p className="text-sm">{setting.event}</p>
                   <div className="block text-sm text-muted-foreground">{getEventDescription(setting.event)}</div>
                 </div>
               </div>
@@ -130,10 +122,10 @@ const EmailEventSettings: React.FC<EmailEventSettingsProps> = ({ accessToken }) 
 
         <div className="mt-6 flex gap-4">
           <Button onClick={handleSaveSettings} disabled={loading}>
-            {t("logging.email.save")}
+            Save Changes
           </Button>
           <Button variant="secondary" onClick={handleResetSettings} disabled={loading}>
-            {t("logging.email.reset")}
+            Reset to Defaults
           </Button>
         </div>
       </CardContent>

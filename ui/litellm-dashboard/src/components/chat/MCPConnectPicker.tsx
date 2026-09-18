@@ -1,12 +1,12 @@
+import { useTranslation } from "react-i18next";
 import React, { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import MessageManager from "@/components/molecules/message_manager";
+import { toast } from "@/lib/toast";
 import { Logo } from "@/components/molecules/logo/Logo";
 import { fetchMCPServers, listMCPTools } from "../networking";
 import { MCPServer } from "../mcp_tools/types";
-import { useTranslation } from "react-i18next";
 
 interface Props {
   accessToken: string;
@@ -58,12 +58,12 @@ const MCPConnectPicker: React.FC<Props> = ({ accessToken, selectedServers, onCha
     try {
       const result = await listMCPTools(accessToken, serverName);
       if (result?.error) {
-        MessageManager.warning(t("integrations.excludedToolsError", { server: serverName }));
+        toast.warning(`Could not load tools for ${serverName} \u2014 it will be excluded from this message.`);
         return;
       }
       onChange([...selectedServers, serverName]);
     } catch {
-      MessageManager.warning(t("integrations.excludedToolsError", { server: serverName }));
+      toast.warning(`Could not load tools for ${serverName} \u2014 it will be excluded from this message.`);
     } finally {
       setTogglingOn((prev) => {
         const next = new Set(prev);
@@ -91,9 +91,7 @@ const MCPConnectPicker: React.FC<Props> = ({ accessToken, selectedServers, onCha
           ))}
         </div>
       ) : servers.length === 0 ? (
-        <div className="px-3 py-4 text-muted-foreground text-[13px] text-center">
-          {t("integrations.noServersConfigured")}
-        </div>
+        <div className="px-3 py-4 text-muted-foreground text-[13px] text-center">{t("integrations.noServersConfigured")}</div>
       ) : (
         servers.map((server) => {
           const name = server.server_name ?? server.alias ?? server.server_id;

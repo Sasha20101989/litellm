@@ -1,22 +1,35 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { Modal, Select, Switch, Collapse, Input, Divider } from "antd";
-import { Button, TextInput } from "@tremor/react";
-import {
-  CodeOutlined,
-  PlayCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  CaretRightOutlined,
-  SaveOutlined,
-  UsergroupAddOutlined,
-  ExportOutlined,
-} from "@ant-design/icons";
+import { CheckCircle2, ChevronRight, Code, ExternalLink, PlayCircle, Save, Users, XCircle } from "lucide-react";
 import { createGuardrailCall, updateGuardrailCall, testCustomCodeGuardrail } from "@/components/networking";
-import NotificationsManager from "@/components/molecules/notifications_manager";
-
-const { Panel } = Collapse;
-const { TextArea } = Input;
+import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  useComboboxAnchor,
+} from "@/components/ui/combobox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
 
 // Code templates
 const CODE_TEMPLATES = {
@@ -97,56 +110,43 @@ const CODE_TEMPLATES = {
 // Available primitives organized by category
 const PRIMITIVES = {
   "Return Values": [
-    { name: "allow()", desc: "Let request/response through", descKey: "allow" },
-    { name: "block(reason)", desc: "Reject with message", descKey: "block" },
-    { name: "modify(texts=[], images=[], tool_calls=[])", desc: "Transform content", descKey: "modify" },
+    { name: "allow()", desc: "Let request/response through" },
+    { name: "block(reason)", desc: "Reject with message" },
+    { name: "flag(reason, metadata={})", desc: "Let through, record a non-blocking violation" },
+    { name: "modify(texts=[], images=[], tool_calls=[])", desc: "Transform content" },
   ],
   "HTTP Requests (async)": [
-    { name: "await http_request(url, method, headers, body)", desc: "Make async HTTP request", descKey: "http" },
-    { name: "await http_get(url, headers)", desc: "Async GET request", descKey: "httpGet" },
-    { name: "await http_post(url, body, headers)", desc: "Async POST request", descKey: "httpPost" },
+    { name: "await http_request(url, method, headers, body)", desc: "Make async HTTP request" },
+    { name: "await http_get(url, headers)", desc: "Async GET request" },
+    { name: "await http_post(url, body, headers)", desc: "Async POST request" },
   ],
   "Regex Functions": [
-    { name: "regex_match(text, pattern)", desc: "Returns True if pattern found", descKey: "regexMatch" },
-    { name: "regex_replace(text, pattern, replacement)", desc: "Replace all matches", descKey: "regexReplace" },
-    { name: "regex_find_all(text, pattern)", desc: "Return list of matches", descKey: "regexFindAll" },
+    { name: "regex_match(text, pattern)", desc: "Returns True if pattern found" },
+    { name: "regex_replace(text, pattern, replacement)", desc: "Replace all matches" },
+    { name: "regex_find_all(text, pattern)", desc: "Return list of matches" },
   ],
   "JSON Functions": [
-    { name: "json_parse(text)", desc: "Parse JSON string, returns None on error", descKey: "jsonParse" },
-    { name: "json_stringify(obj)", desc: "Convert to JSON string", descKey: "jsonStringify" },
-    { name: "json_schema_valid(obj, schema)", desc: "Validate against JSON schema", descKey: "jsonSchema" },
+    { name: "json_parse(text)", desc: "Parse JSON string, returns None on error" },
+    { name: "json_stringify(obj)", desc: "Convert to JSON string" },
+    { name: "json_schema_valid(obj, schema)", desc: "Validate against JSON schema" },
   ],
   "URL Functions": [
-    { name: "extract_urls(text)", desc: "Extract all URLs from text", descKey: "extractUrls" },
-    { name: "is_valid_url(url)", desc: "Check if URL is valid", descKey: "validUrl" },
-    { name: "all_urls_valid(text)", desc: "Check all URLs in text are valid", descKey: "allUrlsValid" },
+    { name: "extract_urls(text)", desc: "Extract all URLs from text" },
+    { name: "is_valid_url(url)", desc: "Check if URL is valid" },
+    { name: "all_urls_valid(text)", desc: "Check all URLs in text are valid" },
   ],
   "Code Detection": [
-    { name: "detect_code(text)", desc: "Returns True if code detected", descKey: "detectCode" },
-    { name: "detect_code_languages(text)", desc: "Returns list of detected languages", descKey: "codeLanguages" },
-    {
-      name: 'contains_code_language(text, ["sql"])',
-      desc: "Check for specific languages",
-      descKey: "containsLanguage",
-    },
+    { name: "detect_code(text)", desc: "Returns True if code detected" },
+    { name: "detect_code_languages(text)", desc: "Returns list of detected languages" },
+    { name: 'contains_code_language(text, ["sql"])', desc: "Check for specific languages" },
   ],
   "Text Utilities": [
-    { name: "contains(text, substring)", desc: "Check if substring exists", descKey: "contains" },
-    { name: "contains_any(text, [substr1, substr2])", desc: "Check if any substring exists", descKey: "containsAny" },
-    { name: "word_count(text)", desc: "Count words", descKey: "wordCount" },
-    { name: "char_count(text)", desc: "Count characters", descKey: "charCount" },
-    { name: "lower(text) / upper(text) / trim(text)", desc: "String transforms", descKey: "stringTransforms" },
+    { name: "contains(text, substring)", desc: "Check if substring exists" },
+    { name: "contains_any(text, [substr1, substr2])", desc: "Check if any substring exists" },
+    { name: "word_count(text)", desc: "Count words" },
+    { name: "char_count(text)", desc: "Count characters" },
+    { name: "lower(text) / upper(text) / trim(text)", desc: "String transforms" },
   ],
-};
-
-const PRIMITIVE_CATEGORY_KEYS: Record<string, string> = {
-  "Return Values": "returnValues",
-  "HTTP Requests (async)": "httpRequests",
-  "Regex Functions": "regexFunctions",
-  "JSON Functions": "jsonFunctions",
-  "URL Functions": "urlFunctions",
-  "Code Detection": "codeDetection",
-  "Text Utilities": "textUtilities",
 };
 
 const MODE_OPTIONS = [
@@ -158,6 +158,17 @@ const MODE_OPTIONS = [
   { value: "post_mcp_call", label: "post_mcp_call (After MCP Tool Call)" },
   { value: "during_mcp_call", label: "during_mcp_call (During MCP Tool Call)" },
 ];
+
+const TEMPLATE_ITEMS = Object.entries(CODE_TEMPLATES).map(([key, template]) => ({
+  value: key,
+  label: template.name,
+}));
+
+type ModeOption = (typeof MODE_OPTIONS)[number];
+
+const MODE_OPTION_BY_VALUE: Record<string, ModeOption> = Object.fromEntries(
+  MODE_OPTIONS.map((option) => [option.value, option]),
+);
 
 // Data for editing an existing guardrail
 export interface EditGuardrailData {
@@ -181,7 +192,7 @@ interface CustomCodeModalProps {
 }
 
 const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onSuccess, accessToken, editData }) => {
-  const { t } = useTranslation("gateway");
+  const anchor = useComboboxAnchor();
   const isEditMode = !!editData;
   const [guardrailName, setGuardrailName] = useState("");
   const [mode, setMode] = useState<string[]>(["pre_call"]);
@@ -354,15 +365,15 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
   // Save guardrail (create or update)
   const handleSave = async () => {
     if (!guardrailName.trim()) {
-      NotificationsManager.fromBackend(t("guardrailsPage.customCode.notifications.nameRequired"));
+      toast.fromError("Please enter a guardrail name");
       return;
     }
     if (!code.trim()) {
-      NotificationsManager.fromBackend(t("guardrailsPage.customCode.notifications.codeRequired"));
+      toast.fromError("Please enter custom code");
       return;
     }
     if (!accessToken) {
-      NotificationsManager.fromBackend(t("guardrailsPage.customCode.notifications.noToken"));
+      toast.fromError("No access token available");
       return;
     }
 
@@ -390,7 +401,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
         }
 
         await updateGuardrailCall(accessToken, editData.guardrail_id, updateData);
-        NotificationsManager.success(t("guardrailsPage.customCode.notifications.updated"));
+        toast.success("Custom code guardrail updated successfully");
       } else {
         // Create new guardrail
         const guardrailData = {
@@ -405,19 +416,15 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
         };
 
         await createGuardrailCall(accessToken, guardrailData);
-        NotificationsManager.success(t("guardrailsPage.customCode.notifications.created"));
+        toast.success("Custom code guardrail created successfully");
       }
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Failed to save guardrail:", error);
-      NotificationsManager.fromBackend(
-        t(
-          isEditMode
-            ? "guardrailsPage.customCode.notifications.updateFailed"
-            : "guardrailsPage.customCode.notifications.createFailed",
-          { error: error instanceof Error ? error.message : String(error) },
-        ),
+      toast.fromError(
+        `Failed to ${isEditMode ? "update" : "create"} guardrail: ` +
+          (error instanceof Error ? error.message : String(error)),
       );
     } finally {
       setIsSaving(false);
@@ -427,7 +434,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
   // Test guardrail using backend endpoint
   const handleTest = async () => {
     if (!accessToken) {
-      setTestResult({ error: t("guardrailsPage.customCode.notifications.noToken") });
+      setTestResult({ error: "No access token available" });
       return;
     }
 
@@ -440,7 +447,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
       try {
         parsedInput = JSON.parse(testInput);
       } catch (e) {
-        setTestResult({ error: t("guardrailsPage.customCode.notifications.invalidTestJson") });
+        setTestResult({ error: "Invalid test input JSON" });
         setIsTesting(false);
         return;
       }
@@ -477,12 +484,12 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
           error_type: response.error_type,
         });
       } else {
-        setTestResult({ error: t("guardrailsPage.customCode.notifications.unknownError") });
+        setTestResult({ error: "Unknown error occurred" });
       }
     } catch (error) {
       console.error("Failed to test custom code:", error);
       setTestResult({
-        error: error instanceof Error ? error.message : t("guardrailsPage.customCode.notifications.testFailed"),
+        error: error instanceof Error ? error.message : "Failed to test custom code",
       });
     } finally {
       setIsTesting(false);
@@ -490,120 +497,101 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
   };
 
   const lineCount = code.split("\n").length;
+  const selectedModeOptions = mode.map((value) => MODE_OPTION_BY_VALUE[value]).filter(Boolean);
 
   return (
-    <Modal
-      open={visible}
-      onCancel={onClose}
-      footer={null}
-      width={1400}
-      className="custom-code-modal"
-      closable={true}
-      destroyOnClose
-    >
-      <div className="flex flex-col h-[80vh]">
-        {/* Header */}
-        <div className="pb-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {isEditMode ? t("guardrailsPage.customCode.editTitle") : t("guardrailsPage.customCode.createTitle")}
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">{t("guardrailsPage.customCode.subtitle")}</p>
-        </div>
+    <Dialog open={visible} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[1400px]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold">
+            {isEditMode ? "Edit Custom Guardrail" : "Create Custom Guardrail"}
+          </DialogTitle>
+          <DialogDescription>Define custom logic using Python-like syntax</DialogDescription>
+        </DialogHeader>
 
         {/* Top Controls */}
-        <div className="flex items-center gap-4 py-4 border-b border-gray-100">
-          <div className="flex-1 max-w-[200px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              {t("guardrailsPage.customCode.name")}
-            </label>
-            <TextInput
+        <div className="flex items-center gap-4 border-b border-border py-4">
+          <div className="max-w-[200px] flex-1">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Guardrail Name</label>
+            <Input
               value={guardrailName}
-              onValueChange={setGuardrailName}
-              placeholder={t("guardrailsPage.customCode.namePlaceholder")}
+              onChange={(e) => setGuardrailName(e.target.value)}
+              placeholder="e.g., block-pii-custom"
             />
           </div>
           <div className="w-[280px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              {t("guardrailsPage.customCode.mode")}
-            </label>
-            <Select
-              mode="multiple"
-              value={mode}
-              onChange={setMode}
-              options={MODE_OPTIONS.map((option) => ({
-                ...option,
-                label: t(`guardrailsPage.customCode.modes.${option.value}`, { defaultValue: option.label }),
-              }))}
-              className="w-full"
-              size="middle"
-              placeholder={t("guardrailsPage.customCode.modePlaceholder")}
-            />
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Mode (can select multiple)</label>
+            <Combobox
+              items={MODE_OPTIONS}
+              value={selectedModeOptions}
+              onValueChange={(options: ModeOption[]) => setMode(options.map((option) => option.value))}
+              multiple
+            >
+              <ComboboxChips render={<div ref={anchor} />} className="w-full">
+                {selectedModeOptions.map((option) => (
+                  <ComboboxChip key={option.value} aria-label={option.label}>
+                    {option.label}
+                  </ComboboxChip>
+                ))}
+                <ComboboxChipsInput placeholder={mode.length === 0 ? "Select modes" : undefined} />
+              </ComboboxChips>
+              <ComboboxContent anchor={anchor}>
+                <ComboboxEmpty>No matching modes</ComboboxEmpty>
+                <ComboboxList>
+                  {(option: ModeOption) => (
+                    <ComboboxItem key={option.value} value={option}>
+                      {option.label}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </div>
           <div className="w-[180px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              {t("guardrailsPage.customCode.template")}
-            </label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Template</label>
             <Select
+              items={TEMPLATE_ITEMS}
               value={selectedTemplate}
-              onChange={handleTemplateChange}
-              className="w-full"
-              size="middle"
-              dropdownRender={(menu) => (
-                <>
-                  {menu}
-                  <Divider style={{ margin: "8px 0" }} />
-                  <div
-                    style={{
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      color: "#1890ff",
-                      fontSize: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.open("https://models.litellm.ai/guardrails", "_blank");
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#f0f0f0";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                    }}
-                  >
-                    <UsergroupAddOutlined />
-                    <span>{t("guardrailsPage.customCode.browseTemplates")}</span>
-                    <ExportOutlined style={{ fontSize: "10px" }} />
-                  </div>
-                </>
-              )}
+              onValueChange={(value: string | null) => value && handleTemplateChange(value)}
             >
-              <Select.OptGroup label={t("guardrailsPage.customCode.standard")}>
-                {Object.entries(CODE_TEMPLATES).map(([key, template]) => (
-                  <Select.Option key={key} value={key}>
-                    {t(`guardrailsPage.customCode.templates.${key}`, { defaultValue: template.name })}
-                  </Select.Option>
-                ))}
-              </Select.OptGroup>
+              <SelectTrigger className="w-full" aria-label="Template">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>STANDARD</SelectLabel>
+                  {TEMPLATE_ITEMS.map((template) => (
+                    <SelectItem key={template.value} value={template.value}>
+                      {template.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectSeparator />
+                <button
+                  type="button"
+                  onClick={() => window.open("https://models.litellm.ai/guardrails", "_blank")}
+                  className="flex w-full items-center gap-1 rounded-sm px-2 py-1.5 text-xs text-primary hover:bg-accent"
+                >
+                  <Users className="size-3.5" />
+                  <span>Browse Community templates</span>
+                  <ExternalLink className="size-2.5" />
+                </button>
+              </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-2 pt-5">
-            <span className="text-sm text-gray-600">{t("guardrailsPage.customCode.defaultOn")}</span>
-            <Switch checked={defaultOn} onChange={setDefaultOn} />
+            <span className="text-sm text-muted-foreground">Default On</span>
+            <Switch checked={defaultOn} onCheckedChange={setDefaultOn} aria-label="Default On" />
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden mt-4 gap-6">
+        <div className="mt-4 flex gap-6">
           {/* Code Editor */}
-          <div className="flex-2 flex flex-col min-w-0 overflow-y-auto">
-            <div className="flex items-center justify-between mb-2 shrink-0">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                {t("guardrailsPage.customCode.pythonLogic")}
-              </span>
-              <span className="text-xs text-gray-400">{t("guardrailsPage.customCode.restrictedEnvironment")}</span>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="mb-2 flex shrink-0 items-center justify-between">
+              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Python Logic</span>
+              <span className="text-xs text-muted-foreground">Restricted environment (no imports)</span>
             </div>
             <div
               className="relative rounded-lg overflow-hidden border border-gray-700 bg-[#1e1e1e] shrink-0"
@@ -619,7 +607,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
                 }}
               >
                 {Array.from({ length: Math.max(lineCount, 20) }, (_, i) => (
-                  <div key={i + 1} className="text-gray-500 h-[22.4px]">
+                  <div key={i + 1} className="text-muted-foreground h-[22.4px]">
                     {i + 1}
                   </div>
                 ))}
@@ -642,106 +630,98 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
             </div>
 
             {/* Test Section */}
-            <Collapse
-              activeKey={testExpanded ? ["test"] : []}
-              onChange={(keys) => setTestExpanded(keys.includes("test"))}
-              className="mt-3 bg-white border border-gray-200 rounded-lg shrink-0"
-              expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            <Collapsible
+              open={testExpanded}
+              onOpenChange={setTestExpanded}
+              className="mt-3 shrink-0 rounded-lg border border-border"
             >
-              <Panel
-                header={
-                  <span className="flex items-center gap-2 text-sm font-medium">
-                    <PlayCircleOutlined className="text-blue-500" />
-                    {t("guardrailsPage.customCode.testTitle")}
-                  </span>
-                }
-                key="test"
-              >
+              <CollapsibleTrigger className="flex w-full items-center gap-2 p-3 text-sm font-medium">
+                <ChevronRight className={`size-4 transition-transform ${testExpanded ? "rotate-90" : ""}`} />
+                <PlayCircle className="size-4 text-muted-foreground" />
+                Test Your Guardrail
+              </CollapsibleTrigger>
+              <CollapsibleContent className="p-3 pt-0">
                 <div className="space-y-3">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-xs font-medium text-gray-600">
-                        {t("guardrailsPage.customCode.testInput")}
-                      </label>
+                      <label className="block text-xs font-medium text-muted-foreground">Test Input (JSON)</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{t("guardrailsPage.customCode.loadExample")}:</span>
+                        <span className="text-xs text-muted-foreground">Load example:</span>
                         <button
                           type="button"
                           onClick={() => setTestInput(JSON.stringify(TEST_INPUT_EXAMPLES.pre_call.data, null, 2))}
-                          className="px-2 py-1 text-xs rounded-sm border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
+                          className="px-2 py-1 text-xs rounded-sm border border-warning/20 bg-warning/10 text-warning hover:bg-warning/15 transition-colors"
                         >
-                          {t("guardrailsPage.customCode.preCall")}
+                          Pre-call
                         </button>
                         <button
                           type="button"
                           onClick={() => setTestInput(JSON.stringify(TEST_INPUT_EXAMPLES.pre_mcp_call.data, null, 2))}
-                          className="px-2 py-1 text-xs rounded-sm border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                          className="px-2 py-1 text-xs rounded-sm border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"
                         >
-                          {t("guardrailsPage.customCode.preMcp")}
+                          Pre MCP
                         </button>
                         <button
                           type="button"
                           onClick={() => setTestInput(JSON.stringify(TEST_INPUT_EXAMPLES.post_call.data, null, 2))}
-                          className="px-2 py-1 text-xs rounded-sm border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                          className="px-2 py-1 text-xs rounded-sm border border-success/20 bg-success/10 text-success hover:bg-success/15 transition-colors"
                         >
-                          {t("guardrailsPage.customCode.postCall")}
+                          Post-call
                         </button>
                       </div>
                     </div>
-                    <div className="mb-2 p-2 bg-gray-50 rounded-sm text-xs text-gray-600 border border-gray-200">
+                    <div className="mb-2 rounded-sm border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                         <div>
-                          <strong>texts</strong>: {t("guardrailsPage.customCode.inputFields.texts")}
+                          <strong>texts</strong>: Message content (always)
                         </div>
                         <div>
-                          <strong>images</strong>: {t("guardrailsPage.customCode.inputFields.images")}
+                          <strong>images</strong>: Base64 images (vision)
                         </div>
                         <div>
-                          <strong>tools</strong>: {t("guardrailsPage.customCode.inputFields.tools")}{" "}
-                          <span className="text-orange-600">(pre_call)</span>,{" "}
-                          {t("guardrailsPage.customCode.inputFields.mcpTool")}{" "}
-                          <span className="text-purple-600">(pre_mcp_call)</span>
+                          <strong>tools</strong>: Tool definitions <span className="text-warning">(pre_call)</span>, MCP
+                          as OpenAI tool <span className="text-purple-600">(pre_mcp_call)</span>
                         </div>
                         <div>
-                          <strong>tool_calls</strong>: {t("guardrailsPage.customCode.inputFields.toolCalls")}{" "}
-                          <span className="text-green-600">(post_call)</span>
+                          <strong>tool_calls</strong>: LLM tool calls <span className="text-success">(post_call)</span>
                         </div>
                         <div>
-                          <strong>structured_messages</strong>: {t("guardrailsPage.customCode.inputFields.messages")}{" "}
-                          <span className="text-orange-600">(pre_call)</span>
+                          <strong>structured_messages</strong>: Full messages{" "}
+                          <span className="text-warning">(pre_call)</span>
                         </div>
                         <div>
-                          <strong>model</strong>: {t("guardrailsPage.customCode.inputFields.model")}
+                          <strong>model</strong>: Model name (always)
                         </div>
                       </div>
                     </div>
-                    <TextArea
+                    <Textarea
                       value={testInput}
                       onChange={(e) => setTestInput(e.target.value)}
                       rows={8}
-                      className="font-mono text-xs"
+                      className="font-mono text-xs field-sizing-fixed"
                       placeholder='{"texts": ["test message"], ...}'
                     />
                   </div>
                   <div className="flex items-center gap-3">
-                    <Button size="xs" onClick={handleTest} disabled={isTesting} icon={PlayCircleOutlined}>
-                      {isTesting ? t("guardrailsPage.customCode.running") : t("guardrailsPage.customCode.runTest")}
+                    <Button size="sm" onClick={handleTest} disabled={isTesting} aria-busy={isTesting}>
+                      {isTesting ? <UiLoadingSpinner className="size-4" /> : <PlayCircle />}
+                      {isTesting ? "Running..." : "Run Test"}
                     </Button>
                     {testResult && (
                       <div
                         className={`flex items-center gap-2 text-sm ${
                           testResult.error
-                            ? "text-red-600"
+                            ? "text-destructive"
                             : testResult.action === "allow"
-                              ? "text-green-600"
+                              ? "text-success"
                               : testResult.action === "block"
-                                ? "text-orange-600"
-                                : "text-blue-600"
+                                ? "text-warning"
+                                : "text-info"
                         }`}
                       >
                         {testResult.error ? (
                           <>
-                            <CloseCircleOutlined />
+                            <XCircle className="size-4" />
                             <span>
                               {testResult.error_type && <span className="font-medium">[{testResult.error_type}] </span>}
                               {testResult.error}
@@ -749,148 +729,117 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
                           </>
                         ) : testResult.action === "allow" ? (
                           <>
-                            <CheckCircleOutlined /> {t("guardrailsPage.customCode.allowed")}
+                            <CheckCircle2 className="size-4" /> Allowed
                           </>
                         ) : testResult.action === "block" ? (
                           <>
-                            <CloseCircleOutlined /> {t("guardrailsPage.customCode.blocked")}: {testResult.reason}
+                            <XCircle className="size-4" /> Blocked: {testResult.reason}
                           </>
                         ) : testResult.action === "modify" ? (
                           <>
-                            <CheckCircleOutlined /> {t("guardrailsPage.customCode.modified")}
+                            <CheckCircle2 className="size-4" /> Modified
                             {testResult.texts && testResult.texts.length > 0 && (
-                              <span className="text-xs text-gray-500 ml-1">
-                                → {testResult.texts[0].substring(0, 50)}
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                -&gt; {testResult.texts[0].substring(0, 50)}
                                 {testResult.texts[0].length > 50 ? "..." : ""}
                               </span>
                             )}
                           </>
                         ) : (
                           <>
-                            <CheckCircleOutlined /> {testResult.action || t("guardrailsPage.customCode.unknown")}
+                            <CheckCircle2 className="size-4" /> {testResult.action || "Unknown"}
                           </>
                         )}
                       </div>
                     )}
                   </div>
                 </div>
-              </Panel>
-            </Collapse>
+              </CollapsibleContent>
+            </Collapsible>
             {/* Contribution CTA Banner */}
-            <div className="mt-3 p-4 bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg flex items-center justify-between shrink-0">
+            <div className="mt-3 flex shrink-0 items-center justify-between rounded-lg border border-info/20 bg-linear-to-r from-blue-50 to-indigo-50 p-4 dark:from-blue-950 dark:to-indigo-950">
               <div className="flex items-center gap-3">
-                <div className="bg-blue-100 rounded-full p-2">
-                  <UsergroupAddOutlined className="text-blue-600 text-lg" />
+                <div className="rounded-full bg-info/15 p-2">
+                  <Users className="size-5 text-info" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-900">{t("guardrailsPage.customCode.builtUseful")}</div>
-                  <div className="text-xs text-gray-600">{t("guardrailsPage.customCode.shareDescription")}</div>
+                  <div className="text-sm font-medium">Built a useful guardrail?</div>
+                  <div className="text-xs text-muted-foreground">
+                    Share it with the community and help others build faster
+                  </div>
                 </div>
               </div>
-              <Button
-                size="xs"
-                onClick={() => window.open("https://github.com/BerriAI/litellm-guardrails", "_blank")}
-                icon={ExportOutlined}
-                className="bg-blue-600 hover:bg-blue-700 text-white border-0"
-              >
-                {t("guardrailsPage.customCode.contribute")}
+              <Button size="sm" onClick={() => window.open("https://github.com/BerriAI/litellm-guardrails", "_blank")}>
+                <ExternalLink />
+                Contribute Template
               </Button>
             </div>
           </div>
 
           {/* Primitives Panel */}
-          <div className="w-[300px] shrink-0 overflow-auto border-l border-gray-200 pl-6">
-            <div className="flex items-center gap-2 mb-3">
-              <CodeOutlined className="text-blue-500" />
-              <span className="font-semibold text-gray-700">{t("guardrailsPage.customCode.primitivesTitle")}</span>
+          <div className="w-[300px] shrink-0 overflow-auto border-l border-border pl-6">
+            <div className="mb-3 flex items-center gap-2">
+              <Code className="size-4 text-muted-foreground" />
+              <span className="font-semibold">Available Primitives</span>
             </div>
-            <p className="text-xs text-gray-500 mb-3">{t("guardrailsPage.customCode.primitivesHelp")}</p>
+            <p className="mb-3 text-xs text-muted-foreground">Click to copy functions to clipboard</p>
 
-            <Collapse
-              defaultActiveKey={["Return Values"]}
-              className="primitives-collapse bg-transparent border-0"
-              expandIconPosition="end"
-            >
+            <div className="space-y-2">
               {Object.entries(PRIMITIVES).map(([category, primitives]) => (
-                <Panel
-                  header={
-                    <span className="text-sm font-medium text-gray-700">
-                      {t(`guardrailsPage.customCode.primitiveCategories.${PRIMITIVE_CATEGORY_KEYS[category]}`, {
-                        defaultValue: category,
-                      })}
-                    </span>
-                  }
+                <Collapsible
                   key={category}
-                  className="bg-white mb-2 rounded-lg border border-gray-200"
+                  defaultOpen={category === "Return Values"}
+                  className="rounded-lg border border-border"
                 >
-                  <div className="space-y-2">
-                    {primitives.map((p) => (
-                      <button
-                        key={p.name}
-                        onClick={() => copyPrimitive(p.name)}
-                        className={`w-full text-left px-2 py-2 rounded transition-colors ${
-                          copiedPrimitive === p.name ? "bg-green-100" : "bg-gray-50 hover:bg-blue-50"
-                        }`}
-                      >
-                        {copiedPrimitive === p.name ? (
-                          <span className="flex items-center gap-1 text-xs font-mono text-green-700">
-                            <CheckCircleOutlined /> {t("guardrailsPage.customCode.copied")}
-                          </span>
-                        ) : (
-                          <>
-                            <div className="text-xs font-mono text-gray-800">{p.name}</div>
-                            <div className="text-[10px] text-gray-500 mt-0.5">
-                              {t(`guardrailsPage.customCode.primitives.${p.descKey}`, { defaultValue: p.desc })}
-                            </div>
-                          </>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </Panel>
+                  <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-sm font-medium">
+                    {category}
+                    <ChevronRight className="size-4 transition-transform group-data-panel-open:rotate-90" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="px-3 pb-3">
+                    <div className="space-y-2">
+                      {primitives.map((p) => (
+                        <button
+                          key={p.name}
+                          onClick={() => copyPrimitive(p.name)}
+                          className={`w-full rounded-sm px-2 py-2 text-left transition-colors ${
+                            copiedPrimitive === p.name ? "bg-accent" : "bg-muted/40 hover:bg-accent"
+                          }`}
+                        >
+                          {copiedPrimitive === p.name ? (
+                            <span className="flex items-center gap-1 font-mono text-xs">
+                              <CheckCircle2 className="size-3.5" /> Copied!
+                            </span>
+                          ) : (
+                            <>
+                              <div className="font-mono text-xs">{p.name}</div>
+                              <div className="mt-0.5 text-[10px] text-muted-foreground">{p.desc}</div>
+                            </>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               ))}
-            </Collapse>
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
-          <span className="text-xs text-gray-400">{t("guardrailsPage.customCode.autoSaved")}</span>
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <span className="text-xs text-muted-foreground">Changes are auto-saved to local draft</span>
           <div className="flex items-center gap-3">
             <Button variant="secondary" onClick={onClose}>
-              {t("guardrailsPage.customCode.cancel")}
+              Cancel
             </Button>
-            <Button
-              onClick={handleSave}
-              loading={isSaving}
-              disabled={isSaving || !guardrailName.trim()}
-              icon={SaveOutlined}
-            >
-              {isEditMode ? t("guardrailsPage.customCode.update") : t("guardrailsPage.customCode.save")}
+            <Button onClick={handleSave} disabled={isSaving || !guardrailName.trim()} aria-busy={isSaving}>
+              {isSaving ? <UiLoadingSpinner className="size-4" /> : <Save />}
+              {isEditMode ? "Update Guardrail" : "Save Guardrail"}
             </Button>
           </div>
         </div>
-      </div>
-
-      <style>{`
-        .custom-code-modal .ant-modal-content {
-          padding: 24px;
-        }
-        .custom-code-modal .ant-modal-close {
-          top: 20px;
-          right: 20px;
-        }
-        .primitives-collapse .ant-collapse-item {
-          border: none !important;
-        }
-        .primitives-collapse .ant-collapse-header {
-          padding: 8px 12px !important;
-        }
-        .primitives-collapse .ant-collapse-content-box {
-          padding: 8px 12px !important;
-        }
-      `}</style>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -38,6 +38,7 @@ export interface DataTableResolvedProps<TData extends RowData, TValue> {
   getRowId?: (row: TData, index: number, parent?: Row<TData>) => string;
 
   isLoading?: boolean;
+  isError?: boolean;
   loadingMessage?: string;
   skeletonRowCount?: number;
   noDataMessage?: React.ReactNode;
@@ -65,6 +66,8 @@ export interface DataTableResolvedProps<TData extends RowData, TValue> {
 
   enableColumnResizing?: boolean;
   columnResizeMode?: ColumnResizeMode;
+  columnVisibility?: VisibilityState;
+  onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
   defaultColumnVisibility?: VisibilityState;
 
   getRowCanExpand?: (row: Row<TData>) => boolean;
@@ -108,6 +111,9 @@ type DataTableBaseProps<TData extends RowData, TValue> = Omit<
   | "columnFilters"
   | "onColumnFiltersChange"
   | "defaultColumnFilters"
+  | "columnVisibility"
+  | "onColumnVisibilityChange"
+  | "defaultColumnVisibility"
   | "rowSelection"
   | "onRowSelectionChange"
 >;
@@ -154,6 +160,18 @@ type FilterProps =
       defaultColumnFilters?: ColumnFiltersState;
     };
 
+type ColumnVisibilityProps =
+  | {
+      columnVisibility: VisibilityState;
+      onColumnVisibilityChange: OnChangeFn<VisibilityState>;
+      defaultColumnVisibility?: never;
+    }
+  | {
+      columnVisibility?: never;
+      onColumnVisibilityChange?: never;
+      defaultColumnVisibility?: VisibilityState;
+    };
+
 type RowSelectionProps =
   | { rowSelection: RowSelectionState; onRowSelectionChange: OnChangeFn<RowSelectionState> }
   | { rowSelection?: never; onRowSelectionChange?: OnChangeFn<RowSelectionState> };
@@ -162,4 +180,5 @@ export type DataTableProps<TData extends RowData, TValue> = DataTableBaseProps<T
   SortingProps &
   PaginationProps &
   FilterProps &
+  ColumnVisibilityProps &
   RowSelectionProps;

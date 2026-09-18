@@ -162,6 +162,7 @@ export const getAutoRoutersTableColumns = ({
     size: 150,
     enableSorting: true,
     sortingFn: "datetime",
+    sortUndefined: "last",
     cell: ({ row }) => <DateCell value={row.original.createdAt} precision="date" />,
   },
   ...(canModify

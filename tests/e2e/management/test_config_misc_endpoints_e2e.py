@@ -7,9 +7,13 @@ so a read-back reflects the change. Router settings, which mutate global proxy
 state, are exercised with a benign, self-restoring change so a shared proxy is left
 as it was found.
 
-Cache settings are deliberately not covered here; see the rationale on
-mgmt.cache_settings.update.happy_path in coverage_registry/mgmt.yaml before adding
-a test for that route.
+Cache settings and the Vault config override are deliberately not covered here.
+Both routes reconfigure the whole proxy: /cache/settings persists what it receives
+into a row that outranks the YAML cache_params and is re-applied on a timer, and
+/config_overrides/hashicorp_vault swaps the process-wide secret manager. Neither can
+be exercised safely against the shared proxy the suites run on, so they need an
+isolated proxy before a test lands. Do not add a read-then-write-back test for
+either one.
 """
 
 from __future__ import annotations
@@ -17,12 +21,13 @@ from __future__ import annotations
 import math
 import time
 from collections.abc import Callable
+from typing import Final
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, JsonValue
 
 from e2e_config import unique_marker
-from e2e_http import NoBody, Success, unwrap, unwrap_status
+from e2e_http import NoBody, Success, UnknownApiError, unwrap, unwrap_status
 from lifecycle import ResourceManager
 from management_client import ManagementClient
 from models import KeyGenerateBody, LiteLLMParamsBody, TeamNewBody
@@ -192,6 +197,19 @@ class ConfigUpdateBody(BaseModel):
 
 class ConfigUpdateResponse(BaseModel):
     message: str
+
+
+class AllowedIpBody(BaseModel):
+    ip: str
+
+
+class ConfigFieldInfoParams(BaseModel):
+    field_name: str
+
+
+class ConfigFieldInfoResponse(BaseModel):
+    field_name: str
+    field_value: JsonValue
 
 
 class RouterCurrentValues(BaseModel):
@@ -510,6 +528,45 @@ class TestRouterSettings:
                 response_type=ConfigUpdateResponse,
             )
         )
+
+
+class TestConfigPersistence:
+    @pytest.mark.covers("mgmt.config.allowed_ip.changed_key_only")
+    def test_add_allowed_ip_does_not_store_unrelated_config_value(
+        self, client: ManagementClient, resources: ResourceManager
+    ) -> None:
+        allowed_ip: Final = "127.0.0.1"
+        added: Final = unwrap(
+            client.proxy.transport.post(
+                "/add/allowed_ip",
+                headers=client.proxy.transport.master,
+                json=AllowedIpBody(ip=allowed_ip),
+                response_type=ConfigUpdateResponse,
+            )
+        )
+        resources.defer(
+            lambda: unwrap(
+                client.proxy.transport.post(
+                    "/delete/allowed_ip",
+                    headers=client.proxy.transport.master,
+                    json=AllowedIpBody(ip=allowed_ip),
+                    response_type=ConfigUpdateResponse,
+                )
+            )
+        )
+        assert added.message == f"IP {allowed_ip} address added successfully"
+
+        field_info: Final = client.proxy.transport.get(
+            "/config/field/info",
+            headers=client.proxy.transport.master,
+            params=ConfigFieldInfoParams(field_name="max_parallel_requests"),
+            response_type=ConfigFieldInfoResponse,
+        )
+        match field_info:
+            case UnknownApiError(status_code=400, body=body):
+                assert "not in DB" in body
+            case _:
+                pytest.fail(f"expected max_parallel_requests to remain absent from the DB row, got {field_info}")
 
 
 class TestMcpServerSubmission:

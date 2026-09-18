@@ -1,14 +1,13 @@
 "use client";
 
 import { SortingState } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { DataTable } from "@/components/shared/DataTable";
 import { AutoRouterIcon } from "@/components/shared/table_cells";
 
 import { getAutoRoutersTableColumns } from "./AutoRoutersTableColumns";
 import { AutoRouterRow } from "./autoRouterRows";
-import { useTranslation } from "react-i18next";
 
 interface AutoRoutersTableProps {
   routers: AutoRouterRow[];
@@ -20,16 +19,22 @@ interface AutoRoutersTableProps {
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
+const DEFAULT_SORTING: SortingState = [
+  { id: "createdAt", desc: true },
+  { id: "name", desc: false },
+];
+
 function EmptyState({ canModify }: { canModify: boolean }) {
-  const { t } = useTranslation("gateway");
   return (
     <div className="flex flex-col items-center gap-1 py-6">
       <div className="mb-1 flex size-10 items-center justify-center rounded-lg bg-muted">
         <AutoRouterIcon size={20} className="text-muted-foreground" />
       </div>
-      <div className="text-sm font-medium text-foreground">{t("models.autoRouters.emptyTitle")}</div>
+      <div className="text-sm font-medium text-foreground">No auto routers yet</div>
       <div className="text-sm text-muted-foreground">
-        {canModify ? t("models.autoRouters.emptyCanCreate") : t("models.autoRouters.emptyReadOnly")}
+        {canModify
+          ? "Create an auto router to pick the right model per request instead of pinning one."
+          : "An auto router picks the right model per request instead of pinning one."}
       </div>
     </div>
   );
@@ -42,12 +47,9 @@ export function AutoRoutersTable({
   onRouterClick,
   onDeleteClick,
 }: AutoRoutersTableProps) {
-  const { t } = useTranslation("gateway");
-  const [sorting, setSorting] = useState<SortingState>([]);
-
   const columns = useMemo(
-    () => getAutoRoutersTableColumns({ canModify, onRouterClick, onDeleteClick, t }),
-    [canModify, onRouterClick, onDeleteClick, t],
+    () => getAutoRoutersTableColumns({ canModify, onRouterClick, onDeleteClick }),
+    [canModify, onRouterClick, onDeleteClick],
   );
 
   return (
@@ -56,12 +58,11 @@ export function AutoRoutersTable({
       columns={columns}
       getRowId={(router) => router.id}
       sortingMode="client"
-      sorting={sorting}
-      onSortingChange={setSorting}
+      defaultSorting={DEFAULT_SORTING}
       paginationMode="client"
       pageSizeOptions={PAGE_SIZE_OPTIONS}
       isLoading={isLoading}
-      loadingMessage={t("models.autoRouters.loading")}
+      loadingMessage="Loading auto routers…"
       noDataMessage={<EmptyState canModify={canModify} />}
       size="compact"
     />

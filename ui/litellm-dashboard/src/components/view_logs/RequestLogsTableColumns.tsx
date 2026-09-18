@@ -1,20 +1,20 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { TFunction } from "i18next";
 
 import { DataTableSortHeader } from "@/components/shared/DataTable";
 import { CellTooltip, DateCell, IdCell, MoneyCell, StatusBadge } from "@/components/shared/table_cells";
 import { getSpendString } from "@/utils/dataUtils";
 
 import { getProviderLogoAndName } from "../provider_info_helpers";
+import { getBatchIdFromRequestId, getBatchRequestCounts, isBatchCallType } from "./batchLogUtils";
 import type { LogEntry } from "./columns";
 import { AGENT_CALL_TYPES, MCP_CALL_TYPES } from "./constants";
-import { AgentBadge, AgentIcon, LlmBadge, McpBadge, SparkleIcon, WrenchIcon } from "./TypeBadges";
+import { AgentBadge, AgentIcon, BatchBadge, LlmBadge, McpBadge, SparkleIcon, WrenchIcon } from "./TypeBadges";
 
 export interface RequestLogsTableColumnsDeps {
   onKeyHashClick: (keyHash: string) => void;
-  onSessionClick: (sessionId: string) => void;
+  onSessionClick: (log: LogEntry) => void;
 }
 
 const readMetaString = (metadata: Record<string, unknown> | undefined, key: string): string | undefined => {
@@ -37,23 +37,21 @@ function TruncatedText({ value }: { value: string | undefined }) {
   return <CellTooltip content={display} trigger={<span className="max-w-[15ch] truncate block">{display}</span>} />;
 }
 
-export const getRequestLogsTableColumns = (
-  { onKeyHashClick, onSessionClick }: RequestLogsTableColumnsDeps,
-  t: TFunction<"logs">,
-): ColumnDef<LogEntry>[] => [
+export const getRequestLogsTableColumns = ({
+  onKeyHashClick,
+  onSessionClick,
+}: RequestLogsTableColumnsDeps): ColumnDef<LogEntry>[] => [
   {
     id: "startTime",
     accessorKey: "startTime",
-    header: ({ column }) => (
-      <DataTableSortHeader column={column} title={t("columns.time")} variant="dropdown-tristate" />
-    ),
+    header: ({ column }) => <DataTableSortHeader column={column} title="Time" variant="dropdown-tristate" />,
     size: 200,
     enableSorting: true,
     cell: ({ row }) => <DateCell value={row.original.startTime} />,
   },
   {
     id: "type",
-    header: t("columns.type"),
+    header: "Type",
     size: 90,
     enableSorting: false,
     meta: { skeleton: "badge" },
@@ -64,25 +62,30 @@ export const getRequestLogsTableColumns = (
       const isAgent = AGENT_CALL_TYPES.includes(log.call_type);
       const sessionLlmCount = log.session_llm_count ?? (isMcp || isAgent ? 0 : sessionCount);
       const sessionAgentCount = log.session_agent_count ?? (isAgent ? sessionCount : 0);
-      const sessionMcpCount = log.session_mcp_count ?? (isMcp ? sessionCount : 0);
+      const sessionMcpCount = log.mcp_tool_call_count ?? (isMcp ? sessionCount : 0);
 
-      if (isMcp) return <McpBadge />;
-      if (isAgent && sessionCount <= 1) return <AgentBadge />;
-      if (sessionCount <= 1) return <LlmBadge />;
+      if (isBatchCallType(log.call_type)) {
+        return <BatchBadge />;
+      }
+      if (sessionCount <= 1) {
+        if (isMcp) return <McpBadge />;
+        if (isAgent) return <AgentBadge />;
+        return <LlmBadge />;
+      }
 
       const sessionTypeBadge = (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-[11px] font-medium whitespace-nowrap">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-info/10 text-info border border-info/20 rounded-full text-[11px] font-medium whitespace-nowrap">
           <SparkleIcon />
           <span>{sessionCount}</span>
           {sessionAgentCount > 0 && (
             <>
-              <span className="text-blue-300">·</span>
+              <span className="text-info">·</span>
               <AgentIcon size={10} />
             </>
           )}
           {sessionMcpCount > 0 && (
             <>
-              <span className="text-blue-300">·</span>
+              <span className="text-info">·</span>
               <WrenchIcon />
             </>
           )}
@@ -91,50 +94,67 @@ export const getRequestLogsTableColumns = (
 
       const tooltipParts = [
         sessionLlmCount > 0 && `${sessionLlmCount} LLM`,
-        sessionAgentCount > 0 && `${sessionAgentCount} ${t("columns.agent")}`,
+        sessionAgentCount > 0 && `${sessionAgentCount} Agent`,
         sessionMcpCount > 0 && `${sessionMcpCount} MCP`,
+        log.session_cache_hit_count != null && `${log.session_cache_hit_count} cache hit`,
       ].filter(Boolean);
       return <CellTooltip content={tooltipParts.join(" • ")} trigger={sessionTypeBadge} />;
     },
   },
   {
     id: "status",
-    header: t("columns.status"),
+    header: "Status",
     size: 100,
     enableSorting: false,
     meta: { skeleton: "badge" },
     cell: ({ row }) => {
       const status = readMetaString(row.original.metadata, "status") ?? "Success";
       const isSuccess = status.toLowerCase() !== "failure";
-      return (
-        <StatusBadge
-          tone={isSuccess ? "success" : "error"}
-          label={isSuccess ? t("columns.success") : t("columns.failure")}
-        />
-      );
+      const batchCounts = isSuccess ? getBatchRequestCounts(row.original.metadata) : undefined;
+      if (batchCounts && batchCounts.failed > 0) {
+        const total = batchCounts.successful + batchCounts.failed;
+        return (
+          <StatusBadge
+            tone="warning"
+            label={`${batchCounts.successful}/${total} succeeded`}
+            tooltip={`${batchCounts.failed} of ${total} batch requests failed`}
+          />
+        );
+      }
+      return <StatusBadge tone={isSuccess ? "success" : "error"} label={isSuccess ? "Success" : "Failure"} />;
     },
   },
   {
     id: "session_id",
     accessorKey: "session_id",
-    header: t("columns.sessionId"),
+    header: "Session ID",
     size: 120,
     enableSorting: false,
-    cell: ({ row }) => <IdCell value={row.original.session_id} onClick={onSessionClick} />,
+    cell: ({ row }) => <IdCell value={row.original.session_id} onClick={() => onSessionClick(row.original)} />,
   },
   {
     id: "request_id",
     accessorKey: "request_id",
-    header: t("columns.requestId"),
+    header: "Request ID",
     enableSorting: false,
-    cell: ({ row }) => <IdCell value={row.original.request_id} variant="plain" />,
+    cell: ({ row }) => {
+      const log = row.original;
+      const batchId = isBatchCallType(log.call_type) ? getBatchIdFromRequestId(log.request_id) : undefined;
+      if (batchId) {
+        return (
+          <div className="flex flex-col">
+            <IdCell value={batchId} variant="plain" copyable tooltip={`Batch ${batchId} (row: ${log.request_id})`} />
+            <span className="text-[10px] text-muted-foreground">batch cost</span>
+          </div>
+        );
+      }
+      return <IdCell value={log.request_id} variant="plain" />;
+    },
   },
   {
     id: "spend",
     accessorKey: "spend",
-    header: ({ column }) => (
-      <DataTableSortHeader column={column} title={t("columns.cost")} variant="dropdown-tristate" />
-    ),
+    header: ({ column }) => <DataTableSortHeader column={column} title="Cost" variant="dropdown-tristate" />,
     size: 110,
     enableSorting: true,
     meta: { numeric: true, skeleton: "twoLine" },
@@ -143,7 +163,8 @@ export const getRequestLogsTableColumns = (
       const mcpCount = log.mcp_tool_call_count || 0;
       const mcpSpend = log.mcp_tool_call_spend || 0;
       const isMultiCallSession = (log.session_total_count || 1) > 1;
-      const spend = isMultiCallSession && log.session_total_spend != null ? log.session_total_spend : log.spend;
+      const sessionTotalSpend = isMultiCallSession ? log.session_total_spend : undefined;
+      const spend = sessionTotalSpend ?? log.spend;
       const money = (
         <span>
           <MoneyCell value={spend} decimals={6} />
@@ -153,10 +174,10 @@ export const getRequestLogsTableColumns = (
       return (
         <div className="flex flex-col items-end">
           {spend ? <CellTooltip content={`$${String(spend)}`} trigger={money} /> : money}
-          {isMultiCallSession && <span className="text-[10px] text-gray-400">{t("columns.sessionTotal")}</span>}
+          {sessionTotalSpend != null && <span className="text-[10px] text-muted-foreground">session total</span>}
           {mcpCount > 0 && mcpSpend > 0 && (
-            <span className="text-[10px] text-amber-600">
-              {t("columns.includingMcp", { spend: getSpendString(mcpSpend), count: mcpCount })}
+            <span className="text-[10px] text-warning">
+              incl. {getSpendString(mcpSpend)} from {mcpCount} MCP
             </span>
           )}
         </div>
@@ -166,28 +187,30 @@ export const getRequestLogsTableColumns = (
   {
     id: "request_duration_ms",
     accessorKey: "request_duration_ms",
-    header: ({ column }) => (
-      <DataTableSortHeader column={column} title={t("columns.duration")} variant="dropdown-tristate" />
-    ),
+    header: ({ column }) => <DataTableSortHeader column={column} title="Duration (s)" variant="dropdown-tristate" />,
     enableSorting: true,
     meta: { numeric: true },
     cell: ({ row }) => {
-      const ms = row.original.request_duration_ms;
+      const log = row.original;
+      const isMultiCallSession = (log.session_total_count || 1) > 1;
+      const sessionTotalMs = isMultiCallSession ? log.session_total_duration_ms : undefined;
+      const ms = sessionTotalMs ?? log.request_duration_ms;
       if (ms == null) return <span>-</span>;
       return (
-        <CellTooltip
-          content={`${ms}ms`}
-          trigger={<span className="max-w-[15ch] truncate inline-block">{(ms / 1000).toFixed(2)}</span>}
-        />
+        <div className="flex flex-col items-end">
+          <CellTooltip
+            content={`${ms}ms`}
+            trigger={<span className="max-w-[15ch] truncate inline-block">{(ms / 1000).toFixed(2)}</span>}
+          />
+          {sessionTotalMs != null && <span className="text-[10px] text-muted-foreground">session total</span>}
+        </div>
       );
     },
   },
   {
     id: "ttft_ms",
     accessorKey: "completionStartTime",
-    header: ({ column }) => (
-      <DataTableSortHeader column={column} title={t("columns.ttft")} variant="dropdown-tristate" />
-    ),
+    header: ({ column }) => <DataTableSortHeader column={column} title="TTFT (s)" variant="dropdown-tristate" />,
     enableSorting: true,
     meta: { numeric: true },
     cell: ({ row }) => {
@@ -207,14 +230,14 @@ export const getRequestLogsTableColumns = (
   },
   {
     id: "team_alias",
-    header: t("columns.teamName"),
+    header: "Team Name",
     size: 150,
     enableSorting: false,
     cell: ({ row }) => <TruncatedText value={readMetaString(row.original.metadata, "user_api_key_team_alias")} />,
   },
   {
     id: "key_hash",
-    header: t("columns.keyHash"),
+    header: "Key Hash",
     size: 110,
     enableSorting: false,
     cell: ({ row }) => (
@@ -223,7 +246,7 @@ export const getRequestLogsTableColumns = (
   },
   {
     id: "key_alias",
-    header: t("columns.keyAlias"),
+    header: "Key Alias",
     size: 150,
     enableSorting: false,
     cell: ({ row }) => <TruncatedText value={readMetaString(row.original.metadata, "user_api_key_alias")} />,
@@ -231,18 +254,19 @@ export const getRequestLogsTableColumns = (
   {
     id: "model",
     accessorKey: "model",
-    header: ({ column }) => (
-      <DataTableSortHeader column={column} title={t("columns.model")} variant="dropdown-tristate" />
-    ),
+    header: ({ column }) => <DataTableSortHeader column={column} title="Model" variant="dropdown-tristate" />,
     size: 200,
     enableSorting: true,
     cell: ({ row }) => {
       const log = row.original;
       const provider = log.custom_llm_provider;
-      const modelName = log.model ?? "";
+      const sessionModels = log.session_models ?? [];
+      const modelNames = sessionModels.length > 0 ? sessionModels : [log.model ?? ""];
+      const modelLabel = log.session_models_truncated ? `${modelNames.join(", ")}, ...` : modelNames.join(", ");
+      const isSingleModel = modelNames.length === 1;
       return (
         <div className="flex items-center space-x-2">
-          {provider && (
+          {provider && isSingleModel && (
             <img
               src={getLogoUrl(log, provider)}
               alt=""
@@ -252,7 +276,14 @@ export const getRequestLogsTableColumns = (
               }}
             />
           )}
-          <CellTooltip content={modelName} trigger={<span className="max-w-[15ch] truncate block">{modelName}</span>} />
+          <CellTooltip
+            content={modelLabel}
+            trigger={
+              <span className={isSingleModel ? "max-w-[15ch] truncate block" : "min-w-0 truncate block"}>
+                {modelLabel}
+              </span>
+            }
+          />
         </div>
       );
     },
@@ -260,28 +291,33 @@ export const getRequestLogsTableColumns = (
   {
     id: "total_tokens",
     accessorKey: "total_tokens",
-    header: ({ column }) => (
-      <DataTableSortHeader column={column} title={t("columns.tokens")} variant="dropdown-tristate" />
-    ),
+    header: ({ column }) => <DataTableSortHeader column={column} title="Tokens" variant="dropdown-tristate" />,
     size: 140,
     enableSorting: true,
     meta: { numeric: true },
     cell: ({ row }) => {
       const log = row.original;
+      const showSessionTotal = (log.session_total_count || 1) > 1 && log.session_total_tokens != null;
+      const total = showSessionTotal ? log.session_total_tokens : log.total_tokens;
+      const prompt = showSessionTotal ? log.session_total_prompt_tokens : log.prompt_tokens;
+      const completion = showSessionTotal ? log.session_total_completion_tokens : log.completion_tokens;
       return (
-        <span className="text-sm">
-          {String(log.total_tokens || "0")}
-          <span className="text-gray-400 text-xs ml-1">
-            ({String(log.prompt_tokens || "0")}+{String(log.completion_tokens || "0")})
+        <div className="flex flex-col items-end">
+          <span className="text-sm">
+            {String(total || "0")}
+            <span className="text-muted-foreground text-xs ml-1">
+              ({String(prompt || "0")}+{String(completion || "0")})
+            </span>
           </span>
-        </span>
+          {showSessionTotal && <span className="text-[10px] text-muted-foreground">session total</span>}
+        </div>
       );
     },
   },
   {
     id: "user",
     accessorKey: "user",
-    header: t("columns.internalUser"),
+    header: "Internal User",
     size: 150,
     enableSorting: false,
     cell: ({ row }) => <TruncatedText value={row.original.user} />,
@@ -289,7 +325,7 @@ export const getRequestLogsTableColumns = (
   {
     id: "end_user",
     accessorKey: "end_user",
-    header: t("columns.endUser"),
+    header: "End User",
     size: 140,
     enableSorting: false,
     cell: ({ row }) => <TruncatedText value={row.original.end_user} />,
@@ -297,7 +333,7 @@ export const getRequestLogsTableColumns = (
   {
     id: "request_tags",
     accessorKey: "request_tags",
-    header: t("columns.tags"),
+    header: "Tags",
     size: 150,
     enableSorting: false,
     meta: { skeleton: "chips" },
@@ -322,7 +358,7 @@ export const getRequestLogsTableColumns = (
               </div>
             }
             trigger={
-              <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+              <span className="px-2 py-1 bg-muted rounded-full text-xs">
                 {firstTagKey}: {String(firstTagValue)}
                 {remainingCount > 0 && ` +${remainingCount}`}
               </span>

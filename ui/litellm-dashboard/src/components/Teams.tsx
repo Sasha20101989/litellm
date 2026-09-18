@@ -4,19 +4,32 @@ import AvailableTeamsPanel from "@/components/team/AvailableTeamsPanel";
 import TeamInfoView from "@/components/team/TeamInfo";
 import TeamSSOSettings from "@/components/TeamSSOSettings";
 import { isProxyAdminRole } from "@/utils/roles";
-import { InfoCircleOutlined } from "@ant-design/icons";
-import { Accordion, AccordionBody, AccordionHeader, TextInput } from "@tremor/react";
-import { Button, Form, Input, Layout, Modal, Select, Switch, Tabs, theme, Tooltip, Typography } from "antd";
-import { Plus, Users } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input as UIInput } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { FormField } from "@/components/shared/form/FormField";
+import { SearchSelect } from "@/components/shared/SearchSelect";
+import { labelWithDocsHint, labelWithHint } from "@/components/shared/form/LabelWithHint";
+import { useZodForm } from "@/lib/forms/useZodForm";
+import { TagsInput } from "@/app/(dashboard)/guardrails/_components/content_filter/TagsInput";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronDown, Plus, Users } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { z } from "zod/v4";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button as UIButton } from "@/components/ui/button";
 import { teamsTableKeys } from "@/app/(dashboard)/hooks/teams/useTeams";
 import { parseAsString, useQueryState } from "nuqs";
 import { TeamsTable } from "./TeamsPage/TeamsTable";
 import AccessGroupSelector from "./common_components/AccessGroupSelector";
-import MetadataKeyValueFields, { metadataPairsToObject } from "./common_components/MetadataKeyValueFields";
+import MetadataKeyValueFields, {
+  metadataPairsSchema,
+  metadataPairsToObject,
+} from "./common_components/MetadataKeyValueFields";
 import { useTeamMetadataSchema } from "@/app/(dashboard)/hooks/teams/useTeamMetadataSchema";
 import PassThroughRoutesSelector from "./common_components/PassThroughRoutesSelector";
 import AgentSelector from "./agent_management/AgentSelector";
@@ -27,13 +40,19 @@ import { fetchAvailableModelsForTeamOrKey } from "./key_team_helpers/fetch_avail
 import type { Team } from "./key_team_helpers/key_list";
 import MCPServerSelector from "./mcp_server_management/MCPServerSelector";
 import MCPToolPermissions from "./mcp_server_management/MCPToolPermissions";
-import NotificationsManager from "./molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import { extractProxyErrorMessage } from "@/lib/http/client";
-import { Organization, getGuardrailsList, getPoliciesList, teamDeleteCall } from "./networking";
+import BudgetDurationDropdown, {
+  getBudgetDurationLabel,
+  NEVER_RESETS_BUDGET_DURATION,
+} from "./common_components/budget_duration_dropdown";
+import { Organization, getDefaultTeamSettings, getGuardrailsList, getPoliciesList, teamDeleteCall } from "./networking";
 import NumericalInput from "./shared/numerical_input";
+import { ModelMaxBudget, ModelMaxBudgetField } from "./key_team_helpers/ModelMaxBudgetEditor";
 import VectorStoreSelector from "./vector_store_management/VectorStoreSelector";
 import SearchToolSelector from "./search_tools/SearchToolSelector";
-import { useTranslation } from "react-i18next";
+import SkillSelector from "./skills/SkillSelector";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface TeamProps {
   accessToken: string | null;
@@ -46,6 +65,107 @@ import DeleteResourceModal from "./common_components/DeleteResourceModal";
 import { teamCreateCall } from "./networking";
 import { normalizeTeamModelSelection } from "./team/teamModelAccess";
 import { ModelSelect } from "./ModelSelect/ModelSelect";
+
+const SUPPRESSED_BY_DESCRIPTION = "";
+
+const numericInputSchema = z.union([z.string(), z.number()]).optional();
+
+const teamCreateFieldsSchema = z.object({
+  team_alias: z.string().min(1, "Please input a team name"),
+  organization_id: z.string().nullish(),
+  models: z.array(z.string()).optional(),
+  max_budget: numericInputSchema,
+  budget_duration: z.string().nullish(),
+  tpm_limit: numericInputSchema,
+  rpm_limit: numericInputSchema,
+  tpd_limit: numericInputSchema,
+  metadata: metadataPairsSchema.optional(),
+  team_id: z.string().optional(),
+  team_member_budget: z.number().optional(),
+  team_member_key_duration: z.string().optional(),
+  team_member_rpm_limit: numericInputSchema,
+  team_member_tpm_limit: numericInputSchema,
+  secret_manager_settings: z.string().optional(),
+  guardrails: z.array(z.string()).optional(),
+  disable_global_guardrails: z.boolean().optional(),
+  policies: z.array(z.string()).optional(),
+  access_group_ids: z.array(z.string()).optional(),
+  allowed_vector_store_ids: z.array(z.string()).optional(),
+  allowed_passthrough_routes: z.array(z.string()).optional(),
+  allowed_mcp_servers_and_groups: z
+    .object({
+      servers: z.array(z.string()),
+      accessGroups: z.array(z.string()),
+      toolsets: z.array(z.string()).optional(),
+    })
+    .optional(),
+  mcp_tool_permissions: z.record(z.string(), z.array(z.string())).optional(),
+  allowed_agents_and_groups: z.object({ agents: z.array(z.string()), accessGroups: z.array(z.string()) }).optional(),
+  object_permission_search_tools: z.array(z.string()).optional(),
+  object_permission_skills: z.array(z.string()).optional(),
+});
+
+type TeamCreateFormValues = z.infer<typeof teamCreateFieldsSchema>;
+
+const EMPTY_TEAM_CREATE_VALUES: TeamCreateFormValues = {
+  team_alias: "",
+  organization_id: null,
+  models: [],
+  max_budget: undefined,
+  budget_duration: undefined,
+  tpm_limit: undefined,
+  rpm_limit: undefined,
+  tpd_limit: undefined,
+  metadata: [],
+  team_id: undefined,
+  team_member_budget: undefined,
+  team_member_key_duration: undefined,
+  team_member_rpm_limit: undefined,
+  team_member_tpm_limit: undefined,
+  secret_manager_settings: undefined,
+  guardrails: undefined,
+  disable_global_guardrails: undefined,
+  policies: undefined,
+  access_group_ids: undefined,
+  allowed_vector_store_ids: undefined,
+  allowed_passthrough_routes: undefined,
+  allowed_mcp_servers_and_groups: undefined,
+  mcp_tool_permissions: {},
+  allowed_agents_and_groups: undefined,
+  object_permission_search_tools: undefined,
+  object_permission_skills: undefined,
+};
+
+const ADDITIONAL_SETTINGS_FIELDS = [
+  "team_id",
+  "team_member_budget",
+  "team_member_key_duration",
+  "team_member_rpm_limit",
+  "team_member_tpm_limit",
+  "secret_manager_settings",
+  "guardrails",
+  "disable_global_guardrails",
+  "policies",
+  "access_group_ids",
+  "allowed_vector_store_ids",
+  "allowed_passthrough_routes",
+] as const;
+const MCP_SETTINGS_FIELDS = ["allowed_mcp_servers_and_groups", "mcp_tool_permissions"] as const;
+const AGENT_SETTINGS_FIELDS = ["allowed_agents_and_groups"] as const;
+const SEARCH_TOOL_SETTINGS_FIELDS = ["object_permission_search_tools"] as const;
+const SKILL_SETTINGS_FIELDS = ["object_permission_skills"] as const;
+
+const isParsableJson = (value: string | undefined): boolean => {
+  if (!value) {
+    return true;
+  }
+  try {
+    JSON.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const canCreateOrManageTeams = (
   userRole: string | null,
@@ -89,16 +209,53 @@ const getAdminOrganizations = (
 
 // @deprecated
 const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser = false }) => {
-  const { t } = useTranslation("gateway");
   const { data: organizationsData } = useOrganizations();
   const organizations = organizationsData ?? null;
   const { data: teamMetadataSchemaFields = [], isLoading: isTeamMetadataSchemaLoading } = useTeamMetadataSchema();
   const queryClient = useQueryClient();
   const refreshTeams = () => queryClient.invalidateQueries({ queryKey: teamsTableKeys.all });
   const [currentOrg] = useState<Organization | null>(null);
-  const [currentOrgForCreateTeam, setCurrentOrgForCreateTeam] = useState<Organization | null>(null);
 
-  const [form] = Form.useForm();
+  const isOrgAdmin = userRole !== "Admin";
+  const [additionalSettingsOpen, setAdditionalSettingsOpen] = useState(false);
+  const [mcpSettingsOpen, setMcpSettingsOpen] = useState(false);
+  const [agentSettingsOpen, setAgentSettingsOpen] = useState(false);
+  const [searchToolSettingsOpen, setSearchToolSettingsOpen] = useState(false);
+  const [skillSettingsOpen, setSkillSettingsOpen] = useState(false);
+
+  const adminOrgs = useMemo(
+    () => getAdminOrganizations(userRole, userID, organizations),
+    [userRole, userID, organizations],
+  );
+
+  const teamCreateSchema = useMemo(
+    () =>
+      teamCreateFieldsSchema.superRefine((values, ctx) => {
+        if (isOrgAdmin && !values.organization_id) {
+          ctx.addIssue({ code: "custom", message: SUPPRESSED_BY_DESCRIPTION, path: ["organization_id"] });
+        }
+        const organizationIsStillPickable =
+          values.organization_id == null ||
+          organizations == null ||
+          adminOrgs.some((org) => org.organization_id === values.organization_id);
+        if (!organizationIsStillPickable) {
+          ctx.addIssue({
+            code: "custom",
+            message: "You can no longer create teams in this organization",
+            path: ["organization_id"],
+          });
+        }
+        if (additionalSettingsOpen && !isParsableJson(values.secret_manager_settings)) {
+          ctx.addIssue({ code: "custom", message: SUPPRESSED_BY_DESCRIPTION, path: ["secret_manager_settings"] });
+        }
+      }),
+    [isOrgAdmin, additionalSettingsOpen, adminOrgs, organizations],
+  );
+
+  const form = useZodForm(teamCreateSchema, { defaultValues: EMPTY_TEAM_CREATE_VALUES });
+  const watchedOrganizationId = form.watch("organization_id");
+  const watchedMcpSelection = form.watch("allowed_mcp_servers_and_groups");
+  const watchedToolPermissions = form.watch("mcp_tool_permissions");
 
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useQueryState("team", parseAsString.withOptions({ history: "push" }));
@@ -115,31 +272,21 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
   const [policiesList, setPoliciesList] = useState<string[]>([]);
   const [loggingSettings, setLoggingSettings] = useState<any[]>([]);
   const [modelAliases, setModelAliases] = useState<{ [key: string]: string }>({});
+  const [modelMaxBudget, setModelMaxBudget] = useState<ModelMaxBudget>({});
   const [routerSettings, setRouterSettings] = useState<RouterSettingsAccordionValue | null>(null);
   const [routerSettingsKey, setRouterSettingsKey] = useState<number>(0);
 
-  useEffect(() => {
-    form.setFieldValue("models", []);
-  }, [currentOrgForCreateTeam, userModels]);
-
-  // Handle organization preselection when modal opens
-  useEffect(() => {
-    if (isTeamModalVisible) {
-      const adminOrgs = getAdminOrganizations(userRole, userID, organizations);
-      const isOrgAdmin = userRole !== "Admin";
-
-      // Org admins must scope a team to an org, so with exactly one we preselect it.
-      // Proxy admins can create org-less teams, so the field stays optional regardless of org count.
-      if (isOrgAdmin && adminOrgs.length === 1) {
-        const org = adminOrgs[0];
-        form.setFieldValue("organization_id", org.organization_id);
-        setCurrentOrgForCreateTeam(org);
-      } else {
-        form.setFieldValue("organization_id", currentOrg?.organization_id || null);
-        setCurrentOrgForCreateTeam(currentOrg);
-      }
-    }
-  }, [isTeamModalVisible, userRole, userID, organizations, currentOrg]);
+  const { data: defaultTeamSettings } = useQuery({
+    queryKey: ["defaultTeamSettings"],
+    queryFn: () => getDefaultTeamSettings(accessToken as string),
+    enabled: isTeamModalVisible && accessToken != null,
+    retry: false,
+    staleTime: 60_000,
+  });
+  const defaultBudgetDuration: string | undefined = defaultTeamSettings?.values?.budget_duration ?? undefined;
+  const budgetDurationPlaceholder = defaultBudgetDuration
+    ? `Default: ${getBudgetDurationLabel(defaultBudgetDuration)} (${defaultBudgetDuration})`
+    : "n/a";
 
   // Add this useEffect to fetch guardrails
   useEffect(() => {
@@ -175,22 +322,42 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
     if (canViewPolicies) fetchPolicies();
   }, [accessToken, canViewPolicies]);
 
-  const handleOk = () => {
-    setIsTeamModalVisible(false);
-    form.resetFields();
+  const openCreateTeamModal = () => {
+    // Org admins must scope a team to an org, so with exactly one we preselect it.
+    // Proxy admins can create org-less teams, so the field stays optional regardless of org count.
+    if (isOrgAdmin && adminOrgs.length === 1) {
+      form.setValue("organization_id", adminOrgs[0].organization_id);
+    }
+    setIsTeamModalVisible(true);
+  };
+
+  const selectCreateTeamOrganization = (
+    next: string | null,
+    currentOrganizationId: string | null,
+    onChange: (organizationId: string | null) => void,
+  ) => {
+    const nextOrganizationId = next;
+    if (nextOrganizationId === currentOrganizationId) return;
+    onChange(nextOrganizationId);
+    form.setValue("models", []);
+  };
+
+  const resetCreateForm = () => {
+    form.reset(EMPTY_TEAM_CREATE_VALUES);
+    setAdditionalSettingsOpen(false);
+    setMcpSettingsOpen(false);
+    setAgentSettingsOpen(false);
+    setSearchToolSettingsOpen(false);
     setLoggingSettings([]);
     setModelAliases({});
+    setModelMaxBudget({});
     setRouterSettings(null);
     setRouterSettingsKey((prev) => prev + 1);
   };
 
   const handleCancel = () => {
     setIsTeamModalVisible(false);
-    form.resetFields();
-    setLoggingSettings([]);
-    setModelAliases({});
-    setRouterSettings(null);
-    setRouterSettingsKey((prev) => prev + 1);
+    resetCreateForm();
   };
 
   const handleDelete = async (team: Team) => {
@@ -208,9 +375,9 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
       setIsTeamDeleting(true);
       await teamDeleteCall(accessToken, teamToDelete.team_id);
       await refreshTeams();
-      NotificationsManager.success(t("teams.notifications.deleted"));
+      toast.success("Team deleted successfully");
     } catch (error) {
-      NotificationsManager.fromBackend(t("teams.notifications.deleteFailed", { error: String(error) }));
+      toast.fromError("Error deleting the team: " + error);
     } finally {
       setIsTeamDeleting(false);
       setIsDeleteModalOpen(false);
@@ -251,7 +418,11 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
           formValues.organization_id = organizationId.trim();
         }
 
-        NotificationsManager.info(t("teams.notifications.creating"));
+        if (formValues.budget_duration === NEVER_RESETS_BUDGET_DURATION) {
+          formValues.budget_duration = null;
+        }
+
+        toast.info("Creating Team");
 
         const metadataObject = {
           ...metadataPairsToObject(formValues.metadata),
@@ -267,7 +438,7 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
               try {
                 formValues.secret_manager_settings = JSON.parse(formValues.secret_manager_settings);
               } catch (e) {
-                throw new Error(t("teams.notifications.secretManagerParseFailed", { error: String(e) }));
+                throw new Error("Failed to parse secret manager settings: " + e);
               }
             }
           }
@@ -282,6 +453,7 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
           (formValues.allowed_mcp_servers_and_groups &&
             (formValues.allowed_mcp_servers_and_groups.servers?.length > 0 ||
               formValues.allowed_mcp_servers_and_groups.accessGroups?.length > 0 ||
+              formValues.allowed_mcp_servers_and_groups.toolsets?.length > 0 ||
               formValues.allowed_mcp_servers_and_groups.toolPermissions))
         ) {
           if (!formValues.object_permission) {
@@ -292,12 +464,15 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
             delete formValues.allowed_vector_store_ids;
           }
           if (formValues.allowed_mcp_servers_and_groups) {
-            const { servers, accessGroups } = formValues.allowed_mcp_servers_and_groups;
+            const { servers, accessGroups, toolsets } = formValues.allowed_mcp_servers_and_groups;
             if (servers && servers.length > 0) {
               formValues.object_permission.mcp_servers = servers;
             }
             if (accessGroups && accessGroups.length > 0) {
               formValues.object_permission.mcp_access_groups = accessGroups;
+            }
+            if (toolsets && toolsets.length > 0) {
+              formValues.object_permission.mcp_toolsets = toolsets;
             }
             delete formValues.allowed_mcp_servers_and_groups;
           }
@@ -340,9 +515,21 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
           delete formValues.object_permission_search_tools;
         }
 
+        if (Array.isArray(formValues.object_permission_skills) && formValues.object_permission_skills.length > 0) {
+          if (!formValues.object_permission) {
+            formValues.object_permission = {};
+          }
+          formValues.object_permission.skills = formValues.object_permission_skills;
+        }
+        delete formValues.object_permission_skills;
+
         // Add model_aliases if any are defined
         if (Object.keys(modelAliases).length > 0) {
           formValues.model_aliases = modelAliases;
+        }
+
+        if (Object.keys(modelMaxBudget).length > 0) {
+          formValues.model_max_budget = modelMaxBudget;
         }
 
         // Add router_settings if any are defined
@@ -357,22 +544,30 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
         }
 
         await teamCreateCall(accessToken, { ...formValues, models: normalizeTeamModelSelection(formValues.models) });
-        NotificationsManager.success(t("teams.notifications.created"));
+        toast.success("Team created");
         await refreshTeams();
-        form.resetFields();
-        setLoggingSettings([]);
-        setModelAliases({});
-        setRouterSettings(null);
-        setRouterSettingsKey((prev) => prev + 1);
+        resetCreateForm();
         setIsTeamModalVisible(false);
       }
     } catch (error) {
       console.error("Error creating the team:", error);
-      NotificationsManager.fromBackend(
-        t("teams.notifications.createFailed", { error: extractProxyErrorMessage(error) }),
-      );
+      toast.fromError("Error creating the team: " + extractProxyErrorMessage(error));
     }
   };
+
+  const mountedCreateValues = (values: TeamCreateFormValues): Record<string, unknown> => {
+    const unmounted = new Set<string>([
+      ...(additionalSettingsOpen ? [] : ADDITIONAL_SETTINGS_FIELDS),
+      ...(additionalSettingsOpen && canViewPolicies ? [] : ["policies"]),
+      ...(mcpSettingsOpen ? [] : MCP_SETTINGS_FIELDS),
+      ...(agentSettingsOpen ? [] : AGENT_SETTINGS_FIELDS),
+      ...(searchToolSettingsOpen ? [] : SEARCH_TOOL_SETTINGS_FIELDS),
+      ...(skillSettingsOpen ? [] : SKILL_SETTINGS_FIELDS),
+    ]);
+    return Object.fromEntries(Object.entries(values).filter(([key]) => !unmounted.has(key)));
+  };
+
+  const onCreateSubmit = (values: TeamCreateFormValues) => handleCreate(mountedCreateValues(values));
 
   const is_team_admin = (team: any) => {
     if (team == null || team.members_with_roles == null) {
@@ -387,14 +582,11 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
     return false;
   };
 
-  const { token } = theme.useToken();
-  const { Text } = Typography;
-  const { Content } = Layout;
-
   const tabItems = [
     {
       key: "your-teams",
-      label: t("teams.tabs.yours"),
+      label: "Your Teams",
+      className: "flex min-h-0 flex-1 flex-col",
       children: (
         <>
           <TeamsTable
@@ -415,21 +607,23 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
 
           <DeleteResourceModal
             isOpen={isDeleteModalOpen}
-            title={t("teams.delete.title")}
+            title="Delete Team?"
             alertMessage={(() => {
               const deleteKeyCount = teamToDelete?.keys_count ?? teamToDelete?.keys?.length ?? 0;
-              return deleteKeyCount === 0 ? undefined : t("teams.delete.warning", { count: deleteKeyCount });
+              return deleteKeyCount === 0
+                ? undefined
+                : `Warning: This team has ${deleteKeyCount} keys associated with it. Deleting the team will also delete all associated keys, along with any models created for this team. This action is irreversible.`;
             })()}
-            message={t("teams.delete.message")}
-            resourceInformationTitle={t("teams.delete.information")}
+            message="Are you sure you want to delete this team, all its keys, and any models created for it? This action cannot be undone."
+            resourceInformationTitle="Team Information"
             resourceInformation={[
-              { label: t("teams.table.teamId"), value: teamToDelete?.team_id, code: true },
-              { label: t("teams.create.teamName"), value: teamToDelete?.team_alias },
+              { label: "Team ID", value: teamToDelete?.team_id, code: true },
+              { label: "Team Name", value: teamToDelete?.team_alias },
               {
-                label: t("teams.table.keys"),
+                label: "Keys",
                 value: teamToDelete?.keys_count ?? teamToDelete?.keys?.length ?? 0,
               },
-              { label: t("teams.table.members"), value: teamToDelete?.members_with_roles?.length },
+              { label: "Members", value: teamToDelete?.members_with_roles?.length },
             ]}
             requiredConfirmation={teamToDelete?.team_alias}
             onCancel={cancelDelete}
@@ -441,14 +635,16 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
     },
     {
       key: "available-teams",
-      label: t("teams.tabs.available"),
+      label: "Available Teams",
+      className: "min-h-0 flex-1 overflow-y-auto",
       children: <AvailableTeamsPanel accessToken={accessToken} userID={userID} />,
     },
     ...(isProxyAdminRole(userRole || "")
       ? [
           {
             key: "default-settings",
-            label: t("teams.tabs.defaultSettings"),
+            label: "Default Team Settings",
+            className: "min-h-0 flex-1 overflow-y-auto",
             children: <TeamSSOSettings accessToken={accessToken} userID={userID || ""} userRole={userRole || ""} />,
           },
         ]
@@ -456,7 +652,7 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
   ];
 
   return (
-    <Content style={{ padding: token.paddingLG, paddingInline: token.paddingLG * 2 }}>
+    <main className={selectedTeamId ? "px-12 py-6" : "flex h-full flex-col p-8"}>
       {selectedTeamId ? (
         <TeamInfoView
           teamId={selectedTeamId}
@@ -476,572 +672,645 @@ const Teams: React.FC<TeamProps> = ({ accessToken, userID, userRole, premiumUser
           premiumUser={premiumUser}
         />
       ) : (
-        <>
-          <div className="mb-4">
-            <PageHeader icon={<Users className="size-5" />} title={t("teams.title")} subtitle={t("teams.subtitle")} />
-          </div>
-
-          <Tabs
-            items={tabItems}
-            tabBarExtraContent={{
-              left: canCreateOrManageTeams(userRole, userID, organizations) ? (
-                <div className="flex items-center gap-4 pr-4">
-                  <UIButton onClick={() => setIsTeamModalVisible(true)} data-testid="create-team-button">
-                    <Plus className="size-4" />
-                    {t("teams.create.button")}
-                  </UIButton>
-                  <div className="h-6 w-px bg-gray-200" />
-                </div>
-              ) : undefined,
-            }}
+        <Tabs defaultValue={tabItems[0].key} className="min-h-0 flex-1 gap-6">
+          <PageHeader
+            icon={<Users />}
+            title="Teams"
+            subtitle="Manage teams, members, and their access to models and budgets"
+            primaryAction={
+              canCreateOrManageTeams(userRole, userID, organizations) ? (
+                <UIButton onClick={openCreateTeamModal} data-testid="create-team-button">
+                  <Plus className="size-4" />
+                  Create Team
+                </UIButton>
+              ) : undefined
+            }
+            tabs={({ leadingControls }) => (
+              <TabsList
+                variant="line"
+                className="gap-0 p-0 [&>[data-slot=tabs-trigger]+[data-slot=tabs-trigger]]:ml-[22px]"
+              >
+                {leadingControls}
+                {tabItems.map((item) => (
+                  <TabsTrigger
+                    key={item.key}
+                    value={item.key}
+                    className="flex-none px-0 py-[7px] data-active:font-semibold"
+                  >
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            )}
           />
-        </>
+          {tabItems.map((item) => (
+            <TabsContent key={item.key} value={item.key} className={item.className}>
+              {item.children}
+            </TabsContent>
+          ))}
+        </Tabs>
       )}
 
       {canCreateOrManageTeams(userRole, userID, organizations) && (
-        <Modal
-          title={t("teams.create.title")}
-          open={isTeamModalVisible}
-          width={1000}
-          footer={null}
-          onOk={handleOk}
-          onCancel={handleCancel}
-          destroyOnHidden
-        >
-          <Form form={form} onFinish={handleCreate} labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} labelAlign="left">
-            <>
-              <Form.Item
-                label={t("teams.create.teamName")}
-                name="team_alias"
-                rules={[
-                  {
-                    required: true,
-                    message: t("teams.create.teamNameRequired"),
-                  },
-                ]}
-              >
-                <TextInput placeholder="" data-testid="team-name-input" />
-              </Form.Item>
-              {(() => {
-                const adminOrgs = getAdminOrganizations(userRole, userID, organizations);
-                const isOrgAdmin = userRole !== "Admin";
-                const isSingleOrg = adminOrgs.length === 1;
-                const hasNoOrgs = adminOrgs.length === 0;
-
-                return (
-                  <>
-                    <Form.Item
-                      label={
-                        <span>
-                          {t("teams.create.organization")}{" "}
-                          <Tooltip
-                            title={
-                              <span>
-                                {t("teams.create.organizationTooltip")}{" "}
-                                <a
-                                  href="https://docs.litellm.ai/docs/proxy/user_management_heirarchy"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    color: "#1890ff",
-                                    textDecoration: "underline",
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {t("teams.create.hierarchy")}
-                                </a>
-                              </span>
-                            }
-                          >
-                            <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                          </Tooltip>
-                        </span>
-                      }
-                      name="organization_id"
-                      initialValue={currentOrg ? currentOrg.organization_id : null}
-                      className="mt-8"
-                      rules={
-                        isOrgAdmin
-                          ? [
-                              {
-                                required: true,
-                                message: t("teams.create.organizationRequired"),
-                              },
-                            ]
-                          : []
-                      }
-                      help={
-                        isOrgAdmin && isSingleOrg
-                          ? t("teams.create.singleOrganization")
-                          : isOrgAdmin
-                            ? t("teams.create.required")
-                            : ""
-                      }
-                    >
-                      <Select
-                        showSearch
-                        allowClear={!isOrgAdmin}
-                        disabled={isOrgAdmin && isSingleOrg}
-                        placeholder={
-                          hasNoOrgs ? t("teams.create.noOrganizations") : t("teams.create.selectOrganization")
-                        }
-                        onChange={(value) => {
-                          form.setFieldValue("organization_id", value);
-                          setCurrentOrgForCreateTeam(adminOrgs?.find((org) => org.organization_id === value) || null);
-                        }}
-                        filterOption={(input, option) => {
-                          if (!option) return false;
-                          const optionValue = option.children?.toString() || "";
-                          return optionValue.toLowerCase().includes(input.toLowerCase());
-                        }}
-                        optionFilterProp="children"
-                      >
-                        {adminOrgs?.map((org) => (
-                          <Select.Option key={org.organization_id} value={org.organization_id}>
-                            <span className="font-medium">{org.organization_alias}</span>{" "}
-                            <span className="text-gray-500">({org.organization_id})</span>
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-
-                    {/* Show message when org admin needs to select organization */}
-                    {isOrgAdmin && !isSingleOrg && adminOrgs.length > 1 && (
-                      <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                        <Text style={{ color: "#1e40af", fontSize: 14 }}>
-                          {t("teams.create.organizationAdminHint")}
-                        </Text>
-                      </div>
+        <Dialog open={isTeamModalVisible} onOpenChange={(open) => !open && handleCancel()}>
+          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[1000px]">
+            <DialogHeader>
+              <DialogTitle>Create Team</DialogTitle>
+            </DialogHeader>
+            <TooltipProvider>
+              <form onSubmit={form.handleSubmit(onCreateSubmit)}>
+                <FieldGroup>
+                  <FormField control={form.control} name="team_alias" label="Team Name">
+                    {({ ref, value, ...field }) => (
+                      <UIInput {...field} ref={ref} value={value ?? ""} data-testid="team-name-input" />
                     )}
-                  </>
-                );
-              })()}
-              <Form.Item
-                label={
-                  <span>
-                    {t("teams.create.models")}{" "}
-                    <Tooltip title={t("teams.create.modelsTooltip")}>
-                      <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                    </Tooltip>
-                  </span>
-                }
-                name="models"
-              >
-                <ModelSelect
-                  value={form.getFieldValue("models") || []}
-                  onChange={(values) => form.setFieldValue("models", values)}
-                  organizationID={form.getFieldValue("organization_id")}
-                  options={{
-                    includeSpecialOptions: true,
-                    showAllProxyModelsOverride: !form.getFieldValue("organization_id"),
-                  }}
-                  context="team"
-                  dataTestId="create-team-models-select"
-                />
-              </Form.Item>
+                  </FormField>
+                  {(() => {
+                    const isSingleOrg = adminOrgs.length === 1;
+                    const hasNoOrgs = adminOrgs.length === 0;
+                    const soleOrganizationId = isSingleOrg ? adminOrgs[0].organization_id ?? null : null;
 
-              <Form.Item label={t("teams.create.maxBudget")} name="max_budget">
-                <NumericalInput step={0.01} precision={2} width={200} />
-              </Form.Item>
-              <Form.Item className="mt-8" label={t("teams.create.resetBudget")} name="budget_duration">
-                <Select defaultValue={null} placeholder={t("teams.create.notApplicable")}>
-                  <Select.Option value="24h">{t("teams.create.daily")}</Select.Option>
-                  <Select.Option value="7d">{t("teams.create.weekly")}</Select.Option>
-                  <Select.Option value="30d">{t("teams.create.monthly")}</Select.Option>
-                </Select>
-              </Form.Item>
-              <Form.Item label={t("teams.create.tpmLimit")} name="tpm_limit">
-                <NumericalInput step={1} width={400} />
-              </Form.Item>
-              <Form.Item label={t("teams.create.rpmLimit")} name="rpm_limit">
-                <NumericalInput step={1} width={400} />
-              </Form.Item>
-              <Form.Item label={t("teams.create.metadata")} help={t("teams.create.metadataHelp")}>
-                <MetadataKeyValueFields
-                  form={form}
-                  schemaFields={teamMetadataSchemaFields}
-                  schemaLoading={isTeamMetadataSchemaLoading}
-                />
-              </Form.Item>
+                    return (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="organization_id"
+                          className="mt-8"
+                          label={labelWithDocsHint(
+                            "Organization",
+                            "Organizations can have multiple teams. Learn more about the user management hierarchy",
+                            "https://docs.litellm.ai/docs/proxy/user_management_heirarchy",
+                          )}
+                          description={
+                            isOrgAdmin && isSingleOrg
+                              ? "You can only create teams within this organization"
+                              : isOrgAdmin
+                                ? "required"
+                                : undefined
+                          }
+                        >
+                          {({ id, value, onChange }) => (
+                            <SearchSelect
+                              inputId={id}
+                              value={value ?? ""}
+                              options={adminOrgs.map((org) => ({
+                                value: org.organization_id ?? "",
+                                label: org.organization_alias ?? "",
+                                sublabel: org.organization_id ?? "",
+                              }))}
+                              disabled={isOrgAdmin && soleOrganizationId !== null && value === soleOrganizationId}
+                              allowClear={!isOrgAdmin}
+                              placeholder={
+                                hasNoOrgs ? "No organizations available" : "Search or select an Organization"
+                              }
+                              emptyText="No organizations available"
+                              onValueChange={(next) => selectCreateTeamOrganization(next, value ?? null, onChange)}
+                            />
+                          )}
+                        </FormField>
 
-              <Accordion className="mt-20 mb-8">
-                <AccordionHeader>
-                  <b>{t("teams.create.additionalSettings")}</b>
-                </AccordionHeader>
-                <AccordionBody>
-                  <Form.Item label={t("teams.table.teamId")} name="team_id" help={t("teams.create.teamIdHelp")}>
-                    <TextInput
-                      onChange={(e) => {
-                        e.target.value = e.target.value.trim();
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={t("teams.create.memberBudget")}
-                    name="team_member_budget"
-                    normalize={(value) => (value ? Number(value) : undefined)}
-                    tooltip={t("teams.create.memberBudgetTooltip")}
+                        {isOrgAdmin && !isSingleOrg && adminOrgs.length > 1 && (
+                          <div className="mb-8 rounded-md border border-info/20 bg-info/10 p-4">
+                            <span className="text-sm text-info">
+                              Please select an organization to create a team for. You can only create teams within
+                              organizations where you are an admin.
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                  <FormField
+                    control={form.control}
+                    name="models"
+                    label={labelWithHint(
+                      "Models",
+                      "These are the models that your selected team has access to. Leave empty to grant no models directly, e.g. when the team gets its models from access groups",
+                    )}
                   >
-                    <NumericalInput step={0.01} precision={2} width={200} />
-                  </Form.Item>
-                  <Form.Item
-                    label={t("teams.create.memberKeyDuration")}
-                    name="team_member_key_duration"
-                    tooltip={t("teams.create.memberKeyDurationTooltip")}
-                  >
-                    <TextInput placeholder={t("teams.create.memberKeyDurationPlaceholder")} />
-                  </Form.Item>
-                  <Form.Item
-                    label={t("teams.create.memberRpmLimit")}
-                    name="team_member_rpm_limit"
-                    tooltip={t("teams.create.memberRpmTooltip")}
-                  >
-                    <NumericalInput step={1} width={400} />
-                  </Form.Item>
-                  <Form.Item
-                    label={t("teams.create.memberTpmLimit")}
-                    name="team_member_tpm_limit"
-                    tooltip={t("teams.create.memberTpmTooltip")}
-                  >
-                    <NumericalInput step={1} width={400} />
-                  </Form.Item>
-                  <Form.Item
-                    label={t("teams.create.secretManager")}
-                    name="secret_manager_settings"
-                    help={premiumUser ? t("teams.create.secretManagerHelp") : t("teams.create.secretManagerPremium")}
-                    rules={[
-                      {
-                        validator: async (_, value) => {
-                          if (!value) {
-                            return Promise.resolve();
-                          }
-                          try {
-                            JSON.parse(value);
-                            return Promise.resolve();
-                          } catch (error) {
-                            return Promise.reject(new Error(t("teams.create.validJson")));
-                          }
-                        },
-                      },
-                    ]}
-                  >
-                    <Input.TextArea
-                      rows={4}
-                      placeholder='{"namespace": "admin", "mount": "secret", "path_prefix": "litellm"}'
-                      disabled={!premiumUser}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("teams.create.guardrails")}{" "}
-                        <Tooltip title={t("teams.create.guardrailsSetup")}>
-                          <a
-                            href="https://docs.litellm.ai/docs/proxy/guardrails/quick_start"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                          </a>
-                        </Tooltip>
-                      </span>
-                    }
-                    name="guardrails"
-                    className="mt-8"
-                    help={t("teams.create.guardrailsHelp")}
-                  >
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      placeholder={t("teams.create.guardrailsPlaceholder")}
-                      options={guardrailsList.map((name) => ({
-                        value: name,
-                        label: name,
-                      }))}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("teams.create.disableGlobalGuardrails")}{" "}
-                        <Tooltip title={t("teams.create.disableGlobalGuardrailsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="disable_global_guardrails"
-                    className="mt-4"
-                    valuePropName="checked"
-                    help={t("teams.create.disableGlobalGuardrailsHelp")}
-                  >
-                    <Switch
-                      disabled={!premiumUser}
-                      checkedChildren={premiumUser ? t("teams.create.yes") : t("teams.create.disableGuardrailsPremium")}
-                      unCheckedChildren={
-                        premiumUser ? t("teams.create.no") : t("teams.create.disableGuardrailsPremium")
-                      }
-                    />
-                  </Form.Item>
-                  {canViewPolicies && (
-                    <Form.Item
-                      label={
-                        <span>
-                          {t("teams.create.policies")}{" "}
-                          <Tooltip title={t("teams.create.policiesTooltip")}>
-                            <a
-                              href="https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                            </a>
-                          </Tooltip>
-                        </span>
-                      }
-                      name="policies"
-                      className="mt-8"
-                      help={t("teams.create.policiesHelp")}
-                    >
-                      <Select
-                        mode="tags"
-                        style={{ width: "100%" }}
-                        placeholder={t("teams.create.policiesPlaceholder")}
-                        options={policiesList.map((name) => ({
-                          value: name,
-                          label: name,
-                        }))}
+                    {({ id, value, onChange }) => (
+                      <ModelSelect
+                        id={id}
+                        value={value ?? []}
+                        onChange={onChange}
+                        organizationID={watchedOrganizationId ?? undefined}
+                        options={{
+                          includeSpecialOptions: true,
+                          showAllProxyModelsOverride: !watchedOrganizationId,
+                        }}
+                        context="team"
+                        dataTestId="create-team-models-select"
                       />
-                    </Form.Item>
-                  )}
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("teams.create.accessGroups")}{" "}
-                        <Tooltip title={t("teams.create.accessGroupsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="access_group_ids"
-                    className="mt-8"
-                    help={t("teams.create.accessGroupsHelp")}
-                  >
-                    <AccessGroupSelector placeholder={t("teams.create.accessGroupsPlaceholder")} />
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("teams.create.vectorStores")}{" "}
-                        <Tooltip title={t("teams.create.vectorStoresTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="allowed_vector_store_ids"
-                    className="mt-8"
-                    help={t("teams.create.vectorStoresHelp")}
-                  >
-                    <VectorStoreSelector
-                      onChange={(values: string[]) => form.setFieldValue("allowed_vector_store_ids", values)}
-                      value={form.getFieldValue("allowed_vector_store_ids")}
-                      accessToken={accessToken || ""}
-                      placeholder={t("teams.create.vectorStoresPlaceholder")}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={t("teams.create.passthroughRoutes")}
-                    name="allowed_passthrough_routes"
-                    className="mt-8"
-                    tooltip={
-                      !premiumUser
-                        ? t("teams.create.passthroughPremium")
-                        : !isProxyAdminRole(userRole || "")
-                          ? t("teams.create.passthroughAdminOnly")
-                          : undefined
-                    }
-                  >
-                    <PassThroughRoutesSelector
-                      accessToken={accessToken || ""}
-                      placeholder={t("teams.create.passthroughPlaceholder")}
-                      disabled={!premiumUser || !isProxyAdminRole(userRole || "")}
-                    />
-                  </Form.Item>
-                </AccordionBody>
-              </Accordion>
+                    )}
+                  </FormField>
 
-              <Accordion className="mt-8 mb-8">
-                <AccordionHeader>
-                  <b>{t("teams.create.mcpSettings")}</b>
-                </AccordionHeader>
-                <AccordionBody>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("teams.create.allowedMcp")}{" "}
-                        <Tooltip title={t("teams.create.allowedMcpTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="allowed_mcp_servers_and_groups"
-                    className="mt-4"
-                    help={t("teams.create.allowedMcpHelp")}
+                  <FormField control={form.control} name="max_budget" label="Max Budget (USD)">
+                    {({ ref, value, ...field }) => (
+                      <NumericalInput {...field} ref={ref} value={value ?? ""} step={0.01} precision={2} width={200} />
+                    )}
+                  </FormField>
+                  <FormField control={form.control} name="budget_duration" className="mt-8" label="Reset Budget">
+                    {({ id, value, onChange }) => (
+                      <BudgetDurationDropdown
+                        id={id}
+                        showNeverResets
+                        placeholder={budgetDurationPlaceholder}
+                        value={value}
+                        onChange={(next) => onChange(next ?? undefined)}
+                      />
+                    )}
+                  </FormField>
+                  <ModelMaxBudgetField
+                    key={`model-max-budget-${routerSettingsKey}`}
+                    premiumUser={premiumUser}
+                    value={modelMaxBudget}
+                    onChange={setModelMaxBudget}
+                    availableModels={userModels}
+                    hint="Cap this team's spend on individual models, each with its own reset window. Every key on the team shares the cap unless the key sets its own budget for that model."
+                  />
+                  <FormField control={form.control} name="tpm_limit" label="Tokens per minute Limit (TPM)">
+                    {({ ref, value, ...field }) => (
+                      <NumericalInput {...field} ref={ref} value={value ?? ""} step={1} width={400} />
+                    )}
+                  </FormField>
+                  <FormField control={form.control} name="rpm_limit" label="Requests per minute Limit (RPM)">
+                    {({ ref, value, ...field }) => (
+                      <NumericalInput {...field} ref={ref} value={value ?? ""} step={1} width={400} />
+                    )}
+                  </FormField>
+                  <FormField
+                    control={form.control}
+                    name="tpd_limit"
+                    label={labelWithHint(
+                      "Tokens per day Limit (TPD)",
+                      "Daily token budget for batch submissions (/v1/batches). When set, batch input files are charged against this 24h window instead of the team's TPM/RPM limits. Online requests keep using TPM/RPM.",
+                    )}
                   >
-                    <MCPServerSelector
-                      onChange={(val: any) => form.setFieldValue("allowed_mcp_servers_and_groups", val)}
-                      value={form.getFieldValue("allowed_mcp_servers_and_groups")}
-                      accessToken={accessToken || ""}
-                      placeholder={t("teams.create.allowedMcpPlaceholder")}
-                      allowAllProxyMcpServers={isProxyAdminRole(userRole || "")}
+                    {({ ref, value, ...field }) => (
+                      <NumericalInput {...field} ref={ref} value={value ?? ""} step={1} width={400} />
+                    )}
+                  </FormField>
+                  <Field>
+                    <FieldLabel>Metadata</FieldLabel>
+                    <MetadataKeyValueFields
+                      control={form.control}
+                      getValues={form.getValues}
+                      name="metadata"
+                      schemaFields={teamMetadataSchemaFields}
+                      schemaLoading={isTeamMetadataSchemaLoading}
                     />
-                  </Form.Item>
+                    <FieldDescription>
+                      Values are saved as text. Enter JSON for typed values, e.g. 3, true, or {'{"region": "us"}'}.
+                    </FieldDescription>
+                  </Field>
 
-                  {/* Hidden field to register mcp_tool_permissions with the form */}
-                  <Form.Item name="mcp_tool_permissions" initialValue={{}} hidden>
-                    <Input type="hidden" />
-                  </Form.Item>
-
-                  <Form.Item
-                    noStyle
-                    shouldUpdate={(prevValues, currentValues) =>
-                      prevValues.allowed_mcp_servers_and_groups !== currentValues.allowed_mcp_servers_and_groups ||
-                      prevValues.mcp_tool_permissions !== currentValues.mcp_tool_permissions
-                    }
+                  <Collapsible
+                    open={additionalSettingsOpen}
+                    onOpenChange={setAdditionalSettingsOpen}
+                    className="mt-20 mb-8 overflow-hidden rounded-lg border"
                   >
-                    {() => (
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>Additional Settings</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <FieldGroup>
+                        <FormField
+                          control={form.control}
+                          name="team_id"
+                          label="Team ID"
+                          description="ID of the team you want to create. If not provided, it will be generated automatically."
+                        >
+                          {({ ref, value, ...field }) => <UIInput {...field} ref={ref} value={value ?? ""} />}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="team_member_budget"
+                          label={labelWithHint(
+                            "Team Member Budget (USD)",
+                            "This is the individual budget for a user in the team.",
+                          )}
+                        >
+                          {({ ref, value, onChange, ...field }) => (
+                            <NumericalInput
+                              {...field}
+                              ref={ref}
+                              value={value ?? ""}
+                              onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                onChange(event.target.value ? Number(event.target.value) : undefined)
+                              }
+                              step={0.01}
+                              precision={2}
+                              width={200}
+                            />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="team_member_key_duration"
+                          label={labelWithHint(
+                            "Team Member Key Duration (eg: 1d, 1mo)",
+                            "Set a limit to the duration of a team member's key. Format: 30s (seconds), 30m (minutes), 30h (hours), 30d (days), 1mo (month)",
+                          )}
+                        >
+                          {({ ref, value, ...field }) => (
+                            <UIInput {...field} ref={ref} value={value ?? ""} placeholder="e.g., 30d" />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="team_member_rpm_limit"
+                          label={labelWithHint(
+                            "Team Member RPM Limit",
+                            "The RPM (Requests Per Minute) limit for individual team members",
+                          )}
+                        >
+                          {({ ref, value, ...field }) => (
+                            <NumericalInput {...field} ref={ref} value={value ?? ""} step={1} width={400} />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="team_member_tpm_limit"
+                          label={labelWithHint(
+                            "Team Member TPM Limit",
+                            "The TPM (Tokens Per Minute) limit for individual team members",
+                          )}
+                        >
+                          {({ ref, value, ...field }) => (
+                            <NumericalInput {...field} ref={ref} value={value ?? ""} step={1} width={400} />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="secret_manager_settings"
+                          label="Secret Manager Settings"
+                          description={
+                            premiumUser
+                              ? "Enter secret manager configuration as a JSON object."
+                              : "Premium feature - Upgrade to manage secret manager settings."
+                          }
+                        >
+                          {({ ref, value, ...field }) => (
+                            <Textarea
+                              {...field}
+                              ref={ref}
+                              value={value ?? ""}
+                              rows={4}
+                              placeholder='{"namespace": "admin", "mount": "secret", "path_prefix": "litellm"}'
+                              disabled={!premiumUser}
+                            />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="guardrails"
+                          className="mt-8"
+                          label={labelWithDocsHint(
+                            "Guardrails",
+                            "Setup your first guardrail",
+                            "https://docs.litellm.ai/docs/proxy/guardrails/quick_start",
+                          )}
+                          description="Select existing guardrails or enter new ones"
+                        >
+                          {({ id, value, onChange }) => (
+                            <TagsInput
+                              id={id}
+                              value={value ?? []}
+                              onValueChange={onChange}
+                              options={guardrailsList.map((name) => ({ value: name, label: name }))}
+                              placeholder="Select or enter guardrails"
+                            />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="disable_global_guardrails"
+                          className="mt-4"
+                          label={labelWithHint(
+                            "Disable Global Guardrails",
+                            "When enabled, this team will bypass any guardrails configured to run on every request (global guardrails)",
+                          )}
+                          description={
+                            premiumUser
+                              ? "Bypass global guardrails for this team"
+                              : "Premium feature - Upgrade to disable global guardrails by team"
+                          }
+                        >
+                          {({ id, value, onChange }) => (
+                            <Switch
+                              id={id}
+                              disabled={!premiumUser}
+                              checked={value === true}
+                              onCheckedChange={onChange}
+                            />
+                          )}
+                        </FormField>
+                        {canViewPolicies && (
+                          <FormField
+                            control={form.control}
+                            name="policies"
+                            className="mt-8"
+                            label={labelWithDocsHint(
+                              "Policies",
+                              "Apply policies to this team to control guardrails and other settings",
+                              "https://docs.litellm.ai/docs/proxy/guardrails/guardrail_policies",
+                            )}
+                            description="Select existing policies or enter new ones"
+                          >
+                            {({ id, value, onChange }) => (
+                              <TagsInput
+                                id={id}
+                                value={value ?? []}
+                                onValueChange={onChange}
+                                options={policiesList.map((name) => ({ value: name, label: name }))}
+                                placeholder="Select or enter policies"
+                              />
+                            )}
+                          </FormField>
+                        )}
+                        <FormField
+                          control={form.control}
+                          name="access_group_ids"
+                          className="mt-8"
+                          label={labelWithHint(
+                            "Access Groups",
+                            "Assign access groups to this team. Access groups control which models, MCP servers, and agents this team can use",
+                          )}
+                          description="Select access groups to assign to this team"
+                        >
+                          {({ value, onChange }) => (
+                            <AccessGroupSelector
+                              value={value}
+                              onChange={onChange}
+                              placeholder="Select access groups (optional)"
+                            />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="allowed_vector_store_ids"
+                          className="mt-8"
+                          label={labelWithHint(
+                            "Allowed Vector Stores",
+                            "Select which vector stores this team can access by default. Leave empty for access to all vector stores",
+                          )}
+                          description="Select vector stores this team can access. Leave empty for access to all vector stores"
+                        >
+                          {({ value, onChange }) => (
+                            <VectorStoreSelector
+                              onChange={onChange}
+                              value={value}
+                              accessToken={accessToken || ""}
+                              placeholder="Select vector stores (optional)"
+                            />
+                          )}
+                        </FormField>
+                        <FormField
+                          control={form.control}
+                          name="allowed_passthrough_routes"
+                          className="mt-8"
+                          label={
+                            !premiumUser
+                              ? labelWithHint(
+                                  "Allowed Pass Through Routes",
+                                  "Premium feature - Upgrade to set allowed pass through routes",
+                                )
+                              : !isProxyAdminRole(userRole || "")
+                                ? labelWithHint(
+                                    "Allowed Pass Through Routes",
+                                    "Only proxy admins can set allowed pass through routes",
+                                  )
+                                : "Allowed Pass Through Routes"
+                          }
+                        >
+                          {({ value, onChange }) => (
+                            <PassThroughRoutesSelector
+                              value={value}
+                              onChange={onChange}
+                              accessToken={accessToken || ""}
+                              placeholder="Select pass through routes (optional)"
+                              disabled={!premiumUser || !isProxyAdminRole(userRole || "")}
+                            />
+                          )}
+                        </FormField>
+                      </FieldGroup>
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  <Collapsible
+                    open={mcpSettingsOpen}
+                    onOpenChange={setMcpSettingsOpen}
+                    className="mt-8 mb-8 overflow-hidden rounded-lg border"
+                  >
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>MCP Settings</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <FormField
+                        control={form.control}
+                        name="allowed_mcp_servers_and_groups"
+                        className="mt-4"
+                        label={labelWithHint(
+                          "Allowed MCP Servers",
+                          "Select which MCP servers or access groups this team can access",
+                        )}
+                        description="Select MCP servers or access groups this team can access"
+                      >
+                        {({ value, onChange }) => (
+                          <MCPServerSelector
+                            onChange={onChange}
+                            value={value}
+                            accessToken={accessToken || ""}
+                            placeholder="Select MCP servers or access groups (optional)"
+                            allowAllProxyMcpServers={isProxyAdminRole(userRole || "")}
+                          />
+                        )}
+                      </FormField>
+
                       <div className="mt-6">
                         <MCPToolPermissions
                           accessToken={accessToken || ""}
-                          selectedServers={form.getFieldValue("allowed_mcp_servers_and_groups")?.servers || []}
-                          toolPermissions={form.getFieldValue("mcp_tool_permissions") || {}}
-                          onChange={(toolPerms) => form.setFieldsValue({ mcp_tool_permissions: toolPerms })}
+                          selectedServers={watchedMcpSelection?.servers || []}
+                          selectedAccessGroups={watchedMcpSelection?.accessGroups || []}
+                          selectedToolsets={watchedMcpSelection?.toolsets || []}
+                          toolPermissions={watchedToolPermissions || {}}
+                          onChange={(toolPerms) => form.setValue("mcp_tool_permissions", toolPerms)}
                         />
                       </div>
-                    )}
-                  </Form.Item>
-                </AccordionBody>
-              </Accordion>
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              <Accordion className="mt-8 mb-8">
-                <AccordionHeader>
-                  <b>{t("teams.create.agentSettings")}</b>
-                </AccordionHeader>
-                <AccordionBody>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("teams.create.allowedAgents")}{" "}
-                        <Tooltip title={t("teams.create.allowedAgentsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="allowed_agents_and_groups"
-                    className="mt-4"
-                    help={t("teams.create.allowedAgentsHelp")}
+                  <Collapsible
+                    open={agentSettingsOpen}
+                    onOpenChange={setAgentSettingsOpen}
+                    className="mt-8 mb-8 overflow-hidden rounded-lg border"
                   >
-                    <AgentSelector
-                      onChange={(val: any) => form.setFieldValue("allowed_agents_and_groups", val)}
-                      value={form.getFieldValue("allowed_agents_and_groups")}
-                      accessToken={accessToken || ""}
-                      placeholder={t("teams.create.allowedAgentsPlaceholder")}
-                    />
-                  </Form.Item>
-                </AccordionBody>
-              </Accordion>
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>Agent Settings</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <FormField
+                        control={form.control}
+                        name="allowed_agents_and_groups"
+                        className="mt-4"
+                        label={labelWithHint(
+                          "Allowed Agents",
+                          "Select which agents or access groups this team can access",
+                        )}
+                        description="Select agents or access groups this team can access"
+                      >
+                        {({ value, onChange }) => (
+                          <AgentSelector
+                            onChange={onChange}
+                            value={value}
+                            accessToken={accessToken || ""}
+                            placeholder="Select agents or access groups (optional)"
+                          />
+                        )}
+                      </FormField>
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              <Accordion className="mt-8 mb-8">
-                <AccordionHeader>
-                  <b>{t("teams.create.searchToolSettings")}</b>
-                </AccordionHeader>
-                <AccordionBody>
-                  <Form.Item
-                    label={
-                      <span>
-                        {t("teams.create.allowedSearchTools")}{" "}
-                        <Tooltip title={t("teams.create.allowedSearchToolsTooltip")}>
-                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="object_permission_search_tools"
-                    className="mt-4"
-                    help={t("teams.create.allowedSearchToolsHelp")}
+                  <Collapsible
+                    open={searchToolSettingsOpen}
+                    onOpenChange={setSearchToolSettingsOpen}
+                    className="mt-8 mb-8 overflow-hidden rounded-lg border"
                   >
-                    <SearchToolSelector
-                      onChange={(vals: string[]) => form.setFieldValue("object_permission_search_tools", vals)}
-                      value={form.getFieldValue("object_permission_search_tools")}
-                      accessToken={accessToken || ""}
-                      placeholder={t("teams.create.allowedSearchToolsPlaceholder")}
-                    />
-                  </Form.Item>
-                </AccordionBody>
-              </Accordion>
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>Search Tool Settings</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <FormField
+                        control={form.control}
+                        name="object_permission_search_tools"
+                        className="mt-4"
+                        label={labelWithHint(
+                          "Allowed Search Tools",
+                          "Select which search tools this team can access. Leave empty to allow all search tools.",
+                        )}
+                        description="Restrict which configured search tools keys on this team may call."
+                      >
+                        {({ value, onChange }) => (
+                          <SearchToolSelector
+                            onChange={onChange}
+                            value={value}
+                            accessToken={accessToken || ""}
+                            placeholder="Select search tools (optional, empty = all allowed)"
+                          />
+                        )}
+                      </FormField>
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              <Accordion className="mt-8 mb-8">
-                <AccordionHeader>
-                  <b>{t("teams.create.loggingSettings")}</b>
-                </AccordionHeader>
-                <AccordionBody>
-                  <div className="mt-4">
-                    <PremiumLoggingSettings
-                      value={loggingSettings}
-                      onChange={setLoggingSettings}
-                      premiumUser={premiumUser}
-                    />
-                  </div>
-                </AccordionBody>
-              </Accordion>
+                  <Collapsible
+                    open={skillSettingsOpen}
+                    onOpenChange={setSkillSettingsOpen}
+                    className="mt-8 mb-8 overflow-hidden rounded-lg border"
+                  >
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>Skill Settings</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <FormField
+                        control={form.control}
+                        name="object_permission_skills"
+                        className="mt-4"
+                        label={labelWithHint(
+                          "Allowed Skills",
+                          "Enabled skills are visible to every team. Grant disabled (private) Claude Code plugins to this team here.",
+                        )}
+                        description="Private skills keys on this team may see in the Claude Code marketplace."
+                      >
+                        {({ value, onChange }) => (
+                          <SkillSelector
+                            onChange={onChange}
+                            value={value}
+                            accessToken={accessToken || ""}
+                            placeholder="Select skills (optional)"
+                          />
+                        )}
+                      </FormField>
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              <Accordion key={`router-settings-accordion-${routerSettingsKey}`} className="mt-8 mb-8">
-                <AccordionHeader>
-                  <b>{t("teams.create.routerSettings")}</b>
-                </AccordionHeader>
-                <AccordionBody>
-                  <div className="mt-4 w-full">
-                    <RouterSettingsAccordion
-                      key={routerSettingsKey}
-                      accessToken={accessToken || ""}
-                      value={routerSettings || undefined}
-                      onChange={setRouterSettings}
-                      modelData={
-                        userModels.length > 0 ? { data: userModels.map((model) => ({ model_name: model })) } : undefined
-                      }
-                    />
-                  </div>
-                </AccordionBody>
-              </Accordion>
+                  <Collapsible className="mt-8 mb-8 overflow-hidden rounded-lg border">
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>Logging Settings</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <div className="mt-4">
+                        <PremiumLoggingSettings
+                          value={loggingSettings}
+                          onChange={setLoggingSettings}
+                          premiumUser={premiumUser}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              <Accordion className="mt-8 mb-8">
-                <AccordionHeader>
-                  <b>{t("teams.create.modelAliases")}</b>
-                </AccordionHeader>
-                <AccordionBody>
-                  <div className="mt-4">
-                    <Text type="secondary" style={{ fontSize: 14, marginBottom: 16, display: "block" }}>
-                      {t("teams.create.modelAliasesDescription")}
-                    </Text>
-                    <ModelAliasManager
-                      accessToken={accessToken || ""}
-                      initialModelAliases={modelAliases}
-                      onAliasUpdate={setModelAliases}
-                      showExampleConfig={false}
-                    />
-                  </div>
-                </AccordionBody>
-              </Accordion>
-            </>
-            <div style={{ textAlign: "right", marginTop: "10px" }}>
-              <Button htmlType="submit" data-testid="create-team-submit">
-                {t("teams.create.submit")}
-              </Button>
-            </div>
-          </Form>
-        </Modal>
+                  <Collapsible
+                    key={`router-settings-accordion-${routerSettingsKey}`}
+                    className="mt-8 mb-8 overflow-hidden rounded-lg border"
+                  >
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>Router Settings</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <div className="mt-4 w-full">
+                        <RouterSettingsAccordion
+                          key={routerSettingsKey}
+                          accessToken={accessToken || ""}
+                          value={routerSettings || undefined}
+                          onChange={setRouterSettings}
+                          modelData={
+                            userModels.length > 0
+                              ? { data: userModels.map((model) => ({ model_name: model })) }
+                              : undefined
+                          }
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  <Collapsible className="mt-8 mb-8 overflow-hidden rounded-lg border">
+                    <CollapsibleTrigger className="group/section flex w-full items-center justify-between px-4 py-3 text-left">
+                      <b>Model Aliases</b>
+                      <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/section:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-4 pb-3">
+                      <div className="mt-4">
+                        <p className="mb-4 block text-sm text-muted-foreground">
+                          Create custom aliases for models that can be used by team members in API calls. This allows
+                          you to create shortcuts for specific models.
+                        </p>
+                        <ModelAliasManager
+                          accessToken={accessToken || ""}
+                          initialModelAliases={modelAliases}
+                          onAliasUpdate={setModelAliases}
+                          showExampleConfig={false}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </FieldGroup>
+                <div className="mt-[10px] text-right">
+                  <UIButton type="submit" data-testid="create-team-submit">
+                    Create Team
+                  </UIButton>
+                </div>
+              </form>
+            </TooltipProvider>
+          </DialogContent>
+        </Dialog>
       )}
-    </Content>
+    </main>
   );
 };
 

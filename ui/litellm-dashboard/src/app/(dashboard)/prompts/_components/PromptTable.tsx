@@ -14,8 +14,8 @@ import { useTranslation } from "react-i18next";
 interface PromptTableProps {
   promptsList: PromptSpec[];
   isLoading: boolean;
-  onPromptClick?: (id: string) => void;
-  onDeleteClick?: (id: string, name: string) => void;
+  onPromptClick?: (id: string, environment: string) => void;
+  onDeleteClick?: (id: string, name: string, environment: string) => void;
   accessToken: string | null;
   isAdmin: boolean;
 }
@@ -76,8 +76,11 @@ const PromptTable: React.FC<PromptTableProps> = ({
   return (
     <DataTable
       data={promptsList}
+      paginationMode="client"
       columns={columns}
-      getRowId={(prompt, index) => prompt.prompt_id || String(index)}
+      getRowId={(prompt, index) =>
+        prompt.prompt_id ? `${prompt.prompt_id}::${prompt.environment || "development"}` : String(index)
+      }
       sortingMode="client"
       sorting={sorting}
       onSortingChange={setSorting}

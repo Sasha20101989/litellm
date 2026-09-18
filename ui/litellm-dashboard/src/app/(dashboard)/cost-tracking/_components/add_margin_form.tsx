@@ -1,11 +1,21 @@
 import React from "react";
-import { TextInput, Button } from "@tremor/react";
-import { Select as AntdSelect, Form, Tooltip, Radio } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
+import { CircleHelp } from "lucide-react";
 import { Providers, provider_map } from "@/components/provider_info_helpers";
 import { Logo } from "@/components/molecules/logo/Logo";
+import { Field, FieldLabel, FieldTitle } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MarginConfig } from "./types";
-import { useTranslation } from "react-i18next";
 
 interface AddMarginFormProps {
   marginConfig: MarginConfig;
@@ -20,6 +30,39 @@ interface AddMarginFormProps {
   onAddProvider: () => void;
 }
 
+interface ProviderOption {
+  value: string;
+  label: string;
+  providerEnum: string | null;
+}
+
+const GLOBAL_OPTION: ProviderOption = {
+  value: "global",
+  label: "Global (All Providers)",
+  providerEnum: null,
+};
+
+const buildProviderOptions = (marginConfig: MarginConfig): ProviderOption[] => [
+  GLOBAL_OPTION,
+  ...Object.entries(Providers).flatMap(([providerEnum, providerDisplayName]) => {
+    const providerValue = provider_map[providerEnum as keyof typeof provider_map];
+    if (providerValue && marginConfig[providerValue]) {
+      return [];
+    }
+    return [{ value: providerEnum, label: providerDisplayName, providerEnum }];
+  }),
+];
+
+const labelWithHint = (label: string, hint: string): React.ReactNode => (
+  <>
+    {label}
+    <Tooltip>
+      <TooltipTrigger render={<CircleHelp className="size-3.5 shrink-0 cursor-help text-muted-foreground" />} />
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  </>
+);
+
 const AddMarginForm: React.FC<AddMarginFormProps> = ({
   marginConfig,
   selectedProvider,
@@ -32,164 +75,116 @@ const AddMarginForm: React.FC<AddMarginFormProps> = ({
   onFixedAmountChange,
   onAddProvider,
 }) => {
-  const { t } = useTranslation("costOptimization");
+  const providerOptions = buildProviderOptions(marginConfig);
+  const selectedOption = providerOptions.find((option) => option.value === selectedProvider) ?? null;
+
   return (
-    <div className="space-y-6">
-      <Form.Item
-        label={
-          <span className="text-sm font-medium text-gray-700 flex items-center">
-            {t("tracking.provider")}
-            <Tooltip title={t("tracking.form.globalHelp")}>
-              <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
-            </Tooltip>
-          </span>
-        }
-        rules={[{ required: true, message: t("tracking.form.providerRequired") }]}
-      >
-        <AntdSelect
-          showSearch
-          placeholder={t("tracking.form.selectProviderGlobal")}
-          value={selectedProvider}
-          onChange={onProviderChange}
-          style={{ width: "100%" }}
-          size="large"
-          optionFilterProp="children"
-          filterOption={(input, option) =>
-            String(option?.label ?? "")
-              .toLowerCase()
-              .includes(input.toLowerCase())
-          }
-        >
-          <AntdSelect.Option key="global" value="global" label={t("tracking.margins.global")}>
-            <div className="flex items-center space-x-2">
-              <span className="font-medium">{t("tracking.margins.global")}</span>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <Field>
+          <FieldLabel htmlFor="margin-provider">
+            {labelWithHint(
+              "Provider",
+              "Select 'Global' to apply margin to all providers, or select a specific provider",
+            )}
+          </FieldLabel>
+          <Combobox
+            items={providerOptions}
+            value={selectedOption}
+            onValueChange={(option: ProviderOption | null) => onProviderChange(option?.value)}
+            itemToStringLabel={(option: ProviderOption) => option.label}
+            isItemEqualToValue={(option: ProviderOption, selected: ProviderOption) => option.value === selected.value}
+          >
+            <ComboboxInput id="margin-provider" placeholder="Select provider or 'Global'" className="w-full" />
+            <ComboboxContent>
+              <ComboboxEmpty>No matching providers</ComboboxEmpty>
+              <ComboboxList>
+                {(option: ProviderOption) => (
+                  <ComboboxItem key={option.value} value={option}>
+                    <span className="flex items-center space-x-2">
+                      {option.providerEnum !== null && (
+                        <Logo provider={option.providerEnum} label={option.label} className="w-5 h-5" />
+                      )}
+                      <span className={option.providerEnum === null ? "font-medium" : undefined}>{option.label}</span>
+                    </span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </Field>
+
+        <Field>
+          <FieldTitle>
+            {labelWithHint("Margin Type", "Choose how to apply the margin: percentage-based or fixed amount")}
+          </FieldTitle>
+          <RadioGroup
+            value={marginType}
+            onValueChange={(value: unknown) => onMarginTypeChange(value as "percentage" | "fixed")}
+            className="w-full"
+          >
+            <FieldLabel className="font-normal">
+              <RadioGroupItem value="percentage" />
+              Percentage-based
+            </FieldLabel>
+            <FieldLabel className="font-normal">
+              <RadioGroupItem value="fixed" />
+              Fixed Amount
+            </FieldLabel>
+          </RadioGroup>
+        </Field>
+
+        {marginType === "percentage" && (
+          <Field>
+            <FieldLabel htmlFor="margin-percentage">
+              {labelWithHint("Margin Percentage", "Enter a percentage value (e.g., 10 for 10% margin)")}
+            </FieldLabel>
+            <div className="flex items-center gap-2">
+              <Input
+                id="margin-percentage"
+                placeholder="10"
+                value={percentageValue}
+                onChange={(event) => onPercentageChange(event.target.value)}
+                className="rounded-lg flex-1"
+              />
+              <span className="text-muted-foreground">%</span>
             </div>
-          </AntdSelect.Option>
-          {Object.entries(Providers).map(([providerEnum, providerDisplayName]) => {
-            const providerValue = provider_map[providerEnum as keyof typeof provider_map];
-            // Only show providers that don't already have a margin configured
-            if (providerValue && marginConfig[providerValue]) {
-              return null;
+          </Field>
+        )}
+
+        {marginType === "fixed" && (
+          <Field>
+            <FieldLabel htmlFor="margin-fixed-amount">
+              {labelWithHint("Fixed Margin Amount", "Enter a fixed amount in USD (e.g., 0.001 for $0.001 per request)")}
+            </FieldLabel>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">$</span>
+              <Input
+                id="margin-fixed-amount"
+                placeholder="0.001"
+                value={fixedAmountValue}
+                onChange={(event) => onFixedAmountChange(event.target.value)}
+                className="rounded-lg flex-1"
+              />
+            </div>
+          </Field>
+        )}
+
+        <div className="flex items-center justify-end space-x-3 pt-6 border-t border-border">
+          <Button
+            type="submit"
+            onClick={onAddProvider}
+            disabled={
+              !selectedProvider ||
+              (marginType === "percentage" && !percentageValue) ||
+              (marginType === "fixed" && !fixedAmountValue)
             }
-            return (
-              <AntdSelect.Option key={providerEnum} value={providerEnum} label={providerDisplayName}>
-                <div className="flex items-center space-x-2">
-                  <Logo provider={providerEnum} label={providerDisplayName} className="w-5 h-5" />
-                  <span>{providerDisplayName}</span>
-                </div>
-              </AntdSelect.Option>
-            );
-          })}
-        </AntdSelect>
-      </Form.Item>
-
-      <Form.Item
-        label={
-          <span className="text-sm font-medium text-gray-700 flex items-center">
-            {t("tracking.form.marginType")}
-            <Tooltip title={t("tracking.form.marginTypeHelp")}>
-              <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
-            </Tooltip>
-          </span>
-        }
-        rules={[{ required: true, message: t("tracking.form.marginTypeRequired") }]}
-      >
-        <Radio.Group value={marginType} onChange={(e) => onMarginTypeChange(e.target.value)} className="w-full">
-          <Radio value="percentage">{t("tracking.margins.percentageBased")}</Radio>
-          <Radio value="fixed">{t("tracking.margins.fixedAmount")}</Radio>
-        </Radio.Group>
-      </Form.Item>
-
-      {marginType === "percentage" && (
-        <Form.Item
-          label={
-            <span className="text-sm font-medium text-gray-700 flex items-center">
-              {t("tracking.form.marginPercentage")}
-              <Tooltip title={t("tracking.form.marginPercentageHelp")}>
-                <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
-              </Tooltip>
-            </span>
-          }
-          rules={[
-            { required: true, message: t("tracking.form.percentageRequired") },
-            {
-              validator: (_, value) => {
-                if (!value) {
-                  return Promise.reject(new Error(t("tracking.form.percentageRequired")));
-                }
-                const numValue = parseFloat(value);
-                if (isNaN(numValue) || numValue < 0 || numValue > 1000) {
-                  return Promise.reject(new Error(t("tracking.form.percentageRange")));
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <div className="flex items-center gap-2">
-            <TextInput
-              placeholder="10"
-              value={percentageValue}
-              onValueChange={onPercentageChange}
-              className="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 flex-1"
-            />
-            <span className="text-gray-600">%</span>
-          </div>
-        </Form.Item>
-      )}
-
-      {marginType === "fixed" && (
-        <Form.Item
-          label={
-            <span className="text-sm font-medium text-gray-700 flex items-center">
-              {t("tracking.form.fixedMargin")}
-              <Tooltip title={t("tracking.form.fixedHelp")}>
-                <InfoCircleOutlined className="ml-2 text-blue-400 hover:text-blue-600 cursor-help" />
-              </Tooltip>
-            </span>
-          }
-          rules={[
-            { required: true, message: t("tracking.form.fixedRequired") },
-            {
-              validator: (_, value) => {
-                if (!value) {
-                  return Promise.reject(new Error(t("tracking.form.fixedRequired")));
-                }
-                const numValue = parseFloat(value);
-                if (isNaN(numValue) || numValue < 0) {
-                  return Promise.reject(new Error(t("tracking.form.fixedNonNegative")));
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">$</span>
-            <TextInput
-              placeholder="0.001"
-              value={fixedAmountValue}
-              onValueChange={onFixedAmountChange}
-              className="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 flex-1"
-            />
-          </div>
-        </Form.Item>
-      )}
-
-      <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-100">
-        <Button
-          variant="primary"
-          onClick={onAddProvider}
-          disabled={
-            !selectedProvider ||
-            (marginType === "percentage" && !percentageValue) ||
-            (marginType === "fixed" && !fixedAmountValue)
-          }
-        >
-          {t("tracking.margins.add")}
-        </Button>
+          >
+            Add Provider Margin
+          </Button>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

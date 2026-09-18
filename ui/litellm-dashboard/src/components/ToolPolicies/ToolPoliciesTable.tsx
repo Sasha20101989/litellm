@@ -19,6 +19,16 @@ import { getToolPoliciesTableColumns } from "./ToolPoliciesTableColumns";
 
 const ALL_VALUE = "all";
 
+const INPUT_POLICY_FILTER_ITEMS = [
+  { value: ALL_VALUE, label: "All Input Policies" },
+  ...INPUT_POLICY_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+];
+
+const OUTPUT_POLICY_FILTER_ITEMS = [
+  { value: ALL_VALUE, label: "All Output Policies" },
+  ...OUTPUT_POLICY_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+];
+
 const toFilterValue = (value: string | null): string | undefined =>
   value === null || value === ALL_VALUE ? undefined : value;
 
@@ -85,6 +95,20 @@ export function ToolPoliciesTable({
 
   const teamOptions = useMemo(() => uniqueValues(data, (row) => row.team_id), [data]);
   const keyAliasOptions = useMemo(() => uniqueValues(data, (row) => row.key_alias), [data]);
+  const teamFilterItems = useMemo(
+    () => [
+      { value: ALL_VALUE, label: "All Teams" },
+      ...teamOptions.map((option) => ({ value: option, label: option })),
+    ],
+    [teamOptions],
+  );
+  const keyAliasFilterItems = useMemo(
+    () => [
+      { value: ALL_VALUE, label: "All Keys" },
+      ...keyAliasOptions.map((option) => ({ value: option, label: option })),
+    ],
+    [keyAliasOptions],
+  );
 
   return (
     <DataTable
@@ -127,6 +151,7 @@ export function ToolPoliciesTable({
               <>
                 <DataTableFilterField label={t("toolPolicies.table.inputPolicy")}>
                   <Select
+                    items={INPUT_POLICY_FILTER_ITEMS}
                     value={(get("input_policy") as string) ?? ALL_VALUE}
                     onValueChange={(value) => set("input_policy", toFilterValue(value))}
                   >
@@ -145,6 +170,7 @@ export function ToolPoliciesTable({
                 </DataTableFilterField>
                 <DataTableFilterField label={t("toolPolicies.table.outputPolicy")}>
                   <Select
+                    items={OUTPUT_POLICY_FILTER_ITEMS}
                     value={(get("output_policy") as string) ?? ALL_VALUE}
                     onValueChange={(value) => set("output_policy", toFilterValue(value))}
                   >
@@ -163,6 +189,7 @@ export function ToolPoliciesTable({
                 </DataTableFilterField>
                 <DataTableFilterField label={t("toolPolicies.table.teamName")}>
                   <Select
+                    items={teamFilterItems}
                     value={(get("team_id") as string) ?? ALL_VALUE}
                     onValueChange={(value) => set("team_id", toFilterValue(value))}
                   >
@@ -181,6 +208,7 @@ export function ToolPoliciesTable({
                 </DataTableFilterField>
                 <DataTableFilterField label={t("toolPolicies.table.keyName")}>
                   <Select
+                    items={keyAliasFilterItems}
                     value={(get("key_alias") as string) ?? ALL_VALUE}
                     onValueChange={(value) => set("key_alias", toFilterValue(value))}
                   >

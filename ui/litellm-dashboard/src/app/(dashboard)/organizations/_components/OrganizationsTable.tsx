@@ -1,14 +1,13 @@
 "use client";
 
-import { SortingState } from "@tanstack/react-table";
 import { Building2, SearchX } from "lucide-react";
-import React, { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useMemo } from "react";
 
 import { DataTable } from "@/components/shared/DataTable";
 import { Organization } from "@/components/networking";
 
 import { getOrganizationsTableColumns } from "./OrganizationsTableColumns";
+import { useOrganizationsTableState } from "./useOrganizationsTableState";
 
 interface OrganizationsTableProps {
   organizations: Organization[];
@@ -20,10 +19,7 @@ interface OrganizationsTableProps {
   onDeleteClick: (organizationId: string) => void;
 }
 
-const DEFAULT_SORTING: SortingState = [{ id: "created_at", desc: true }];
-
 function EmptyState({ searchActive }: { searchActive: boolean }) {
-  const { t } = useTranslation("gateway");
   const Icon = searchActive ? SearchX : Building2;
   return (
     <div className="flex flex-col items-center gap-1 py-6">
@@ -31,10 +27,12 @@ function EmptyState({ searchActive }: { searchActive: boolean }) {
         <Icon className="size-5 text-muted-foreground" />
       </div>
       <div className="text-sm font-medium text-foreground">
-        {searchActive ? t("organizations.table.noMatches") : t("organizations.table.empty")}
+        {searchActive ? "No matching organizations" : "No organizations yet"}
       </div>
       <div className="text-sm text-muted-foreground">
-        {searchActive ? t("organizations.table.noMatchesDescription") : t("organizations.table.emptyDescription")}
+        {searchActive
+          ? "No organizations match your search. Try a different name or ID."
+          : "Create an organization to group teams, models, and budgets."}
       </div>
     </div>
   );
@@ -49,24 +47,26 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
   onEditClick,
   onDeleteClick,
 }) => {
-  const { t } = useTranslation("gateway");
-  const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
+  const { sorting, onSortingChange, pagination, onPaginationChange } = useOrganizationsTableState();
 
   const columns = useMemo(() => {
-    const deps = { userRole, onOrganizationClick, onEditClick, onDeleteClick, t };
+    const deps = { userRole, onOrganizationClick, onEditClick, onDeleteClick };
     return getOrganizationsTableColumns(deps);
-  }, [userRole, onOrganizationClick, onEditClick, onDeleteClick, t]);
+  }, [userRole, onOrganizationClick, onEditClick, onDeleteClick]);
 
   return (
     <DataTable
       data={organizations}
+      paginationMode="client"
+      pagination={pagination}
+      onPaginationChange={onPaginationChange}
       columns={columns}
       getRowId={(organization, index) => organization.organization_id || String(index)}
       sortingMode="client"
       sorting={sorting}
-      onSortingChange={setSorting}
+      onSortingChange={onSortingChange}
       isLoading={isLoading}
-      loadingMessage={t("organizations.table.loading")}
+      loadingMessage="Loading organizations…"
       noDataMessage={<EmptyState searchActive={searchActive} />}
       size="compact"
     />

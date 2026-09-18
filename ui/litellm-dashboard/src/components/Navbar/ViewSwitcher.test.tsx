@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import ViewSwitcher from "./ViewSwitcher";
 
 const { mockUsePluginMode, mockUseUISettings, mockUsePathname, state } = vi.hoisted(() => {
@@ -10,7 +10,6 @@ const { mockUsePluginMode, mockUseUISettings, mockUsePathname, state } = vi.hois
     activePlugin: null as { name: string; display_name: string; url: string } | null,
     enableChatUI: false,
     pathname: "/ui/",
-    language: "en" as "en" | "ru",
   };
   return {
     state,
@@ -29,19 +28,7 @@ vi.mock("@/contexts/PluginModeContext", () => ({ usePluginMode: mockUsePluginMod
 vi.mock("@/app/(dashboard)/hooks/uiSettings/useUISettings", () => ({ useUISettings: mockUseUISettings }));
 vi.mock("next/navigation", () => ({ usePathname: mockUsePathname }));
 // Deterministic hrefs so navigation assertions don't depend on server_root_path.
-vi.mock("@/utils/migratedPages", () => ({ migratedHref: (seg: string) => `/ui/${seg}` }));
-vi.mock("react-i18next", async () => {
-  const { resources } = await import("@/i18n/catalog");
-  return {
-    useTranslation: () => ({
-      t: (key: string) =>
-        key.split(".").reduce<unknown>((copy, segment) => {
-          if (typeof copy !== "object" || copy === null) return undefined;
-          return (copy as Record<string, unknown>)[segment];
-        }, resources[state.language].navigation) ?? key,
-    }),
-  };
-});
+vi.mock("@/utils/uiHref", () => ({ uiHref: (seg: string) => `/ui/${seg}` }));
 
 describe("ViewSwitcher", () => {
   let assignSpy: ReturnType<typeof vi.fn>;
@@ -59,7 +46,6 @@ describe("ViewSwitcher", () => {
     state.plugins = [];
     state.enableChatUI = false;
     state.pathname = "/ui/";
-    state.language = "en";
     state.setMode.mockClear();
   });
 
@@ -72,7 +58,7 @@ describe("ViewSwitcher", () => {
     act(() => {
       fireEvent.click(button);
     });
-    await waitFor(() => expect(screen.getByText("Chat")).toBeInTheDocument());
+    expect(await screen.findByText("Chat")).toBeInTheDocument();
     expect(screen.getByText(/Admins can enable in Settings/i)).toBeInTheDocument();
 
     act(() => {
@@ -95,7 +81,7 @@ describe("ViewSwitcher", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button"));
     });
-    await waitFor(() => expect(screen.getByText("AI Gateway")).toBeInTheDocument());
+    expect(await screen.findByText("AI Gateway")).toBeInTheDocument();
     expect(screen.getByText("Observability")).toBeInTheDocument();
   });
 
@@ -107,7 +93,7 @@ describe("ViewSwitcher", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button"));
     });
-    await waitFor(() => expect(screen.getByText("Chat UI")).toBeInTheDocument());
+    expect(await screen.findByText("Chat UI")).toBeInTheDocument();
     act(() => {
       fireEvent.click(screen.getByText("Chat UI"));
     });
@@ -122,7 +108,7 @@ describe("ViewSwitcher", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button"));
     });
-    await waitFor(() => expect(screen.getByText("Chat")).toBeInTheDocument());
+    expect(await screen.findByText("Chat")).toBeInTheDocument();
     expect(screen.queryByText(/Admins can enable in Settings/i)).not.toBeInTheDocument();
 
     act(() => {
@@ -141,7 +127,7 @@ describe("ViewSwitcher", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button"));
     });
-    await waitFor(() => expect(screen.getByText("AI Gateway")).toBeInTheDocument());
+    expect(await screen.findByText("AI Gateway")).toBeInTheDocument();
     act(() => {
       fireEvent.click(screen.getByText("AI Gateway"));
     });
@@ -157,7 +143,7 @@ describe("ViewSwitcher", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button"));
     });
-    await waitFor(() => expect(screen.getByText("Observability")).toBeInTheDocument());
+    expect(await screen.findByText("Observability")).toBeInTheDocument();
     expect(screen.getByText("Chat")).toBeInTheDocument();
     expect(screen.getByText(/Admins can enable in Settings/i)).toBeInTheDocument();
 
@@ -165,20 +151,5 @@ describe("ViewSwitcher", () => {
       fireEvent.click(screen.getByText("Chat"));
     });
     expect(assignSpy).not.toHaveBeenCalled();
-  });
-
-  it("localizes first-party entries while preserving plugin display names", async () => {
-    state.language = "ru";
-    state.plugins = [
-      { name: "agent-control-plane", display_name: "Agent Control Plane", url: "http://localhost:9000" },
-    ];
-
-    render(<ViewSwitcher />);
-    fireEvent.click(screen.getByRole("button"));
-
-    await waitFor(() => expect(screen.getAllByText("AI-шлюз")).toHaveLength(2));
-    expect(screen.getByText("Чат")).toBeInTheDocument();
-    expect(screen.getByText("Администратор может включить чат в настройках")).toBeInTheDocument();
-    expect(screen.getByText("Agent Control Plane")).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ToolModal from "../tool_modal";
-import NotificationsManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import { createPromptCall, updatePromptCall, getPromptInfo } from "@/components/networking";
 import { PromptType, PromptEditorViewProps, Tool } from "./types";
 import { convertToDotPrompt, parseExistingPrompt } from "./utils";
@@ -13,21 +13,19 @@ import ConversationPanel from "./conversation_panel";
 import PublishModal from "./PublishModal";
 import DotpromptViewTab from "./DotpromptViewTab";
 import VersionHistorySidePanel from "./VersionHistorySidePanel";
-import { useTranslation } from "react-i18next";
 
 const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess, accessToken, initialPromptData }) => {
-  const { t } = useTranslation("prompts");
   const getInitialPrompt = (): PromptType => {
     if (initialPromptData) {
       try {
         return parseExistingPrompt(initialPromptData);
       } catch (error) {
         console.error("Error parsing existing prompt:", error);
-        NotificationsManager.fromBackend(t("editor.parseFailed"));
+        toast.fromError("Failed to parse prompt data");
       }
     }
     return {
-      name: t("editor.newPrompt"),
+      name: "New prompt",
       model: "gpt-4o",
       config: {
         temperature: 1,
@@ -38,7 +36,7 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
       messages: [
         {
           role: "user",
-          content: t("editor.defaultMessage", { template_variables: "{{template_variables}}" }),
+          content: "Enter task specifics. Use {{template_variables}} for dynamic inputs",
         },
       ],
       environment: "development",
@@ -122,7 +120,7 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
     try {
       const parsed = JSON.parse(json);
       const tool: Tool = {
-        name: parsed.function?.name || t("editor.unnamedTool"),
+        name: parsed.function?.name || "Unnamed Tool",
         description: parsed.function?.description || "",
         json: json,
       };
@@ -144,7 +142,7 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
       setShowToolModal(false);
       setEditingToolIndex(null);
     } catch (error) {
-      NotificationsManager.fromBackend(t("editor.invalidJson"));
+      toast.fromError("Invalid JSON format");
     }
   };
 
@@ -171,15 +169,14 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
       // Store the version number or construct versioned ID for tracking
       const versionNum = versionData.version || 1;
       setActiveVersionId(`${versionData.prompt_id}.v${versionNum}`);
-      // NotificationsManager.success(`Loaded version v${versionNum}`);
     } catch (error) {
       console.error("Error loading version:", error);
-      NotificationsManager.fromBackend(t("editor.versionFailed"));
+      toast.fromError("Failed to load prompt version");
     }
   };
 
   const handleSaveClick = () => {
-    if (!prompt.name || prompt.name.trim() === "" || prompt.name === t("editor.newPrompt")) {
+    if (!prompt.name || prompt.name.trim() === "" || prompt.name === "New prompt") {
       setShowNameModal(true);
     } else {
       handleSave();
@@ -188,12 +185,12 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
 
   const handleSave = async () => {
     if (!accessToken) {
-      NotificationsManager.fromBackend(t("upload.accessRequired"));
+      toast.fromError("Access token is required");
       return;
     }
 
     if (!prompt.name || prompt.name.trim() === "") {
-      NotificationsManager.fromBackend(t("editor.validName"));
+      toast.fromError("Please enter a valid prompt name");
       return;
     }
 
@@ -217,16 +214,16 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
 
       if (editMode && initialPromptData?.prompt_spec?.prompt_id) {
         await updatePromptCall(accessToken, initialPromptData.prompt_spec.prompt_id, promptData);
-        NotificationsManager.success(t("editor.updated"));
+        toast.success("Prompt updated successfully!");
       } else {
         await createPromptCall(accessToken, promptData);
-        NotificationsManager.success(t("editor.created"));
+        toast.success("Prompt created successfully!");
       }
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error saving prompt:", error);
-      NotificationsManager.fromBackend(editMode ? t("editor.updateFailed") : t("editor.saveFailed"));
+      toast.fromError(editMode ? "Failed to update prompt" : "Failed to save prompt");
     } finally {
       setIsSaving(false);
       setShowNameModal(false);
@@ -260,7 +257,7 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
   };
 
   return (
-    <div className="flex h-full bg-white">
+    <div className="flex h-full bg-card">
       <div className="flex-1 flex flex-col">
         <PromptEditorHeader
           promptName={prompt.name}
@@ -294,8 +291,8 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
         />
 
         <div className="flex-1 flex overflow-hidden">
-          <div className="w-1/2 overflow-y-auto bg-white border-r border-gray-200 shrink-0">
-            <div className="border-b border-gray-200 bg-white px-6 py-4 flex items-center gap-3">
+          <div className="w-1/2 overflow-y-auto bg-card border-r border-border shrink-0">
+            <div className="border-b border-border bg-card px-6 py-4 flex items-center gap-3">
               <ModelConfigCard
                 model={prompt.model}
                 temperature={prompt.config.temperature}
@@ -316,18 +313,18 @@ const PromptEditorView: React.FC<PromptEditorViewProps> = ({ onClose, onSuccess,
                 }
               />
 
-              <div className="ml-auto inline-flex items-center bg-gray-200 rounded-full p-0.5">
+              <div className="ml-auto inline-flex items-center bg-border rounded-full p-0.5">
                 <button
                   className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                    viewMode === "pretty" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"
+                    viewMode === "pretty" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
                   }`}
                   onClick={() => setViewMode("pretty")}
                 >
-                  {t("editor.pretty")}
+                  PRETTY
                 </button>
                 <button
                   className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                    viewMode === "dotprompt" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"
+                    viewMode === "dotprompt" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
                   }`}
                   onClick={() => setViewMode("dotprompt")}
                 >

@@ -2,14 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { useTranslation } from "react-i18next";
 
 import { organizationKeys } from "@/app/(dashboard)/hooks/organizations/useOrganizations";
 import { ModelSelect } from "@/components/ModelSelect/ModelSelect";
 import MCPServerSelector from "@/components/mcp_server_management/MCPServerSelector";
-import NotificationsManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import type { Organization } from "@/components/networking";
-import { FieldGroup } from "@/components/shared/form/field";
+import { FieldGroup } from "@/components/ui/field";
 import { FormField } from "@/components/shared/form/FormField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,13 @@ import { buildOrgPatch, orgToForm, type OrgPatchBody } from "./mapper";
 import { orgSettingsSchema } from "./schema";
 
 export const NO_RESET = "never";
+
+export const BUDGET_DURATION_OPTIONS = [
+  { value: NO_RESET, label: "No reset" },
+  { value: "24h", label: "daily" },
+  { value: "7d", label: "weekly" },
+  { value: "30d", label: "monthly" },
+] as const;
 
 const defaultPatchOrganization = async (organizationId: string, body: OrgPatchBody): Promise<unknown> => {
   const { data } = await fetchClient.PATCH("/v2/organization/{organization_id}", {
@@ -50,28 +56,19 @@ export const OrgSettingsForm = ({
   onSaved,
   patchOrganization = defaultPatchOrganization,
 }: OrgSettingsFormProps) => {
-  const { t } = useTranslation("gateway");
   const queryClient = useQueryClient();
   const form = useZodForm(orgSettingsSchema, { defaultValues: orgToForm(org) });
   const { isDirty } = form.formState;
-  const budgetDurationOptions = [
-    { value: NO_RESET, label: t("organizations.form.noReset") },
-    { value: "24h", label: t("budgets.duration.daily") },
-    { value: "7d", label: t("budgets.duration.weekly") },
-    { value: "30d", label: t("budgets.duration.monthly") },
-  ];
 
   const mutation = useMutation({
     mutationFn: (body: OrgPatchBody) => patchOrganization(organizationId, body),
     onSuccess: () => {
-      NotificationsManager.success(t("organizations.notifications.settingsUpdated"));
+      toast.success("Organization settings updated successfully");
       queryClient.invalidateQueries({ queryKey: organizationKeys.all });
       onSaved();
     },
     onError: (error: unknown) =>
-      NotificationsManager.fromBackend(
-        error instanceof Error ? error.message : t("organizations.notifications.settingsFailed"),
-      ),
+      toast.fromError(error instanceof Error ? error.message : "Failed to update organization settings"),
   });
 
   const onSubmit = form.handleSubmit((values) => {
@@ -81,11 +78,11 @@ export const OrgSettingsForm = ({
   return (
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
-        <FormField control={form.control} name="organization_alias" label={t("organizations.form.organizationName")}>
+        <FormField control={form.control} name="organization_alias" label="Organization Name">
           {({ ref, ...field }) => <Input {...field} ref={ref} />}
         </FormField>
 
-        <FormField control={form.control} name="models" label={t("organizations.form.models")}>
+        <FormField control={form.control} name="models" label="Models">
           {(field) => (
             <ModelSelect
               value={field.value}
@@ -96,14 +93,14 @@ export const OrgSettingsForm = ({
           )}
         </FormField>
 
-        <FormField control={form.control} name="max_budget" label={t("organizations.form.maxBudget")}>
+        <FormField control={form.control} name="max_budget" label="Max Budget (USD)">
           {({ ref, ...field }) => <Input {...field} ref={ref} type="number" step="any" min={0} />}
         </FormField>
 
-        <FormField control={form.control} name="budget_duration" label={t("organizations.form.resetBudget")}>
+        <FormField control={form.control} name="budget_duration" label="Reset Budget">
           {({ id, value, onChange, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedBy }) => (
             <Select
-              items={budgetDurationOptions}
+              items={BUDGET_DURATION_OPTIONS}
               value={value === "" ? NO_RESET : value}
               onValueChange={(selected) => onChange(selected === NO_RESET ? "" : selected)}
             >
@@ -111,7 +108,7 @@ export const OrgSettingsForm = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {budgetDurationOptions.map((option) => (
+                {BUDGET_DURATION_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -121,48 +118,48 @@ export const OrgSettingsForm = ({
           )}
         </FormField>
 
-        <FormField control={form.control} name="tpm_limit" label={t("organizations.form.tpmLimit")}>
+        <FormField control={form.control} name="tpm_limit" label="Tokens per minute Limit (TPM)">
           {({ ref, ...field }) => <Input {...field} ref={ref} type="number" step={1} min={0} />}
         </FormField>
 
-        <FormField control={form.control} name="rpm_limit" label={t("organizations.form.rpmLimit")}>
+        <FormField control={form.control} name="rpm_limit" label="Requests per minute Limit (RPM)">
           {({ ref, ...field }) => <Input {...field} ref={ref} type="number" step={1} min={0} />}
         </FormField>
 
-        <FormField control={form.control} name="vector_stores" label={t("organizations.form.vectorStores")}>
+        <FormField control={form.control} name="vector_stores" label="Vector Stores">
           {(field) => (
             <VectorStoreSelector
               value={field.value}
               onChange={field.onChange}
               accessToken={accessToken}
-              placeholder={t("organizations.form.selectVectorStores")}
+              placeholder="Select vector stores"
             />
           )}
         </FormField>
 
-        <FormField control={form.control} name="mcp" label={t("organizations.form.mcpAndAccessGroups")}>
+        <FormField control={form.control} name="mcp" label="MCP Servers & Access Groups">
           {(field) => (
             <MCPServerSelector
               value={field.value}
               onChange={field.onChange}
               accessToken={accessToken}
-              placeholder={t("organizations.form.selectMcp")}
+              placeholder="Select MCP servers and access groups"
             />
           )}
         </FormField>
 
-        <FormField control={form.control} name="metadata" label={t("organizations.form.metadata")}>
+        <FormField control={form.control} name="metadata" label="Metadata">
           {({ ref, ...field }) => <Textarea {...field} ref={ref} rows={4} />}
         </FormField>
       </FieldGroup>
 
-      <div className="sticky z-10 bg-white p-4 border-t border-gray-200 -bottom-6 -inset-x-6 mt-6">
+      <div className="sticky z-chrome bg-card p-4 border-t border-border -bottom-6 -inset-x-6 mt-6">
         <div className="flex justify-end items-center gap-2">
           <Button type="button" variant="outline" onClick={onCancel} disabled={mutation.isPending}>
-            {t("organizations.form.cancel")}
+            Cancel
           </Button>
           <Button type="submit" disabled={!isDirty || mutation.isPending}>
-            {mutation.isPending ? t("organizations.form.saving") : t("organizations.form.save")}
+            {mutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>

@@ -3,39 +3,63 @@
 import { useHashicorpVaultConfig } from "@/app/(dashboard)/hooks/configOverrides/useHashicorpVaultConfig";
 import { useUpdateHashicorpVaultConfig } from "@/app/(dashboard)/hooks/configOverrides/useUpdateHashicorpVaultConfig";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
-import NotificationManager from "@/components/molecules/notifications_manager";
-import { Button, Divider, Form, Input, Modal, Space, Typography } from "antd";
-import React, { useEffect } from "react";
-import { SENSITIVE_FIELDS } from "./constants";
-import { useTranslation } from "react-i18next";
+import { toast } from "@/lib/toast";
+import React, { useMemo } from "react";
+import { z } from "zod/v4";
+import { FieldGroup } from "@/components/ui/field";
+import { FormField } from "@/components/shared/form/FormField";
+import { PasswordInput } from "@/components/shared/PasswordInput";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
+import { Separator } from "@/components/ui/separator";
+import { useZodForm } from "@/lib/forms/useZodForm";
+import { SENSITIVE_FIELDS, FIELD_LABELS } from "./constants";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-interface FieldGroup {
-  titleKey: string;
-  subtitleKey?: string;
+interface VaultFieldGroup {
+  title: string;
+  subtitle?: string;
   fields: string[];
 }
 
-const FIELD_GROUPS: FieldGroup[] = [
+const FIELD_GROUPS: VaultFieldGroup[] = [
   {
-    titleKey: "admin.vault.groups.connection",
+    title: "Connection",
     fields: ["vault_addr", "vault_namespace", "vault_mount_name", "vault_path_prefix"],
   },
   {
-    titleKey: "admin.vault.groups.token",
-    subtitleKey: "admin.vault.groups.tokenDescription",
+    title: "Token Authentication",
+    subtitle: "Use a Vault token to authenticate. Only one auth method is required.",
     fields: ["vault_token"],
   },
   {
-    titleKey: "admin.vault.groups.approle",
-    subtitleKey: "admin.vault.groups.approleDescription",
+    title: "AppRole Authentication",
+    subtitle: "Use AppRole credentials to authenticate. Only one auth method is required.",
     fields: ["approle_role_id", "approle_secret_id", "approle_mount_path"],
   },
   {
-    titleKey: "admin.vault.groups.tls",
-    subtitleKey: "admin.vault.groups.tlsDescription",
+    title: "TLS",
+    subtitle: "Optional client certificate for mTLS.",
     fields: ["client_cert", "client_key", "vault_cert_role"],
   },
 ];
+
+type VaultFormValues = Record<string, string>;
+
+const buildSchema = (fields: readonly string[]): z.ZodType<VaultFormValues, VaultFormValues> =>
+  z.object(
+    Object.fromEntries(
+      fields.map((name) => [
+        name,
+        name === "vault_addr"
+          ? z.string().refine((value) => value.length === 0 || /^https?:\/\/.+/.test(value), {
+              message: "Must start with http:// or https://",
+            })
+          : z.string(),
+      ]),
+    ),
+  ) as unknown as z.ZodType<VaultFormValues, VaultFormValues>;
 
 interface EditHashicorpVaultModalProps {
   isVisible: boolean;
@@ -44,69 +68,54 @@ interface EditHashicorpVaultModalProps {
 }
 
 const EditHashicorpVaultModal: React.FC<EditHashicorpVaultModalProps> = ({ isVisible, onCancel, onSuccess }) => {
-  const { t } = useTranslation("settings");
-  const [form] = Form.useForm();
   const { accessToken } = useAuthorized();
   const { data } = useHashicorpVaultConfig();
   const { mutate, isPending } = useUpdateHashicorpVaultConfig(accessToken);
 
-  const schema = data?.field_schema;
-  const properties = schema?.properties ?? {};
-  const rawValues = data?.values ?? {};
-  const fieldLabels: Record<string, string> = {
-    vault_addr: t("admin.vault.fields.vault_addr"),
-    vault_namespace: t("admin.vault.fields.vault_namespace"),
-    vault_mount_name: t("admin.vault.fields.vault_mount_name"),
-    vault_path_prefix: t("admin.vault.fields.vault_path_prefix"),
-    vault_token: t("admin.vault.fields.vault_token"),
-    approle_role_id: t("admin.vault.fields.approle_role_id"),
-    approle_secret_id: t("admin.vault.fields.approle_secret_id"),
-    approle_mount_path: t("admin.vault.fields.approle_mount_path"),
-    client_cert: t("admin.vault.fields.client_cert"),
-    client_key: t("admin.vault.fields.client_key"),
-    vault_cert_role: t("admin.vault.fields.vault_cert_role"),
-  };
+  const properties: Record<string, { description?: string }> = useMemo(
+    () => data?.field_schema?.properties ?? {},
+    [data],
+  );
+  const rawValues: Record<string, unknown> = useMemo(() => data?.values ?? {}, [data]);
 
-  useEffect(() => {
-    if (isVisible && data) {
-      form.resetFields();
-      // Only set non-sensitive fields — sensitive ones show as placeholders
-      const formValues: Record<string, any> = {};
-      for (const [key, value] of Object.entries(rawValues)) {
-        if (!SENSITIVE_FIELDS.has(key)) {
-          formValues[key] = value;
-        }
-      }
-      form.setFieldsValue(formValues);
-    }
-  }, [isVisible, data, form]);
+  const visibleFields = useMemo(
+    () => FIELD_GROUPS.flatMap((group) => group.fields).filter((name) => properties[name] !== undefined),
+    [properties],
+  );
 
-  const handleSubmit = (formValues: Record<string, any>) => {
-    const config: Record<string, any> = {};
-    for (const [key, value] of Object.entries(formValues)) {
-      if (value !== undefined && value !== null && value !== "") {
-        // Non-empty value → update
-        config[key] = value;
-      } else if (!SENSITIVE_FIELDS.has(key)) {
-        // Non-sensitive field cleared → send "" to clear it on the backend
-        config[key] = "";
-      }
-      // Sensitive field left blank → omit from payload (keep existing)
-    }
+  const seededValues = useMemo(
+    () =>
+      Object.fromEntries(
+        visibleFields.map((name) => [name, SENSITIVE_FIELDS.has(name) ? "" : ((rawValues[name] ?? "") as string)]),
+      ),
+    [visibleFields, rawValues],
+  );
+
+  const schema = useMemo(() => buildSchema(visibleFields), [visibleFields]);
+  const form = useZodForm(schema, { values: seededValues });
+
+  const handleSubmit = (formValues: VaultFormValues) => {
+    const config: Record<string, string> = Object.fromEntries(
+      Object.entries(formValues).flatMap(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") return [[key, value]];
+        if (!SENSITIVE_FIELDS.has(key)) return [[key, ""]];
+        return [];
+      }),
+    );
 
     mutate(config, {
       onSuccess: () => {
-        NotificationManager.success(t("admin.vault.updated"));
+        toast.success("Hashicorp Vault configuration updated successfully");
         onSuccess();
       },
       onError: (err) => {
-        NotificationManager.fromBackend(err);
+        toast.fromError(err);
       },
     });
   };
 
   const handleCancel = () => {
-    form.resetFields();
+    form.reset(seededValues);
     onCancel();
   };
 
@@ -114,57 +123,53 @@ const EditHashicorpVaultModal: React.FC<EditHashicorpVaultModalProps> = ({ isVis
     const fieldSchema = properties[fieldName];
     if (!fieldSchema) return null;
 
-    const rules =
-      fieldName === "vault_addr" ? [{ pattern: /^https?:\/\/.+/, message: t("admin.vault.urlProtocol") }] : undefined;
-
     const isSensitive = SENSITIVE_FIELDS.has(fieldName);
     const existingValue = rawValues[fieldName];
     const hasExistingValue = isSensitive && existingValue != null && existingValue !== "";
-    const placeholder = hasExistingValue
-      ? t("admin.vault.keepExisting", { value: existingValue })
-      : fieldLabels[fieldName] ?? fieldName;
+    const placeholder = hasExistingValue ? `Leave blank to keep existing (${existingValue})` : fieldSchema?.description;
 
     return (
-      <Form.Item key={fieldName} name={fieldName} label={fieldLabels[fieldName] ?? fieldName} rules={rules}>
-        {isSensitive ? <Input.Password placeholder={placeholder} /> : <Input placeholder={placeholder} />}
-      </Form.Item>
+      <FormField key={fieldName} control={form.control} name={fieldName} label={FIELD_LABELS[fieldName] ?? fieldName}>
+        {({ ref, ...field }) =>
+          isSensitive ? (
+            <PasswordInput ref={ref} placeholder={placeholder} {...field} />
+          ) : (
+            <Input ref={ref} placeholder={fieldSchema?.description} {...field} />
+          )
+        }
+      </FormField>
     );
   };
 
   return (
-    <Modal
-      title={t("admin.vault.editTitle")}
-      open={isVisible}
-      width={700}
-      footer={
-        <Space>
-          <Button onClick={handleCancel} disabled={isPending}>
-            {t("admin.vault.cancel")}
-          </Button>
-          <Button type="primary" loading={isPending} onClick={() => form.submit()}>
-            {isPending ? t("admin.vault.saving") : t("admin.vault.save")}
-          </Button>
-        </Space>
-      }
-      onCancel={handleCancel}
-    >
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        {FIELD_GROUPS.map((group, index) => (
-          <div key={group.titleKey}>
-            {index > 0 && <Divider />}
-            <Typography.Title level={5} style={{ marginBottom: 4 }}>
-              {t(group.titleKey)}
-            </Typography.Title>
-            {group.subtitleKey && (
-              <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
-                {t(group.subtitleKey)}
-              </Typography.Paragraph>
-            )}
-            {group.fields.map(renderField)}
+    <Dialog open={isVisible} onOpenChange={(open) => !open && handleCancel()}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[700px]">
+        <DialogHeader>
+          <DialogTitle>Edit Hashicorp Vault Configuration</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          {FIELD_GROUPS.map((group, index) => (
+            <div key={group.title}>
+              {index > 0 && <Separator className="my-6" />}
+              <h5 className="mb-1 text-base font-semibold text-foreground">{group.title}</h5>
+              {group.subtitle && <p className="mb-4 text-sm text-muted-foreground">{group.subtitle}</p>}
+              <FieldGroup>{group.fields.map(renderField)}</FieldGroup>
+            </div>
+          ))}
+        </form>
+        <DialogFooter>
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={isPending}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={isPending} onClick={() => void form.handleSubmit(handleSubmit)()}>
+              {isPending && <UiLoadingSpinner className="size-4 mr-1" />}
+              {isPending ? "Saving..." : "Save"}
+            </Button>
           </div>
-        ))}
-      </Form>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -1,4 +1,4 @@
-import NotificationManager from "@/components/molecules/notifications_manager";
+import { toast } from "@/lib/toast";
 import { testMCPSemanticFilter } from "@/components/networking";
 
 export interface TestResult {
@@ -6,20 +6,6 @@ export interface TestResult {
   selectedTools: number;
   tools: string[];
 }
-
-interface SemanticFilterTestMessages {
-  missingInput: string;
-  notEnabled: string;
-  completed: string;
-  failed: string;
-}
-
-const DEFAULT_MESSAGES: SemanticFilterTestMessages = {
-  missingInput: "Please enter a query and select a model",
-  notEnabled: "Semantic filter is not enabled or no tools were filtered",
-  completed: "Semantic filter test completed successfully",
-  failed: "Failed to test semantic filter",
-};
 
 interface FilterHeaders {
   filter: string | null;
@@ -44,18 +30,16 @@ export const runSemanticFilterTest = async ({
   setIsTesting,
   setTestResult,
   setTestError,
-  messages = DEFAULT_MESSAGES,
 }: {
   accessToken: string;
-  testModel: string;
+  testModel: string | null;
   testQuery: string;
   setIsTesting: (value: boolean) => void;
   setTestResult: (result: TestResult | null) => void;
   setTestError: (error: string | null) => void;
-  messages?: SemanticFilterTestMessages;
 }) => {
   if (!testQuery || !testModel || !accessToken) {
-    NotificationManager.error(messages.missingInput);
+    toast.error("Please enter a query and select a model");
     return;
   }
 
@@ -68,32 +52,32 @@ export const runSemanticFilterTest = async ({
     const parsedResult = parseFilterHeaders(headers);
 
     if (!parsedResult) {
-      NotificationManager.warning(messages.notEnabled);
+      toast.warning("Semantic filter is not enabled or no tools were filtered");
       return;
     }
 
     setTestResult(parsedResult);
-    NotificationManager.success(messages.completed);
+    toast.success("Semantic filter test completed successfully");
   } catch (error) {
     console.error("Test failed:", error);
-    const message = error instanceof Error && error.message ? error.message : messages.failed;
+    const message = error instanceof Error && error.message ? error.message : "Failed to test semantic filter";
     setTestError(message);
-    NotificationManager.error(messages.failed);
+    toast.error("Failed to test semantic filter");
   } finally {
     setIsTesting(false);
   }
 };
 
-export const getCurlCommand = (testModel: string, testQuery: string, queryFallback = "Your query here") =>
+export const getCurlCommand = (testModel: string | null, testQuery: string) =>
   `curl --location 'http://localhost:4000/v1/responses' \\
 --header 'Content-Type: application/json' \\
 --header 'Authorization: Bearer sk-1234' \\
 --data '{
-    "model": "${testModel}",
+    "model": "${testModel ?? "YOUR_MODEL"}",
     "input": [
     {
       "role": "user",
-      "content": "${testQuery || queryFallback}",
+      "content": "${testQuery || "Your query here"}",
       "type": "message"
     }
   ],

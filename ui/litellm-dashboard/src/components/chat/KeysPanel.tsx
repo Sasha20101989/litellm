@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { Loader2, RefreshCw, KeyRound, Copy, Check } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,11 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import MessageManager from "@/components/molecules/message_manager";
+import { toast } from "@/lib/toast";
 import { keyListCall, regenerateKeyCall } from "../networking";
 import { KeyResponse } from "../key_team_helpers/key_list";
 import { formatExpiresUtc, isKeyExpired, calculateExpiryPreviewFromDuration } from "@/utils/keyExpiryUtils";
-import { useTranslation } from "react-i18next";
 
 const KEYS_QUERY_KEY = "chat-user-keys";
 
@@ -33,21 +33,18 @@ function maskKey(keyName: string | undefined): string {
   return keyName.slice(0, 7) + "..." + keyName.slice(-4);
 }
 
-function relativeTime(
-  isoString: string | null | undefined,
-  t: (key: string, values?: Record<string, number>) => string,
-): string {
+function relativeTime(isoString: string | null | undefined): string {
   if (!isoString) return "";
   try {
     const date = new Date(isoString);
     const diffMs = Date.now() - date.getTime();
     const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 60) return t("keys.justNow");
+    if (diffSec < 60) return "just now";
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return t("keys.minutesAgo", { count: diffMin });
+    if (diffMin < 60) return `${diffMin}m ago`;
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return t("keys.hoursAgo", { count: diffHr });
-    return t("keys.daysAgo", { count: Math.floor(diffHr / 24) });
+    if (diffHr < 24) return `${diffHr}h ago`;
+    return `${Math.floor(diffHr / 24)}d ago`;
   } catch {
     return "";
   }
@@ -110,13 +107,13 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
     const keyExpired = rotateTarget ? isKeyExpired(rotateTarget.expires) : false;
 
     if (formState.duration && !DURATION_RE.test(formState.duration)) {
-      errors.duration = t("keys.validationDuration");
+      errors.duration = "Must be a duration like 30s, 30m, 24h, 2d, 1w, or 1mo";
     }
     if (keyExpired && !formState.duration) {
-      errors.duration = t("keys.validationExpired");
+      errors.duration = "Expiration is required for expired keys";
     }
     if (formState.grace_period && !DURATION_RE.test(formState.grace_period)) {
-      errors.grace_period = t("keys.validationGrace");
+      errors.grace_period = "Must be a duration like 24h, 2d";
     }
 
     setFormErrors(errors);
@@ -137,10 +134,10 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
 
       const response = await regenerateKeyCall(accessToken, rotateTarget.token || rotateTarget.token_id, payload);
       setRegeneratedKey(response.key);
-      MessageManager.success(t("keys.rotateSuccess"));
+      toast.success("Key rotated successfully");
       queryClient.invalidateQueries({ queryKey: [KEYS_QUERY_KEY] });
     } catch {
-      MessageManager.error(t("keys.rotateError"));
+      toast.error("Failed to rotate key");
     } finally {
       setIsRegenerating(false);
     }
@@ -170,7 +167,8 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
         <h2 className="text-base font-semibold text-foreground mb-0.5">{t("keys.title")}</h2>
         <p className="text-sm text-muted-foreground m-0">
           {t("keys.subtitle")}
-          {premiumUser && t("keys.premiumHint")}
+          {premiumUser &&
+            ". Rotate keys to generate new credentials while optionally keeping the old key valid during a grace period"}
         </p>
       </div>
 
@@ -180,15 +178,9 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.key")}</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide">
-                  {t("keys.columns.spend")}
-                </TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide">
-                  {t("keys.columns.expires")}
-                </TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide">
-                  {t("keys.columns.created")}
-                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.spend")}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.expires")}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.created")}</TableHead>
                 {premiumUser && (
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-right w-[80px]" />
                 )}
@@ -230,15 +222,9 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.key")}</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide">
-                  {t("keys.columns.spend")}
-                </TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide">
-                  {t("keys.columns.expires")}
-                </TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide">
-                  {t("keys.columns.created")}
-                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.spend")}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.expires")}</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide">{t("keys.columns.created")}</TableHead>
                 {premiumUser && (
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-right w-[80px]" />
                 )}
@@ -264,21 +250,16 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
                         <span className="text-muted-foreground text-[13px]">{t("keys.never")}</span>
                       ) : (
                         <Badge variant={expired ? "destructive" : "outline"}>
-                          {expired ? t("keys.expired") : formatExpiresUtc(record.expires)}
+                          {expired ? "Expired" : formatExpiresUtc(record.expires)}
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-[13px]">
-                      {relativeTime(record.created_at, t)}
+                      {relativeTime(record.created_at)}
                     </TableCell>
                     {premiumUser && (
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={() => openRotateModal(record)}
-                          title={t("keys.rotateTooltip")}
-                        >
+                        <Button variant="outline" size="xs" onClick={() => openRotateModal(record)} title={t("keys.rotateTooltip")}>
                           <RefreshCw className="h-3 w-3" />
                           {t("keys.rotate")}
                         </Button>
@@ -300,7 +281,7 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
 
           {regeneratedKey ? (
             <div>
-              <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950 px-3 py-2 text-sm text-amber-800 dark:text-amber-300 mb-4">
+              <div className="rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning mb-4">
                 {t("keys.saveWarning")}
               </div>
               <div className="text-xs text-muted-foreground mb-1">{t("keys.newKey")}</div>
@@ -351,16 +332,10 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
                   />
                   {formErrors.duration && <p className="text-xs text-destructive">{formErrors.duration}</p>}
                   <p className={`text-xs ${keyIsExpired ? "text-destructive" : "text-muted-foreground"}`}>
-                    {t("keys.current", {
-                      value: rotateTarget?.expires ? formatExpiresUtc(rotateTarget.expires) : t("keys.never"),
-                    })}
-                    {keyIsExpired && ` (${t("keys.expired")})`}
+                    {t("common:merge.current")} {rotateTarget?.expires ? formatExpiresUtc(rotateTarget.expires) : "Never"}
+                    {keyIsExpired && " (expired)"}
                   </p>
-                  {newExpiryTime && (
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                      {t("keys.newExpiry", { value: newExpiryTime })}
-                    </p>
-                  )}
+                  {newExpiryTime && <p className="text-xs text-success">{t("common:merge.next")} {newExpiryTime}</p>}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label>{t("keys.gracePeriod")}</Label>
@@ -384,14 +359,14 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
                 <CopyToClipboard text={regeneratedKey} onCopy={() => setCopied(true)}>
                   <Button>
                     {copied ? <Check className="h-4 w-4 mr-1.5" /> : <Copy className="h-4 w-4 mr-1.5" />}
-                    {copied ? t("keys.copied") : t("keys.copyKey")}
+                    {copied ? "Copied" : "Copy Key"}
                   </Button>
                 </CopyToClipboard>
               </>
             ) : (
               <>
                 <Button variant="outline" onClick={closeModal}>
-                  {t("keys.cancel")}
+                  {t("playground.cancel")}
                 </Button>
                 <Button onClick={handleRegenerate} disabled={isRegenerating}>
                   {isRegenerating ? (

@@ -1,33 +1,14 @@
 import { PaginationState } from "@tanstack/react-table";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React, { useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { MemoryRow } from "@/components/networking";
 
 import { MemoryTable } from "./MemoryTable";
 
-const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
-
-vi.mock("react-i18next", async () => {
-  const { resources } = await import("@/i18n/catalog");
-  return {
-    useTranslation: (namespace: keyof (typeof resources)["en"] = "common") => ({
-      t: (key: string, values?: Record<string, unknown>) => {
-        const copy = key.split(".").reduce<unknown>((value, segment) => {
-          if (typeof value !== "object" || value === null) return undefined;
-          return (value as Record<string, unknown>)[segment];
-        }, resources[localization.language][namespace]);
-        if (typeof copy !== "string") return key;
-        return Object.entries(values ?? {}).reduce(
-          (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
-          copy,
-        );
-      },
-    }),
-  };
-});
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const makeMemory = (overrides: Partial<MemoryRow> = {}): MemoryRow => ({
   memory_id: "mem-1",
@@ -57,17 +38,21 @@ const baseProps = {
 };
 
 describe("MemoryTable", () => {
-  beforeEach(() => {
-    localization.language = "en";
-  });
-
-  it("renders table controls in Russian", () => {
-    localization.language = "ru";
+  it("links the User ID and Team ID cells to their detail pages", () => {
     render(<MemoryTable {...baseProps} />);
 
-    expect(screen.getByText("Имя")).toBeInTheDocument();
-    expect(screen.getByText("Предпросмотр")).toBeInTheDocument();
-    expect(screen.getByLabelText("Открыть действия с записью памяти")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "user-42" })).toHaveAttribute("href", "/ui/users?user=user-42");
+    expect(screen.getByRole("link", { name: "team-7" })).toHaveAttribute("href", "/ui/teams?team=team-7");
+  });
+
+  it("leaves the proxy admin and dashboard sentinels unlinked", () => {
+    const sentinelRow = makeMemory({ user_id: "default_user_id", team_id: "litellm-dashboard" });
+    render(<MemoryTable {...baseProps} data={[sentinelRow]} />);
+
+    expect(screen.getByText("default_user_id")).toBeInTheDocument();
+    expect(screen.getByText("litellm-dashboard")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "default_user_id" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "litellm-dashboard" })).not.toBeInTheDocument();
   });
 
   it("renders every column header", () => {
@@ -129,6 +114,7 @@ describe("MemoryTable", () => {
   it("shows the filtered-empty copy when a search is active", () => {
     render(<MemoryTable {...baseProps} data={[]} rowCount={0} hasActiveSearch={true} />);
     expect(screen.getByText("No matching memories")).toBeInTheDocument();
+    expect(screen.getByText("No memories match your search.")).toBeInTheDocument();
     expect(screen.queryByText("No memories stored yet")).not.toBeInTheDocument();
   });
 
@@ -162,7 +148,8 @@ describe("MemoryTable", () => {
     const onRefresh = vi.fn();
     render(<MemoryTable {...baseProps} onSearchChange={onSearchChange} onRefresh={onRefresh} />);
 
-    await user.type(screen.getByTestId("datatable-search"), "u");
+    expect(screen.getByPlaceholderText("Search by key prefix or memory ID…")).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("datatable-search"), { target: { value: "u" } });
     expect(onSearchChange).toHaveBeenCalledWith("u");
 
     await user.click(screen.getByTestId("datatable-refresh"));

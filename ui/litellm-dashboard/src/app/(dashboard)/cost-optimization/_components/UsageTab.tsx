@@ -1,18 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Info } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 import { AreaChart, BarChart, CustomLegend, DonutChart, SEQUENTIAL_COLOR_RAMP } from "@/components/shared/charts";
 import AdvancedDatePicker from "@/components/shared/advanced_date_picker";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useCan from "@/app/(dashboard)/hooks/useCan";
 import { getToolSpend, ToolSpendResponse } from "@/components/networking";
-import { SpendMetrics } from "@/components/UsagePage/types";
-import { formatNumberWithCommas } from "@/utils/dataUtils";
 import {
   buildDailyToolSeries,
   formatRangeLabel,
@@ -23,11 +18,15 @@ import {
   SAVINGS_SERIES,
   SavingsAccumulation,
   SavingsPoint,
+  savingsSeriesOf,
+  shortDate,
+  sumOverDays,
   toCumulative,
   topToolsBySpend,
   usd,
   withStartAnchor,
 } from "./costOptimizationUtils";
+import SavingsTiles from "@/components/shared/SavingsTiles";
 import { DailyActivityRange } from "./useDailyActivityRange";
 
 interface UsageTabProps {
@@ -42,49 +41,9 @@ const EMPTY_TOOL_SPEND: ToolSpendResponse = {
   end_date: null,
 };
 
-const shortDate = (iso: string, locale: string): string =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString(locale, { month: "short", day: "numeric" });
-
 const isoDay = (d: Date): string => d.toISOString().slice(0, 10);
 
-const compressionOf = (m: SpendMetrics): number => m.compression_savings_spend ?? 0;
-const cachingOf = (m: SpendMetrics): number => m.prompt_caching_savings_spend ?? 0;
-const autorouterOf = (m: SpendMetrics): number => m.autorouter_savings_spend ?? 0;
-const savedTokensOf = (m: SpendMetrics): number => m.compression_saved_tokens ?? 0;
-
-const SummaryCard = ({ label, value, hint, info }: { label: string; value: string; hint?: string; info?: string }) => {
-  const { t } = useTranslation("costOptimization");
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-        {info && (
-          <Popover>
-            <PopoverTrigger
-              aria-label={t("usage.calculation", { label })}
-              data-testid={`summary-card-info-${label.toLowerCase().replace(/\s+/g, "-")}`}
-              className="cursor-pointer text-muted-foreground hover:text-foreground"
-            >
-              <Info className="size-3.5" />
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 text-sm text-muted-foreground">
-              {info}
-            </PopoverContent>
-          </Popover>
-        )}
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-semibold text-foreground">{value}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      </CardContent>
-    </Card>
-  );
-};
-
 const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
-  const { t, i18n } = useTranslation("costOptimization");
-  const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-US";
   const { dateValue, onDateChange, results, loading, isFetchingMore } = activity;
 
   const startTime = dateValue.from ?? null;
@@ -113,43 +72,22 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
   const toolSpend = toolSpendState?.key === rangeKey ? toolSpendState.data : null;
   const toolSpendLoading = toolSpendEnabled && toolSpend === null;
 
-  const compressionTotal = useMemo(() => results.reduce((sum, d) => sum + compressionOf(d.metrics), 0), [results]);
-  const cachingTotal = useMemo(() => results.reduce((sum, d) => sum + cachingOf(d.metrics), 0), [results]);
-  const autorouterTotal = useMemo(() => results.reduce((sum, d) => sum + autorouterOf(d.metrics), 0), [results]);
-  const savedTokensTotal = useMemo(() => results.reduce((sum, d) => sum + savedTokensOf(d.metrics), 0), [results]);
-  const totalSaved = compressionTotal + cachingTotal + autorouterTotal;
-
   const [accumulation, setAccumulation] = useState<SavingsAccumulation>("cumulative");
 
-  // The daily rollup arrives newest first; sort on the raw ISO date so the axis
-  // reads oldest to newest and the running total accumulates forward in time
-  // rather than backward. Sort here, before shortDate() drops the year and makes
-  // the labels unsortable.
-  const perInterval = useMemo<SavingsPoint[]>(
-    () =>
-      [...results]
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .map((d) => ({
-          date: shortDate(d.date, locale),
-          Compression: compressionOf(d.metrics),
-          "Prompt caching": cachingOf(d.metrics),
-          "Auto-router": autorouterOf(d.metrics),
-        })),
-    [locale, results],
-  );
+  const perInterval = useMemo<SavingsPoint[]>(() => savingsSeriesOf(results), [results]);
 
   // Cumulative anchors on a synthetic $0 point at the range start so a short
   // range (down to a single day) rises from zero instead of floating as one dot.
   const overTime = useMemo(() => {
     if (accumulation !== "cumulative") return perInterval;
-    const startLabel = startTime ? shortDate(localIsoDay(startTime), locale) : "";
+    const startLabel = startTime ? shortDate(localIsoDay(startTime)) : "";
     return withStartAnchor(toCumulative(perInterval), startLabel);
-  }, [accumulation, locale, perInterval, startTime]);
+  }, [accumulation, perInterval, startTime]);
 
-  const intervalLabel = t("usage.perDay");
-  const rangeLabel = formatRangeLabel(startTime ?? undefined, endTime ?? undefined, locale);
+  const intervalLabel = "Per day";
+  const rangeLabel = formatRangeLabel(startTime ?? undefined, endTime ?? undefined);
   const savingsSubtitle = [
-    accumulation === "cumulative" ? t("usage.runningTotal") : t("usage.savedPerDay"),
+    accumulation === "cumulative" ? "Running total saved" : `Saved ${intervalLabel.toLowerCase()}`,
     rangeLabel && `${rangeLabel} (UTC)`,
   ]
     .filter(Boolean)
@@ -158,22 +96,14 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
   // A driver can come out negative (auto-router pays a cold-cache write on every
   // model switch), and a negative slice has no meaning in a donut, so only drivers
   // that actually saved are plotted; the range total keeps the signed truth.
-  const savingsCategoryLabels = useMemo(
-    () => ({
-      Compression: t("drivers.compression"),
-      "Prompt caching": t("drivers.promptCaching"),
-      "Auto-router": t("drivers.autoRouter"),
-    }),
-    [t],
-  );
   const byDriver = useMemo(
     () =>
-      SAVINGS_DRIVERS.map(({ name, color }) => ({
-        driver: savingsCategoryLabels[name],
+      SAVINGS_DRIVERS.map(({ name, color, of }) => ({
+        driver: name,
         color,
-        usd: { Compression: compressionTotal, "Prompt caching": cachingTotal, "Auto-router": autorouterTotal }[name],
+        usd: sumOverDays(results, of),
       })).filter((d) => d.usd > 0),
-    [autorouterTotal, cachingTotal, compressionTotal, savingsCategoryLabels],
+    [results],
   );
   const plottedDriverTotal = useMemo(() => byDriver.reduce((sum, d) => sum + d.usd, 0), [byDriver]);
 
@@ -187,44 +117,20 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
     () =>
       buildDailyToolSeries(toolSpend?.daily ?? [], topToolNames).map((point) => ({
         ...point,
-        date: shortDate(String(point.date), locale),
+        date: shortDate(String(point.date)),
       })),
-    [locale, toolSpend, topToolNames],
+    [toolSpend, topToolNames],
   );
   const toolColors = useMemo(() => SEQUENTIAL_COLOR_RAMP.slice(0, Math.max(topToolNames.length, 1)), [topToolNames]);
 
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-wrap items-center justify-end gap-4">
-        <span className="text-sm text-muted-foreground">{t("usage.utcDays")}</span>
+        <span className="text-sm text-muted-foreground">Spend is bucketed by UTC day</span>
         <AdvancedDatePicker value={dateValue} onValueChange={onDateChange} />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard
-          label={t("usage.totalSaved")}
-          value={usd(totalSaved)}
-          hint={loading || isFetchingMore ? t("usage.loading") : t("usage.totalSavedHint")}
-        />
-        <SummaryCard
-          label={t("usage.compressionSavings")}
-          value={usd(compressionTotal)}
-          hint={t("usage.compressedTokens", { count: formatNumberWithCommas(savedTokensTotal) })}
-          info={t("usage.compressionInfo")}
-        />
-        <SummaryCard
-          label={t("usage.promptCachingSavings")}
-          value={usd(cachingTotal)}
-          hint={t("usage.promptCachingHint")}
-          info={t("usage.promptCachingInfo")}
-        />
-        <SummaryCard
-          label={t("usage.autoRouterSavings")}
-          value={usd(autorouterTotal)}
-          hint={t("usage.autoRouterHint")}
-          info={t("usage.autoRouterInfo")}
-        />
-      </div>
+      <SavingsTiles results={results} isLoading={loading || isFetchingMore} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -233,17 +139,13 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
               never competes with the controls for width and neither moves when it grows.
               The controls wrap within their column instead of pushing past the card */}
           <CardHeader>
-            <CardTitle>{t("usage.savings")}</CardTitle>
+            <CardTitle>Savings</CardTitle>
             <CardDescription>{savingsSubtitle}</CardDescription>
             <CardAction className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-              <CustomLegend
-                categories={SAVINGS_SERIES}
-                colors={SAVINGS_COLORS}
-                categoryLabels={savingsCategoryLabels}
-              />
+              <CustomLegend categories={SAVINGS_SERIES} colors={SAVINGS_COLORS} />
               <Tabs value={accumulation} onValueChange={(value) => setAccumulation(value as SavingsAccumulation)}>
                 <TabsList>
-                  <TabsTrigger value="cumulative">{t("usage.cumulative")}</TabsTrigger>
+                  <TabsTrigger value="cumulative">Cumulative</TabsTrigger>
                   <TabsTrigger value="per-interval">{intervalLabel}</TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -255,7 +157,6 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
                 data={overTime}
                 index="date"
                 categories={SAVINGS_SERIES}
-                categoryLabels={savingsCategoryLabels}
                 colors={SAVINGS_COLORS}
                 valueFormatter={usd}
                 showLegend={false}
@@ -269,7 +170,6 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
                 data={overTime}
                 index="date"
                 categories={SAVINGS_SERIES}
-                categoryLabels={savingsCategoryLabels}
                 colors={SAVINGS_COLORS}
                 valueFormatter={usd}
                 showLegend={false}
@@ -279,7 +179,7 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>{t("usage.savingsByDriver")}</CardTitle>
+            <CardTitle>Savings by driver</CardTitle>
           </CardHeader>
           <CardContent>
             <DonutChart
@@ -299,23 +199,26 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
       {canViewProxyWideCostData && (
         <Card>
           <CardHeader>
-            <CardTitle>{t("usage.spendByTool")}</CardTitle>
-            <p className="text-sm text-muted-foreground">{t("usage.spendByToolDescription")}</p>
+            <CardTitle>Spend by tool</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Spend on requests that invoked each tool (MCP and client-side tools); declaring a tool without invoking it
+              does not count. A request that invoked multiple tools counts its full spend toward each, so this
+              attributes rather than partitions spend.
+            </p>
           </CardHeader>
           <CardContent>
             {topTools.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                {toolSpendLoading ? t("usage.loading") : t("usage.noToolUsage")}
+                {toolSpendLoading ? "Loading..." : "No tool usage in this range."}
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div>
-                  <p className="mb-2 text-sm font-medium text-muted-foreground">{t("usage.totalByTool")}</p>
+                  <p className="mb-2 text-sm font-medium text-muted-foreground">Total by tool</p>
                   <BarChart
                     data={topToolsChart}
                     index="tool_name"
                     categories={["spend"]}
-                    categoryLabels={{ spend: t("usage.spend") }}
                     colors={toolColors}
                     colorByDatum
                     layout="vertical"
@@ -326,7 +229,7 @@ const UsageTab: React.FC<UsageTabProps> = ({ accessToken, activity }) => {
                   />
                 </div>
                 <div>
-                  <p className="mb-2 text-sm font-medium text-muted-foreground">{t("usage.dailyByTool")}</p>
+                  <p className="mb-2 text-sm font-medium text-muted-foreground">Daily spend by tool</p>
                   <CustomLegend categories={topToolNames} colors={toolColors} />
                   <BarChart
                     data={dailyToolSeries}

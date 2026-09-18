@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Select } from "antd";
 import { Guardrail } from "./types";
 import { getGuardrailsList } from "../networking";
+import { MultiSelect } from "@/components/shared/MultiSelect";
 
 interface GuardrailSelectorProps {
   onChange: (selectedGuardrails: string[]) => void;
@@ -9,19 +9,9 @@ interface GuardrailSelectorProps {
   className?: string;
   accessToken: string;
   disabled?: boolean;
-  placeholder?: string;
-  disabledPlaceholder?: string;
 }
 
-const GuardrailSelector: React.FC<GuardrailSelectorProps> = ({
-  onChange,
-  value,
-  className,
-  accessToken,
-  disabled,
-  placeholder,
-  disabledPlaceholder,
-}) => {
+const GuardrailSelector: React.FC<GuardrailSelectorProps> = ({ onChange, value, className, accessToken, disabled }) => {
   const [guardrails, setGuardrails] = useState<Guardrail[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -50,29 +40,21 @@ const GuardrailSelector: React.FC<GuardrailSelectorProps> = ({
   };
 
   return (
-    <div>
-      <Select
-        mode="multiple"
+    <div className="min-w-0">
+      <MultiSelect
         disabled={disabled}
-        placeholder={
-          disabled
-            ? disabledPlaceholder ?? "Setting guardrails is a premium feature."
-            : placeholder ?? "Select guardrails"
-        }
-        onChange={handleGuardrailChange}
+        placeholder={disabled ? "Setting guardrails is a premium feature." : "Select guardrails"}
+        onValueChange={handleGuardrailChange}
         value={value}
         loading={loading}
         className={className}
-        allowClear
-        options={guardrails.map((guardrail) => {
-          return {
-            label: `${guardrail.guardrail_name}`,
-            value: guardrail.guardrail_name,
-          };
+        options={guardrails.flatMap((guardrail) => {
+          const name = guardrail.guardrail_name;
+          if (name == null || name === "") {
+            return [];
+          }
+          return [{ label: name, value: name }];
         })}
-        optionFilterProp="label"
-        showSearch
-        style={{ width: "100%" }}
       />
     </div>
   );

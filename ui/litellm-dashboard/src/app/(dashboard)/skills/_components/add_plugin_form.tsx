@@ -1,23 +1,36 @@
 import React, { useState } from "react";
-import { Modal, Form, Input, Select } from "antd";
-import MessageManager from "@/components/molecules/message_manager";
-import { Button } from "@tremor/react";
+import { CircleHelp } from "lucide-react";
+import { z } from "zod/v4";
+import { toast } from "@/lib/toast";
 import { registerClaudeCodePlugin } from "@/components/networking";
+import { FieldGroup } from "@/components/ui/field";
+import { FormField } from "@/components/shared/form/FormField";
+import { Button } from "@/components/ui/button";
+import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useZodForm } from "@/lib/forms/useZodForm";
 import {
   validatePluginName,
   isValidSemanticVersion,
   isValidEmail,
-  isValidUrl,
   parseKeywords,
   parseSkillSource,
   isValidSubPath,
+  isValidSha256,
   SkillSourcePreview,
 } from "@/components/claude_code_plugins/helpers";
 import { PluginAuthor, PluginSource, SkillRegisterRequest } from "@/components/claude_code_plugins/types";
-import { useTranslation } from "react-i18next";
-
-const { TextArea } = Input;
-const { Option } = Select;
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface AddPluginFormProps {
   visible: boolean;
@@ -26,39 +39,75 @@ interface AddPluginFormProps {
   onSuccess: () => void;
 }
 
-interface AddPluginFormValues {
-  name: string;
-  skillUrl?: string;
-  subPath?: string;
-  version?: string;
-  description?: string;
-  authorName?: string;
-  authorEmail?: string;
-  homepage?: string;
-  category?: string;
-  keywords?: string;
-  domain?: string;
-  namespace?: string;
-}
+const addPluginShape = {
+  skillUrl: z.string().min(1, "Please enter a repository or zip archive URL"),
+  subPath: z
+    .string()
+    .refine(
+      (value) => !value || isValidSubPath(value),
+      "Subfolder must be a relative path like plugins/my-skill (letters, numbers, dots, hyphens, underscores)",
+    ),
+  sha256: z.string().refine(isValidSha256, "SHA-256 must be a 64-character hex digest"),
+  name: z
+    .string()
+    .min(1, "Please enter skill name")
+    .regex(/^[a-z0-9-]+$/, "Name must be kebab-case (lowercase, numbers, hyphens only)"),
+  domain: z.string(),
+  namespace: z.string(),
+  description: z.string(),
+  category: z.string().nullable(),
+  keywords: z.string(),
+  version: z.string(),
+  authorName: z.string(),
+  authorEmail: z
+    .string()
+    .refine((value) => value === "" || z.email().safeParse(value).success, "Please enter a valid email"),
+};
+
+const addPluginSchema = z.object(addPluginShape);
+
+type AddPluginFormValues = z.infer<typeof addPluginSchema>;
+
+const EMPTY_VALUES: AddPluginFormValues = {
+  skillUrl: "",
+  subPath: "",
+  sha256: "",
+  name: "",
+  domain: "",
+  namespace: "",
+  description: "",
+  category: null,
+  keywords: "",
+  version: "",
+  authorName: "",
+  authorEmail: "",
+};
 
 const buildAuthor = (values: AddPluginFormValues): PluginAuthor | undefined => {
-  const name = values.authorName?.trim();
-  const email = values.authorEmail?.trim();
+  const name = values.authorName.trim();
+  const email = values.authorEmail.trim();
   if (!name) {
     return undefined;
   }
   return email ? { name, email } : { name };
 };
 
+const archiveUrlOf = (preview: SkillSourcePreview | null): string | undefined =>
+  preview?.parsed.source === "archive" ? preview.parsed.url : undefined;
+
+const withArchiveDigest = (source: PluginSource, sha256: string): PluginSource => {
+  const digest = sha256.trim();
+  return source.source === "archive" && digest ? { ...source, sha256: digest.toLowerCase() } : source;
+};
+
 const buildRegisterRequest = (values: AddPluginFormValues, source: PluginSource): SkillRegisterRequest => {
   const author = buildAuthor(values);
   return {
     name: values.name.trim(),
-    source,
+    source: withArchiveDigest(source, values.sha256),
     ...(values.version ? { version: values.version.trim() } : {}),
     ...(values.description ? { description: values.description.trim() } : {}),
     ...(author ? { author } : {}),
-    ...(values.homepage ? { homepage: values.homepage.trim() } : {}),
     ...(values.category ? { category: values.category } : {}),
     ...(values.keywords ? { keywords: parseKeywords(values.keywords) } : {}),
     ...(values.domain ? { domain: values.domain.trim() } : {}),
@@ -67,258 +116,311 @@ const buildRegisterRequest = (values: AddPluginFormValues, source: PluginSource)
 };
 
 const PREDEFINED_CATEGORIES = [
-  { value: "Development", translationKey: "development" },
-  { value: "Productivity", translationKey: "productivity" },
-  { value: "Learning", translationKey: "learning" },
-  { value: "Security", translationKey: "security" },
-  { value: "Data & Analytics", translationKey: "data" },
-  { value: "Integration", translationKey: "integration" },
-  { value: "Testing", translationKey: "testing" },
-  { value: "Documentation", translationKey: "documentation" },
+  "Development",
+  "Productivity",
+  "Learning",
+  "Security",
+  "Data & Analytics",
+  "Integration",
+  "Testing",
+  "Documentation",
 ];
 
+const SUB_PATH_LOCK_REASON = {
+  "git-subdir": "The URL already points to a subfolder, so this field is disabled",
+  archive: "A zip archive is installed as a whole, so this field is disabled",
+} as const;
+
+type SubPathLock = keyof typeof SUB_PATH_LOCK_REASON;
+
+const subPathLockFor = (source: PluginSource["source"] | undefined): SubPathLock | null =>
+  source === "git-subdir" || source === "archive" ? source : null;
+
+const labelWithHint = (label: string, hint: string): React.ReactNode => (
+  <>
+    {label}
+    <Tooltip>
+      <TooltipTrigger render={<CircleHelp className="size-3.5 shrink-0 cursor-help text-muted-foreground" />} />
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  </>
+);
+
 const AddPluginForm: React.FC<AddPluginFormProps> = ({ visible, onClose, accessToken, onSuccess }) => {
-  const { t } = useTranslation("gateway");
-  const [form] = Form.useForm();
+  const form = useZodForm(addPluginSchema, { defaultValues: EMPTY_VALUES });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [urlPreview, setUrlPreview] = useState<SkillSourcePreview | null>(null);
-  const [urlEncodesSubdir, setUrlEncodesSubdir] = useState(false);
+  const [subPathLock, setSubPathLock] = useState<SubPathLock | null>(null);
 
   const recomputePreview = (skillUrl: string, subPath: string) => {
-    const encodesSubdir = parseSkillSource(skillUrl)?.parsed.source === "git-subdir";
-    setUrlEncodesSubdir(encodesSubdir);
-    if (encodesSubdir && form.getFieldValue("subPath")) {
-      form.setFieldsValue({ subPath: "" });
+    const lock = subPathLockFor(parseSkillSource(skillUrl)?.parsed.source);
+    setSubPathLock(lock);
+    if (lock && form.getValues("subPath")) {
+      form.setValue("subPath", "");
     }
-    const preview = parseSkillSource(skillUrl, encodesSubdir ? undefined : subPath);
+    const preview = parseSkillSource(skillUrl, lock ? undefined : subPath);
+    if (archiveUrlOf(preview) !== archiveUrlOf(urlPreview) && form.getValues("sha256")) {
+      form.setValue("sha256", "");
+    }
     setUrlPreview(preview);
-    if (preview && !form.getFieldValue("name")) {
-      form.setFieldsValue({ name: preview.suggestedName });
+    if (preview && !form.getValues("name")) {
+      form.setValue("name", preview.suggestedName);
     }
-  };
-
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    recomputePreview(e.target.value, form.getFieldValue("subPath") ?? "");
-  };
-
-  const handleSubPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    recomputePreview(form.getFieldValue("skillUrl") ?? "", e.target.value);
   };
 
   const handleSubmit = async (values: AddPluginFormValues) => {
     if (!accessToken) {
-      MessageManager.error(t("skills.form.noToken"));
+      toast.error("No access token available");
       return;
     }
 
     if (!urlPreview) {
-      MessageManager.error(t("skills.form.validRepository"));
+      toast.error("Please enter a valid repository or zip archive URL");
       return;
     }
 
     if (!validatePluginName(values.name)) {
-      MessageManager.error(t("skills.form.kebabError"));
+      toast.error("Skill name must be kebab-case (lowercase letters, numbers, and hyphens only)");
       return;
     }
 
     if (values.version && !isValidSemanticVersion(values.version)) {
-      MessageManager.error(t("skills.form.versionError"));
+      toast.error("Version must be in semantic versioning format (e.g., 1.0.0)");
       return;
     }
 
     if (values.authorEmail && !isValidEmail(values.authorEmail)) {
-      MessageManager.error(t("skills.form.emailError"));
-      return;
-    }
-
-    if (values.homepage && !isValidUrl(values.homepage)) {
-      MessageManager.error(t("skills.form.homepageError"));
+      toast.error("Invalid email format");
       return;
     }
 
     setIsSubmitting(true);
     try {
       await registerClaudeCodePlugin(accessToken, buildRegisterRequest(values, urlPreview.parsed));
-      MessageManager.success(t("skills.form.success"));
-      form.resetFields();
+      toast.success("Skill registered successfully");
+      form.reset(EMPTY_VALUES);
       setUrlPreview(null);
-      setUrlEncodesSubdir(false);
+      setSubPathLock(null);
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error registering skill:", error);
-      MessageManager.error(error instanceof Error && error.message ? error.message : t("skills.form.failed"));
+      toast.error(error instanceof Error && error.message ? error.message : "Failed to register skill");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    form.resetFields();
+    form.reset(EMPTY_VALUES);
     setUrlPreview(null);
-    setUrlEncodesSubdir(false);
+    setSubPathLock(null);
     onClose();
   };
 
   return (
-    <Modal
-      title={t("skills.form.title")}
-      open={visible}
-      onCancel={handleCancel}
-      footer={null}
-      width={700}
-      className="top-8"
-    >
-      <Form form={form} layout="vertical" onFinish={handleSubmit} className="mt-4">
-        {/* Smart URL Input */}
-        <Form.Item
-          label={t("skills.form.repository")}
-          name="skillUrl"
-          rules={[{ required: true, message: t("skills.form.repositoryRequired") }]}
-          tooltip={t("skills.form.repositoryTooltip")}
-        >
-          <Input
-            placeholder="https://github.com/org/repo or https://gitlab.com/org/repo"
-            className="rounded-lg"
-            onChange={handleUrlChange}
-          />
-        </Form.Item>
+    <Dialog open={visible} onOpenChange={(open) => !open && handleCancel()}>
+      <DialogContent className="top-8 max-h-[calc(100dvh-4rem)] translate-y-0 overflow-y-auto sm:max-w-[700px]">
+        <DialogHeader>
+          <DialogTitle>Add New Skill</DialogTitle>
+        </DialogHeader>
+        <TooltipProvider>
+          <form onSubmit={form.handleSubmit(handleSubmit)} noValidate className="mt-4">
+            <FieldGroup>
+              <FormField
+                control={form.control}
+                name="skillUrl"
+                label={labelWithHint(
+                  "Source URL",
+                  "Paste an HTTPS git repository URL from GitHub, GitLab, Bitbucket, or a self-hosted host (e.g. github.com/org/repo or github.com/org/repo/tree/main/my-skill), or an HTTPS link to a .zip archive of the skill hosted on S3 or any static file server. For a private repository use its SSH clone URL (git@ghe.example.com:org/repo.git) so Claude Code clones it with your own SSH key.",
+                )}
+              >
+                {({ ref, onChange, ...field }) => (
+                  <Input
+                    {...field}
+                    ref={ref}
+                    placeholder="https://github.com/org/repo or https://bucket.s3.amazonaws.com/my-skill.zip"
+                    className="rounded-lg"
+                    onChange={(event) => {
+                      onChange(event);
+                      recomputePreview(event.target.value, form.getValues("subPath"));
+                    }}
+                  />
+                )}
+              </FormField>
 
-        {/* Optional subfolder for monorepos */}
-        <Form.Item
-          label={t("skills.form.subfolder")}
-          name="subPath"
-          rules={[
-            {
-              validator: (_, value) =>
-                !value || isValidSubPath(value)
-                  ? Promise.resolve()
-                  : Promise.reject(new Error(t("skills.form.subfolderError"))),
-            },
-          ]}
-          tooltip={t("skills.form.subfolderTooltip")}
-          extra={urlEncodesSubdir ? t("skills.form.subfolderEncoded") : undefined}
-        >
-          <Input
-            placeholder="plugins/my-skill"
-            className="rounded-lg"
-            onChange={handleSubPathChange}
-            disabled={urlEncodesSubdir}
-          />
-        </Form.Item>
+              <FormField
+                control={form.control}
+                name="subPath"
+                label={labelWithHint(
+                  "Subfolder path (Optional)",
+                  "Path within the repository where the skill lives (e.g., plugins/my-skill). Leave empty if the skill is at the repo root.",
+                )}
+                description={subPathLock ? SUB_PATH_LOCK_REASON[subPathLock] : undefined}
+              >
+                {({ ref, onChange, ...field }) => (
+                  <Input
+                    {...field}
+                    ref={ref}
+                    placeholder="plugins/my-skill"
+                    className="rounded-lg"
+                    onChange={(event) => {
+                      onChange(event);
+                      recomputePreview(form.getValues("skillUrl"), event.target.value);
+                    }}
+                    disabled={subPathLock !== null}
+                  />
+                )}
+              </FormField>
 
-        {/* Parsed preview */}
-        {urlPreview && (
-          <div className="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-            {t("skills.form.detected", { source: urlPreview.label })}
-          </div>
-        )}
+              {urlPreview?.parsed.source === "archive" && (
+                <FormField
+                  control={form.control}
+                  name="sha256"
+                  label={labelWithHint(
+                    "Archive SHA-256 (Optional)",
+                    "Hex digest of the zip file. Claude Code refuses to install the archive if its checksum does not match.",
+                  )}
+                >
+                  {({ ref, ...field }) => (
+                    <Input {...field} ref={ref} placeholder="64 hex characters" className="rounded-lg font-mono" />
+                  )}
+                </FormField>
+              )}
 
-        {/* Skill Name */}
-        <Form.Item
-          label={t("skills.form.name")}
-          name="name"
-          rules={[
-            { required: true, message: t("skills.form.nameRequired") },
-            {
-              pattern: /^[a-z0-9-]+$/,
-              message: t("skills.form.namePattern"),
-            },
-          ]}
-          tooltip={t("skills.form.nameTooltip")}
-        >
-          <Input placeholder="my-skill" className="rounded-lg" />
-        </Form.Item>
+              {urlPreview && (
+                <div className="rounded-lg border border-info/20 bg-info/10 px-3 py-2 text-sm text-info">
+                  Detected: {urlPreview.label}
+                </div>
+              )}
 
-        {/* Domain and Namespace — side by side */}
-        <div className="flex gap-4">
-          <Form.Item
-            label={t("skills.form.domain")}
-            name="domain"
-            tooltip={t("skills.form.domainTooltip")}
-            className="flex-1"
-          >
-            <Input placeholder={t("skills.form.categories.productivity")} className="rounded-lg" />
-          </Form.Item>
-          <Form.Item
-            label={t("skills.form.namespace")}
-            name="namespace"
-            tooltip={t("skills.form.namespaceTooltip")}
-            className="flex-1"
-          >
-            <Input placeholder="workflows" className="rounded-lg" />
-          </Form.Item>
-        </div>
+              <FormField
+                control={form.control}
+                name="name"
+                label={labelWithHint("Skill Name", "Unique identifier in kebab-case format (e.g., my-skill)")}
+              >
+                {({ ref, ...field }) => <Input {...field} ref={ref} placeholder="my-skill" className="rounded-lg" />}
+              </FormField>
 
-        {/* Description */}
-        <Form.Item
-          label={t("skills.form.description")}
-          name="description"
-          tooltip={t("skills.form.descriptionTooltip")}
-        >
-          <TextArea
-            rows={3}
-            placeholder={t("skills.form.descriptionPlaceholder")}
-            maxLength={500}
-            className="rounded-lg"
-          />
-        </Form.Item>
+              <div className="flex gap-4">
+                <FormField
+                  control={form.control}
+                  name="domain"
+                  label={labelWithHint("Domain (Optional)", "Top-level grouping in the Skill Hub (e.g., Productivity)")}
+                  className="flex-1"
+                >
+                  {({ ref, ...field }) => (
+                    <Input {...field} ref={ref} placeholder="Productivity" className="rounded-lg" />
+                  )}
+                </FormField>
+                <FormField
+                  control={form.control}
+                  name="namespace"
+                  label={labelWithHint("Namespace (Optional)", "Sub-grouping within domain (e.g., workflows)")}
+                  className="flex-1"
+                >
+                  {({ ref, ...field }) => <Input {...field} ref={ref} placeholder="workflows" className="rounded-lg" />}
+                </FormField>
+              </div>
 
-        {/* Category */}
-        <Form.Item label={t("skills.form.category")} name="category" tooltip={t("skills.form.categoryTooltip")}>
-          <Select
-            placeholder={t("skills.form.categoryPlaceholder")}
-            allowClear
-            showSearch
-            optionFilterProp="children"
-            className="rounded-lg"
-          >
-            {PREDEFINED_CATEGORIES.map((category) => (
-              <Option key={category.value} value={category.value}>
-                {t(`skills.form.categories.${category.translationKey}`)}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+              <FormField
+                control={form.control}
+                name="description"
+                label={labelWithHint("Description (Optional)", "Brief description of what the skill does")}
+              >
+                {({ ref, ...field }) => (
+                  <Textarea
+                    {...field}
+                    ref={ref}
+                    rows={3}
+                    placeholder="A skill that helps with..."
+                    maxLength={500}
+                    className="rounded-lg"
+                  />
+                )}
+              </FormField>
 
-        {/* Keywords */}
-        <Form.Item label={t("skills.form.keywords")} name="keywords" tooltip={t("skills.form.keywordsTooltip")}>
-          <Input placeholder="search, web, api" className="rounded-lg" />
-        </Form.Item>
+              <FormField
+                control={form.control}
+                name="category"
+                label={labelWithHint("Category (Optional)", "Select a category or enter a custom one")}
+              >
+                {({ id, value, onChange, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedBy }) => (
+                  <Combobox items={PREDEFINED_CATEGORIES} value={value} onValueChange={onChange}>
+                    <ComboboxInput
+                      id={id}
+                      aria-invalid={ariaInvalid}
+                      aria-describedby={ariaDescribedBy}
+                      placeholder="Select or type a category"
+                      className="w-full rounded-lg"
+                      showClear={value != null && value !== ""}
+                    />
+                    <ComboboxContent>
+                      <ComboboxEmpty>No matching categories</ComboboxEmpty>
+                      <ComboboxList>
+                        {(category: string) => (
+                          <ComboboxItem key={category} value={category}>
+                            {category}
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                )}
+              </FormField>
 
-        {/* Version */}
-        <Form.Item label={t("skills.form.version")} name="version" tooltip={t("skills.form.versionTooltip")}>
-          <Input placeholder="1.0.0" className="rounded-lg" />
-        </Form.Item>
+              <FormField
+                control={form.control}
+                name="keywords"
+                label={labelWithHint("Keywords (Optional)", "Comma-separated list of keywords for search")}
+              >
+                {({ ref, ...field }) => (
+                  <Input {...field} ref={ref} placeholder="search, web, api" className="rounded-lg" />
+                )}
+              </FormField>
 
-        {/* Author Name */}
-        <Form.Item label={t("skills.form.author")} name="authorName" tooltip={t("skills.form.authorTooltip")}>
-          <Input placeholder={t("skills.form.authorPlaceholder")} className="rounded-lg" />
-        </Form.Item>
+              <FormField
+                control={form.control}
+                name="version"
+                label={labelWithHint("Version (Optional)", "Semantic version (e.g., 1.0.0)")}
+              >
+                {({ ref, ...field }) => <Input {...field} ref={ref} placeholder="1.0.0" className="rounded-lg" />}
+              </FormField>
 
-        {/* Author Email */}
-        <Form.Item
-          label={t("skills.form.authorEmail")}
-          name="authorEmail"
-          rules={[{ type: "email", message: t("skills.form.authorEmailRequired") }]}
-          tooltip={t("skills.form.authorEmailTooltip")}
-        >
-          <Input type="email" placeholder="author@example.com" className="rounded-lg" />
-        </Form.Item>
+              <FormField
+                control={form.control}
+                name="authorName"
+                label={labelWithHint("Author Name (Optional)", "Name of the skill author or organization")}
+              >
+                {({ ref, ...field }) => (
+                  <Input {...field} ref={ref} placeholder="Your Name or Organization" className="rounded-lg" />
+                )}
+              </FormField>
 
-        {/* Submit Buttons */}
-        <Form.Item className="mb-0 mt-6">
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={handleCancel} disabled={isSubmitting}>
-              {t("skills.cancel")}
-            </Button>
-            <Button type="submit" loading={isSubmitting}>
-              {isSubmitting ? t("skills.form.adding") : t("skills.form.submit")}
-            </Button>
-          </div>
-        </Form.Item>
-      </Form>
-    </Modal>
+              <FormField
+                control={form.control}
+                name="authorEmail"
+                label={labelWithHint("Author Email (Optional)", "Contact email for the skill author")}
+              >
+                {({ ref, ...field }) => (
+                  <Input {...field} ref={ref} type="email" placeholder="author@example.com" className="rounded-lg" />
+                )}
+              </FormField>
+            </FieldGroup>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}>
+                {isSubmitting && <UiLoadingSpinner className="size-4" />}
+                {isSubmitting ? "Adding..." : "Add Skill"}
+              </Button>
+            </div>
+          </form>
+        </TooltipProvider>
+      </DialogContent>
+    </Dialog>
   );
 };
 
