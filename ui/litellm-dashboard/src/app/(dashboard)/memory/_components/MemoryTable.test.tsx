@@ -8,6 +8,27 @@ import { MemoryRow } from "@/components/networking";
 
 import { MemoryTable } from "./MemoryTable";
 
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const segments = key.split(".");
+    const copy = [resources.en.gateway, resources.en.common]
+      .map((namespace) =>
+        segments.reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, namespace),
+      )
+      .find((value): value is string => typeof value === "string");
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const makeMemory = (overrides: Partial<MemoryRow> = {}): MemoryRow => ({

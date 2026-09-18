@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
@@ -55,6 +56,7 @@ const PatternModal: React.FC<PatternModalProps> = ({
   onAdd,
   onCancel,
 }) => {
+  const { t } = useTranslation("gateway");
   const selectedPattern = prebuiltPatterns.find((pattern) => pattern.name === selectedPatternName) ?? null;
   const patternGroups = categories
     .map((category) => ({
@@ -80,7 +82,7 @@ const PatternModal: React.FC<PatternModalProps> = ({
               itemToStringLabel={(pattern: PrebuiltPattern) => pattern.display_name}
               filter={matchesPatternQuery}
             >
-              <ComboboxInput className="mt-2 w-full" placeholder="Choose pattern type" />
+              <ComboboxInput className="mt-2 w-full" placeholder={t("guardrailsPage.contentFilter.choosePatternType")} />
               <ComboboxContent>
                 <ComboboxEmpty>No matching patterns</ComboboxEmpty>
                 <ComboboxList>
@@ -111,7 +113,7 @@ const PatternModal: React.FC<PatternModalProps> = ({
               value={patternAction}
               onValueChange={(value: string | null) => value && onActionChange(value as "BLOCK" | "MASK")}
             >
-              <SelectTrigger className="w-full" aria-label="Action">
+              <SelectTrigger className="w-full" aria-label={t("guardrailsPage.contentFilter.action")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

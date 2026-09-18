@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, ChevronRight, Clock, Copy } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ interface GuardrailTestResultsProps {
 }
 
 export function GuardrailTestResults({ results, errors }: GuardrailTestResultsProps) {
+  const { t } = useTranslation("gateway");
   const [collapsedResults, setCollapsedResults] = useState<Set<string>>(new Set());
 
   const toggleResultCollapse = (guardrailName: string) => {
@@ -68,7 +70,7 @@ export function GuardrailTestResults({ results, errors }: GuardrailTestResultsPr
 
   return (
     <div className="space-y-3 border-t border-border pt-4">
-      <h3 className="text-sm font-semibold">Results</h3>
+      <h3 className="text-sm font-semibold">{t("guardrailsPage.playground.results.title")}</h3>
 
       {/* Success Results */}
       {results &&
@@ -102,14 +104,14 @@ export function GuardrailTestResults({ results, errors }: GuardrailTestResultsPr
                         onClick={async () => {
                           const success = await copyToClipboard(result.response_text);
                           if (success) {
-                            toast.success("Result copied to clipboard");
+                            toast.success(t("guardrailsPage.playground.results.copied"));
                           } else {
-                            toast.fromError("Failed to copy result");
+                            toast.fromError(t("guardrailsPage.playground.results.copyFailed"));
                           }
                         }}
                       >
                         <Copy />
-                        Copy
+                        {t("guardrailsPage.playground.results.copy")}
                       </Button>
                     )}
                   </div>
@@ -117,13 +119,16 @@ export function GuardrailTestResults({ results, errors }: GuardrailTestResultsPr
                 {!isCollapsed && (
                   <>
                     <div className="rounded-sm border border-success/20 bg-background p-3">
-                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Output Text</label>
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">
+                        {t("guardrailsPage.playground.results.outputText")}
+                      </label>
                       <div className="font-mono text-sm whitespace-pre-wrap wrap-break-word">
                         {result.response_text}
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      <span className="font-medium">Characters:</span> {result.response_text.length}
+                      <span className="font-medium">{t("guardrailsPage.playground.panel.characters")}:</span>{" "}
+                      {result.response_text.length}
                     </div>
                   </>
                 )}
@@ -162,7 +167,7 @@ export function GuardrailTestResults({ results, errors }: GuardrailTestResultsPr
                         className="cursor-pointer text-sm font-medium text-destructive"
                         onClick={() => toggleResultCollapse(errorItem.guardrailName)}
                       >
-                        {errorItem.guardrailName} - Error
+                        {errorItem.guardrailName} - {t("guardrailsPage.playground.results.error")}
                       </p>
                       <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                         <Clock className="size-3" />

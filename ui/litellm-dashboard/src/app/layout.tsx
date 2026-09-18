@@ -4,7 +4,6 @@ import "./globals.css";
 
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-import AntdGlobalProvider from "@/contexts/AntdGlobalProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ReactQueryProvider from "@/contexts/ReactQueryProvider";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -28,9 +27,7 @@ export default function RootLayout({
         <NuqsAdapter>
           <ReactQueryProvider>
             <I18nProvider>
-              <AntdGlobalProvider>
-                <AuthProvider>{children}</AuthProvider>
-              </AntdGlobalProvider>
+              <AuthProvider>{children}</AuthProvider>
             </I18nProvider>
           </ReactQueryProvider>
         </NuqsAdapter>

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ const KeywordModal: React.FC<KeywordModalProps> = ({
   onAdd,
   onCancel,
 }) => {
+  const { t } = useTranslation("gateway");
   return (
     <Dialog open={visible} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[800px]">
@@ -57,7 +59,7 @@ const KeywordModal: React.FC<KeywordModalProps> = ({
               value={action}
               onValueChange={(value: string | null) => value && onActionChange(value as "BLOCK" | "MASK")}
             >
-              <SelectTrigger className="w-full" aria-label="Action">
+              <SelectTrigger className="w-full" aria-label={t("guardrailsPage.contentFilter.action")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -74,7 +76,7 @@ const KeywordModal: React.FC<KeywordModalProps> = ({
             <p className="font-semibold">Description (optional)</p>
             <Textarea
               className="mt-2 field-sizing-fixed"
-              placeholder="Explain why this keyword is sensitive"
+              placeholder={t("guardrailsPage.contentFilter.descriptionPlaceholder")}
               value={description}
               onChange={(e) => onDescriptionChange(e.target.value)}
               rows={3}

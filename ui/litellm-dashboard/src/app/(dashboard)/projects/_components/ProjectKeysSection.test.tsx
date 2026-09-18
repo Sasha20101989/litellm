@@ -4,6 +4,27 @@ import type { OnUrlUpdateFunction } from "nuqs/adapters/testing";
 import { fireEvent, renderWithProviders, screen, waitFor } from "../../../../../tests/test-utils";
 import { ProjectKeysSection } from "./ProjectKeysSection";
 
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const segments = key.split(".");
+    const copy = [resources.en.management, resources.en.common, resources.en.gateway]
+      .map((namespace) =>
+        segments.reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, namespace),
+      )
+      .find((value): value is string => typeof value === "string");
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 const mockUseKeys = vi.fn();
 vi.mock("@/app/(dashboard)/hooks/keys/useKeys", () => ({
   useKeys: (...args: unknown[]) => mockUseKeys(...args),

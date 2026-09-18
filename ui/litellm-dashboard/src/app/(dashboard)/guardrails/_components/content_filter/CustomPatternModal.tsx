@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ const CustomPatternModal: React.FC<CustomPatternModalProps> = ({
   onAdd,
   onCancel,
 }) => {
+  const { t } = useTranslation("gateway");
   return (
     <Dialog open={visible} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[800px]">
@@ -67,7 +69,7 @@ const CustomPatternModal: React.FC<CustomPatternModalProps> = ({
               value={patternAction}
               onValueChange={(value: string | null) => value && onActionChange(value as "BLOCK" | "MASK")}
             >
-              <SelectTrigger className="w-full" aria-label="Action">
+              <SelectTrigger className="w-full" aria-label={t("guardrailsPage.contentFilter.action")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

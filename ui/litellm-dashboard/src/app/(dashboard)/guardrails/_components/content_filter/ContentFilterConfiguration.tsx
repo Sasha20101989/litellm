@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Upload } from "lucide-react";
 import { validateBlockedWordsFile } from "@/components/networking";
 import { toast } from "@/lib/toast";
@@ -102,6 +103,7 @@ const ContentFilterConfiguration: React.FC<ContentFilterConfigurationProps> = ({
   competitorIntentConfig = null,
   onCompetitorIntentChange,
 }) => {
+  const { t } = useTranslation("gateway");
   const [patternModalVisible, setPatternModalVisible] = useState(false);
   const [keywordModalVisible, setKeywordModalVisible] = useState(false);
   const [customPatternModalVisible, setCustomPatternModalVisible] = useState(false);
@@ -119,7 +121,7 @@ const ContentFilterConfiguration: React.FC<ContentFilterConfigurationProps> = ({
 
   const handleAddPrebuiltPattern = () => {
     if (!selectedPatternName) {
-      toast.error("Please select a pattern");
+      toast.error(t("guardrailsPage.contentFilter.notifications.selectPattern"));
       return;
     }
 
@@ -160,7 +162,7 @@ const ContentFilterConfiguration: React.FC<ContentFilterConfigurationProps> = ({
 
   const handleAddKeyword = () => {
     if (!newKeyword) {
-      toast.error("Please enter a keyword");
+      toast.error(t("guardrailsPage.contentFilter.notifications.enterKeyword"));
       return;
     }
 
@@ -188,9 +190,9 @@ const ContentFilterConfiguration: React.FC<ContentFilterConfigurationProps> = ({
           if (onFileUpload) {
             onFileUpload(content);
           }
-          toast.success(result.message || "File uploaded successfully");
+          toast.success(result.message || t("guardrailsPage.contentFilter.notifications.uploaded"));
         } else {
-          const errorMessage = result.error || (result.errors && result.errors.join(", ")) || "Invalid file";
+          const errorMessage = result.error || (result.errors && result.errors.join(", ")) || t("guardrailsPage.contentFilter.notifications.invalidFile");
           toast.error(`Validation failed: ${errorMessage}`);
         }
       }

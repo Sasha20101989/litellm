@@ -226,7 +226,7 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
       <PageHeader
         icon={<KeyRound />}
         title={t("virtualKeys.title")}
-        subtitle="Every key that authenticates requests to the gateway."
+        subtitle={t("virtualKeys.subtitle")}
         primaryAction={headerActions}
       />
       <DataTable
@@ -259,7 +259,7 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
               table={table}
               searchValue={searchInput}
               onSearchChange={setSearch}
-              searchPlaceholder="Search by key alias or ID…"
+              searchPlaceholder={t("virtualKeys.searchPlaceholder")}
               onRefresh={() => refetch?.()}
               isRefreshing={isFetching}
               onOpenFilters={() => setFiltersOpen(true)}
@@ -271,7 +271,7 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
               open={filtersOpen}
               onOpenChange={setFiltersOpen}
               title={t("models.filters.title")}
-              description="Narrow down virtual keys"
+              description={t("virtualKeys.filters.description")}
             >
               {({ get, set }) => (
                 <>

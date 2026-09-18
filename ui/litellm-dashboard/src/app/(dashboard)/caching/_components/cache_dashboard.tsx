@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw } from "lucide-react";
 import { cachingHealthCheckCall } from "@/components/networking";
 import { useCacheActivity, type CacheActivityGroup } from "@/app/(dashboard)/hooks/caching/useCacheActivity";
+import { Trans, useTranslation } from "react-i18next";
 
 // Import the new component
 import { CacheHealthTab } from "./cache_health";
@@ -80,6 +81,7 @@ interface CachePageProps {
 // Helper function to deep-parse a JSON string if possible
 
 const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole, userID, premiumUser }) => {
+  const { t } = useTranslation("costOptimization");
   const anchor1 = useComboboxAnchor();
   const anchor2 = useComboboxAnchor();
   const [selectedApiKeys, setSelectedApiKeys] = useState<string[]>([]);
@@ -182,26 +184,28 @@ const CacheDashboard: React.FC<CachePageProps> = ({ accessToken, token, userRole
         <Card>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Analytics for LiteLLM&apos;s{" "}
-              <a
-                href="https://docs.litellm.ai/docs/proxy/caching"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                response cache
-              </a>{" "}
-              (e.g. Redis / in-memory): requests answered from cache without calling the LLM provider. Provider-side{" "}
-              <a
-                href="https://docs.litellm.ai/docs/completion/prompt_caching"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                prompt caching
-              </a>{" "}
-              (cached input tokens from Anthropic, OpenAI, etc.) is not shown here; see &quot;Prompt Caching
-              Metrics&quot; on the Usage page or individual requests in the Logs page.
+              <Trans
+                t={t}
+                i18nKey="caching.analyticsDescription"
+                components={{
+                  responseCache: (
+                    <a
+                      href="https://docs.litellm.ai/docs/proxy/caching"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    />
+                  ),
+                  promptCaching: (
+                    <a
+                      href="https://docs.litellm.ai/docs/completion/prompt_caching"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    />
+                  ),
+                }}
+              />
             </p>
 
             <div className="mt-4 grid grid-cols-1 items-center gap-4 md:grid-cols-[1fr_1fr_auto]">

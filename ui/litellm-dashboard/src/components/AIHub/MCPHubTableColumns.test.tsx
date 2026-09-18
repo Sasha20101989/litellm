@@ -3,6 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DataTable } from "@/components/shared/DataTable";
 import { getMCPHubTableColumns, MCPServerData } from "./MCPHubTableColumns";
+import { resources } from "@/i18n/catalog";
+
+const t = (key: string, values?: Record<string, unknown>): string => {
+  const copy = key.split(".").reduce<unknown>((value, segment) => {
+    if (typeof value !== "object" || value === null) return undefined;
+    return (value as Record<string, unknown>)[segment];
+  }, resources.en.common);
+  if (typeof copy !== "string") return key;
+  return Object.entries(values ?? {}).reduce((text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)), copy);
+};
 
 const SERVER_URL = "https://mcp.exa.ai/mcp";
 
@@ -32,7 +42,7 @@ function renderTable(onServerClick = vi.fn()) {
   render(
     <DataTable
       data={[mockServer]}
-      columns={getMCPHubTableColumns({ onServerClick })}
+      columns={getMCPHubTableColumns({ onServerClick, t })}
       getRowId={(server) => server.server_id}
       sortingMode="client"
       size="compact"
@@ -57,7 +67,7 @@ describe("getMCPHubTableColumns", () => {
   it("does not expose a URL column", () => {
     renderTable();
     expect(screen.queryByText("URL")).not.toBeInTheDocument();
-    const columns = getMCPHubTableColumns({ onServerClick: vi.fn() });
+    const columns = getMCPHubTableColumns({ onServerClick: vi.fn(), t });
     expect(columns.some((c) => c.header === "URL" || c.meta?.title === "URL")).toBe(false);
   });
 

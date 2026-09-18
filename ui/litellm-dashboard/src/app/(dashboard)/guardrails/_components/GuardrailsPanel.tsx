@@ -1,5 +1,6 @@
 import { parseAsString, useQueryState } from "nuqs";
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronDown, Code, Plus } from "lucide-react";
 import { getGuardrailsList, deleteGuardrailCall } from "@/components/networking";
@@ -34,6 +35,7 @@ interface GuardrailsResponse {
 }
 
 const GuardrailsPanel: React.FC<GuardrailsPanelProps> = ({ accessToken, userRole }) => {
+  const { t } = useTranslation("gateway");
   const [guardrailsList, setGuardrailsList] = useState<Guardrail[]>([]);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isCustomCodeModalVisible, setIsCustomCodeModalVisible] = useState(false);
@@ -109,11 +111,11 @@ const GuardrailsPanel: React.FC<GuardrailsPanelProps> = ({ accessToken, userRole
     setIsDeleting(true);
     try {
       await deleteGuardrailCall(accessToken, guardrailToDelete.guardrail_id);
-      toast.success(`Guardrail "${guardrailToDelete.guardrail_name}" deleted successfully`);
+      toast.success(t("guardrailsPage.notifications.deleted", { name: guardrailToDelete.guardrail_name }));
       await fetchGuardrails();
     } catch (error) {
       console.error("Error deleting guardrail:", error);
-      toast.fromError("Failed to delete guardrail");
+      toast.fromError(t("guardrailsPage.notifications.deleteFailed"));
     } finally {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
@@ -138,18 +140,18 @@ const GuardrailsPanel: React.FC<GuardrailsPanelProps> = ({ accessToken, userRole
           {isAdmin && (
             <>
               <TabsTrigger value="garden" className="flex-none">
-                Guardrail Garden
+                {t("guardrailsPage.tabs.garden")}
               </TabsTrigger>
               <TabsTrigger value="guardrails" className="flex-none">
-                Guardrails
+                {t("guardrailsPage.tabs.guardrails")}
               </TabsTrigger>
               <TabsTrigger value="playground" className="flex-none" disabled={!accessToken}>
-                Test Playground
+                {t("guardrailsPage.tabs.playground")}
               </TabsTrigger>
             </>
           )}
           <TabsTrigger value="submitted" className="flex-none">
-            Submitted Guardrails
+            {t("guardrailsPage.tabs.submitted")}
           </TabsTrigger>
         </TabsList>
 
@@ -164,17 +166,17 @@ const GuardrailsPanel: React.FC<GuardrailsPanelProps> = ({ accessToken, userRole
                 <DropdownMenu>
                   <DropdownMenuTrigger disabled={!accessToken} className={cn(buttonVariants({ variant: "default" }))}>
                     <Plus />
-                    Add New Guardrail
+                    {t("guardrailsPage.actions.add")}
                     <ChevronDown />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56">
                     <DropdownMenuItem onClick={handleAddGuardrail}>
                       <Plus />
-                      Add Provider Guardrail
+                      {t("guardrailsPage.actions.addProvider")}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleAddCustomCodeGuardrail}>
                       <Code />
-                      Create Custom Code Guardrail
+                      {t("guardrailsPage.actions.addCustom")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -212,17 +214,17 @@ const GuardrailsPanel: React.FC<GuardrailsPanelProps> = ({ accessToken, userRole
 
               <DeleteResourceModal
                 isOpen={isDeleteModalOpen}
-                title="Delete Guardrail"
-                message={`Are you sure you want to delete guardrail: ${guardrailToDelete?.guardrail_name}? This action cannot be undone.`}
-                resourceInformationTitle="Guardrail Information"
+                title={t("guardrailsPage.delete.title")}
+                message={t("guardrailsPage.delete.message", { name: guardrailToDelete?.guardrail_name })}
+                resourceInformationTitle={t("guardrailsPage.delete.information")}
                 resourceInformation={[
-                  { label: "Name", value: guardrailToDelete?.guardrail_name },
-                  { label: "ID", value: guardrailToDelete?.guardrail_id, code: true },
-                  { label: "Provider", value: providerDisplayName },
-                  { label: "Mode", value: formatGuardrailMode(guardrailToDelete?.litellm_params.mode) },
+                  { label: t("guardrailsPage.columns.name"), value: guardrailToDelete?.guardrail_name },
+                  { label: t("guardrailsPage.columns.id"), value: guardrailToDelete?.guardrail_id, code: true },
+                  { label: t("guardrailsPage.columns.provider"), value: providerDisplayName },
+                  { label: t("guardrailsPage.columns.mode"), value: formatGuardrailMode(guardrailToDelete?.litellm_params.mode) },
                   {
-                    label: "Default On",
-                    value: guardrailToDelete?.litellm_params.default_on ? "Yes" : "No",
+                    label: t("guardrailsPage.columns.defaultOn"),
+                    value: guardrailToDelete?.litellm_params.default_on ? t("guardrailsPage.values.yes") : t("guardrailsPage.values.no"),
                   },
                 ]}
                 onCancel={handleDeleteCancel}

@@ -71,7 +71,7 @@ export const ruNavigation = {
     },
     badges: { beta: "Бета", new: "Новое" },
     controls: {
-      home: "Главная LiteLLM",
+      home: "Главная Nexoplane",
       expand: "Развернуть сайдбар",
       collapse: "Свернуть сайдбар",
     },
@@ -109,7 +109,7 @@ export const ruNavigation = {
       userId: "ID пользователя",
       copyEmail: "Копировать эл. почту",
       copyUserId: "Копировать ID пользователя",
-      thanks: "Спасибо, что используете LiteLLM!",
+      thanks: "Спасибо, что используете Nexoplane!",
       hideNew: "Скрыть метки новых функций",
       hideNewAria: "Переключить отображение меток новых функций",
       hidePrompts: "Скрыть все промпты",

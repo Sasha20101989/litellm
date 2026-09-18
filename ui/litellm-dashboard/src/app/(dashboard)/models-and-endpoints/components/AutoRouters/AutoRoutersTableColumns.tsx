@@ -23,7 +23,8 @@ import { fitPills } from "./fitPills";
 
 function TypeCell({ row }: { row: AutoRouterRow }) {
   const { t } = useTranslation("gateway");
-  const typeKey = row.typeLabel === "LLM Classifier" ? "llm" : row.typeLabel === "Heuristic" ? "heuristic" : row.kind;
+  const typeLabels: Record<string, string> = { "LLM Classifier": "llm", Heuristic: "heuristic" };
+  const typeKey = typeLabels[row.typeLabel] ?? row.kind;
   return (
     <Badge variant="secondary" className="font-normal">
       {t(`models.autoRouters.typeLabels.${typeKey}`, { defaultValue: row.typeLabel })}

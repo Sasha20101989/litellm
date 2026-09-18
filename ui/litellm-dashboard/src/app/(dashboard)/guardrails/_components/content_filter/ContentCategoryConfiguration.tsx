@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronRight, FileText, Plus, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { getCategoryYaml } from "@/components/networking";
@@ -54,6 +55,7 @@ const ContentCategoryConfiguration: React.FC<ContentCategoryConfigurationProps> 
   pendingSelection,
   onPendingSelectionChange,
 }) => {
+  const { t } = useTranslation("gateway");
   // Use controlled state if parent provides it, otherwise use local state
   const [localSelectedCategoryName, setLocalSelectedCategoryName] = React.useState<string>("");
   const selectedCategoryName = pendingSelection !== undefined ? pendingSelection : localSelectedCategoryName;
@@ -174,7 +176,7 @@ const ContentCategoryConfiguration: React.FC<ContentCategoryConfigurationProps> 
 
   const columns: ColumnDef<SelectedCategory>[] = [
     {
-      header: "Category",
+      header: t("guardrailsPage.contentFilter.category"),
       accessorKey: "display_name",
       cell: ({ row }) => {
         const category = availableCategories.find((c) => c.name === row.original.category);
@@ -187,7 +189,7 @@ const ContentCategoryConfiguration: React.FC<ContentCategoryConfigurationProps> 
       },
     },
     {
-      header: "Action",
+      header: t("guardrailsPage.contentFilter.action"),
       accessorKey: "action",
       size: 150,
       cell: ({ row }) => (
@@ -196,7 +198,7 @@ const ContentCategoryConfiguration: React.FC<ContentCategoryConfigurationProps> 
           value={row.original.action}
           onValueChange={(value: string | null) => value && onCategoryUpdate(row.original.id, "action", value)}
         >
-          <SelectTrigger size="sm" className="w-full" aria-label="Action">
+          <SelectTrigger size="sm" className="w-full" aria-label={t("guardrailsPage.contentFilter.action")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -210,7 +212,7 @@ const ContentCategoryConfiguration: React.FC<ContentCategoryConfigurationProps> 
       ),
     },
     {
-      header: "Severity Threshold",
+      header: t("guardrailsPage.contentFilter.severityThreshold"),
       accessorKey: "severity_threshold",
       size: 180,
       cell: ({ row }) => (
@@ -221,7 +223,7 @@ const ContentCategoryConfiguration: React.FC<ContentCategoryConfigurationProps> 
             value && onCategoryUpdate(row.original.id, "severity_threshold", value)
           }
         >
-          <SelectTrigger size="sm" className="w-full" aria-label="Severity Threshold">
+          <SelectTrigger size="sm" className="w-full" aria-label={t("guardrailsPage.contentFilter.severityThreshold")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -270,7 +272,7 @@ const ContentCategoryConfiguration: React.FC<ContentCategoryConfigurationProps> 
             onValueChange={(category: ContentCategory | null) => setSelectedCategoryName(category?.name ?? "")}
             itemToStringLabel={(category: ContentCategory) => category.display_name}
           >
-            <ComboboxInput className="w-full" placeholder="Select a content category" />
+            <ComboboxInput className="w-full" placeholder={t("guardrailsPage.contentFilter.selectCategory")} />
             <ComboboxContent>
               <ComboboxEmpty>No matching categories</ComboboxEmpty>
               <ComboboxList>

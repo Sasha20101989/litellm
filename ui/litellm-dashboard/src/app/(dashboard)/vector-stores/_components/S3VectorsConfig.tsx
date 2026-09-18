@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface S3VectorsConfigProps {
   accessToken: string | null;
@@ -33,6 +34,7 @@ const labelWithHint = (label: string, hint: string): React.ReactNode => (
 const asText = (value: unknown): string => (typeof value === "string" ? value : "");
 
 const S3VectorsConfig: React.FC<S3VectorsConfigProps> = ({ accessToken, providerParams, onParamsChange }) => {
+  const { t } = useTranslation("gateway");
   const [embeddingModels, setEmbeddingModels] = useState<ModelGroup[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
@@ -64,32 +66,32 @@ const S3VectorsConfig: React.FC<S3VectorsConfigProps> = ({ accessToken, provider
 
   const bucketName = asText(providerParams.vector_bucket_name);
   const indexName = asText(providerParams.index_name);
-  const bucketNameError = bucketName && bucketName.length < 3 ? "Bucket name must be at least 3 characters" : undefined;
+  const bucketNameError = bucketName && bucketName.length < 3 ? t("vectorStores.s3.bucketMin") : undefined;
   const indexNameError =
     indexName && indexName.length > 0 && indexName.length < 3
-      ? "Index name must be at least 3 characters if provided"
+      ? t("vectorStores.s3.indexMin")
       : undefined;
 
   return (
     <TooltipProvider>
       <Alert variant="info" className="mb-4">
         <Info />
-        <AlertTitle>AWS S3 Vectors Setup</AlertTitle>
+        <AlertTitle>{t("vectorStores.s3.title")}</AlertTitle>
         <AlertDescription>
           <div>
-            <p>AWS S3 Vectors allows you to store and query vector embeddings directly in S3:</p>
+            <p>{t("vectorStores.s3.intro")}</p>
             <ul style={{ marginLeft: "16px", marginTop: "8px" }}>
-              <li>Vector buckets and indexes will be automatically created if they don&apos;t exist</li>
-              <li>Vector dimensions are auto-detected from your selected embedding model</li>
-              <li>Ensure your AWS credentials have permissions for S3 Vectors operations</li>
+              <li>{t("vectorStores.s3.autoCreate")}</li>
+              <li>{t("vectorStores.s3.autoDimensions")}</li>
+              <li>{t("vectorStores.s3.permissions")}</li>
               <li>
-                Learn more:{" "}
+                {t("vectorStores.s3.learnMore")}{" "}
                 <a
                   href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vector-buckets.html"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  AWS S3 Vectors Documentation
+                  {t("vectorStores.s3.documentation")}
                 </a>
               </li>
             </ul>
@@ -100,15 +102,15 @@ const S3VectorsConfig: React.FC<S3VectorsConfigProps> = ({ accessToken, provider
       <Field data-invalid={bucketNameError !== undefined || undefined}>
         <FieldLabel htmlFor="s3-vector-bucket-name">
           {labelWithHint(
-            "Vector Bucket Name",
-            "S3 bucket name for vector storage (must be at least 3 characters, lowercase letters, numbers, hyphens, and periods only)",
+            t("vectorStores.s3.bucket"),
+            t("vectorStores.s3.bucketTooltip"),
           )}
         </FieldLabel>
         <Input
           id="s3-vector-bucket-name"
           value={bucketName}
           onChange={(e) => handleFieldChange("vector_bucket_name", e.target.value)}
-          placeholder="my-vector-bucket (min 3 chars)"
+          placeholder={t("vectorStores.s3.bucketPlaceholder")}
           aria-invalid={bucketNameError !== undefined || undefined}
         />
         <FieldError>{bucketNameError}</FieldError>
@@ -117,15 +119,15 @@ const S3VectorsConfig: React.FC<S3VectorsConfigProps> = ({ accessToken, provider
       <Field data-invalid={indexNameError !== undefined || undefined}>
         <FieldLabel htmlFor="s3-index-name">
           {labelWithHint(
-            "Index Name",
-            "Name for the vector index (optional, will be auto-generated if not provided). If provided, must be at least 3 characters.",
+            t("vectorStores.s3.index"),
+            t("vectorStores.s3.indexTooltip"),
           )}
         </FieldLabel>
         <Input
           id="s3-index-name"
           value={indexName}
           onChange={(e) => handleFieldChange("index_name", e.target.value)}
-          placeholder="my-vector-index (optional, min 3 chars)"
+          placeholder={t("vectorStores.s3.indexPlaceholder")}
           aria-invalid={indexNameError !== undefined || undefined}
         />
         <FieldError>{indexNameError}</FieldError>
@@ -133,7 +135,7 @@ const S3VectorsConfig: React.FC<S3VectorsConfigProps> = ({ accessToken, provider
 
       <Field>
         <FieldLabel htmlFor="s3-aws-region-name">
-          {labelWithHint("AWS Region", "AWS region where the S3 bucket is located (e.g., us-west-2)")}
+          {labelWithHint(t("vectorStores.s3.region"), t("vectorStores.s3.regionTooltip"))}
         </FieldLabel>
         <Input
           id="s3-aws-region-name"
@@ -145,16 +147,16 @@ const S3VectorsConfig: React.FC<S3VectorsConfigProps> = ({ accessToken, provider
 
       <Field>
         <FieldLabel htmlFor="s3-embedding-model">
-          {labelWithHint("Embedding Model", "Select the embedding model to use for vector generation")}
+          {labelWithHint(t("vectorStores.s3.embedding"), t("vectorStores.s3.embeddingTooltip"))}
         </FieldLabel>
         <Combobox
           value={asText(providerParams.embedding_model) || null}
           onValueChange={(value: string | null) => value !== null && handleFieldChange("embedding_model", value)}
           items={embeddingModels.map((model) => model.model_group)}
         >
-          <ComboboxInput id="s3-embedding-model" placeholder="Select an embedding model" />
+          <ComboboxInput id="s3-embedding-model" placeholder={t("vectorStores.s3.embeddingPlaceholder")} />
           <ComboboxContent>
-            <ComboboxEmpty>{isLoadingModels ? "Loading models..." : "No embedding models found."}</ComboboxEmpty>
+            <ComboboxEmpty>{isLoadingModels ? t("policies.aiSuggestion.loadingModels") : t("policies.aiSuggestion.noModels")}</ComboboxEmpty>
             <ComboboxList>
               {(model: string) => (
                 <ComboboxItem key={model} value={model}>

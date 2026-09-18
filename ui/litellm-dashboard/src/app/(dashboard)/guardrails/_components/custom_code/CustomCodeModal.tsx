@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, ChevronRight, Code, ExternalLink, PlayCircle, Save, Users, XCircle } from "lucide-react";
 import { createGuardrailCall, updateGuardrailCall, testCustomCodeGuardrail } from "@/components/networking";
 import { toast } from "@/lib/toast";
@@ -192,6 +193,7 @@ interface CustomCodeModalProps {
 }
 
 const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onSuccess, accessToken, editData }) => {
+  const { t } = useTranslation("gateway");
   const anchor = useComboboxAnchor();
   const isEditMode = !!editData;
   const [guardrailName, setGuardrailName] = useState("");
@@ -365,15 +367,15 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
   // Save guardrail (create or update)
   const handleSave = async () => {
     if (!guardrailName.trim()) {
-      toast.fromError("Please enter a guardrail name");
+      toast.fromError(t("guardrailsPage.customCode.notifications.nameRequired"));
       return;
     }
     if (!code.trim()) {
-      toast.fromError("Please enter custom code");
+      toast.fromError(t("guardrailsPage.customCode.notifications.codeRequired"));
       return;
     }
     if (!accessToken) {
-      toast.fromError("No access token available");
+      toast.fromError(t("guardrailsPage.customCode.notifications.noToken"));
       return;
     }
 
@@ -401,7 +403,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
         }
 
         await updateGuardrailCall(accessToken, editData.guardrail_id, updateData);
-        toast.success("Custom code guardrail updated successfully");
+        toast.success(t("guardrailsPage.customCode.notifications.updated"));
       } else {
         // Create new guardrail
         const guardrailData = {
@@ -416,7 +418,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
         };
 
         await createGuardrailCall(accessToken, guardrailData);
-        toast.success("Custom code guardrail created successfully");
+        toast.success(t("guardrailsPage.customCode.notifications.created"));
       }
       onSuccess();
       onClose();
@@ -434,7 +436,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
   // Test guardrail using backend endpoint
   const handleTest = async () => {
     if (!accessToken) {
-      setTestResult({ error: "No access token available" });
+      setTestResult({ error: t("guardrailsPage.customCode.notifications.noToken") });
       return;
     }
 
@@ -447,7 +449,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
       try {
         parsedInput = JSON.parse(testInput);
       } catch (e) {
-        setTestResult({ error: "Invalid test input JSON" });
+        setTestResult({ error: t("guardrailsPage.customCode.notifications.invalidTestJson") });
         setIsTesting(false);
         return;
       }
@@ -484,12 +486,12 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
           error_type: response.error_type,
         });
       } else {
-        setTestResult({ error: "Unknown error occurred" });
+        setTestResult({ error: t("guardrailsPage.customCode.notifications.unknownError") });
       }
     } catch (error) {
       console.error("Failed to test custom code:", error);
       setTestResult({
-        error: error instanceof Error ? error.message : "Failed to test custom code",
+        error: error instanceof Error ? error.message : t("guardrailsPage.customCode.notifications.testFailed"),
       });
     } finally {
       setIsTesting(false);
@@ -504,7 +506,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[1400px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            {isEditMode ? "Edit Custom Guardrail" : "Create Custom Guardrail"}
+            {isEditMode ? t("guardrailsPage.customCode.editTitle") : t("guardrailsPage.customCode.createTitle")}
           </DialogTitle>
           <DialogDescription>Define custom logic using Python-like syntax</DialogDescription>
         </DialogHeader>
@@ -533,7 +535,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
                     {option.label}
                   </ComboboxChip>
                 ))}
-                <ComboboxChipsInput placeholder={mode.length === 0 ? "Select modes" : undefined} />
+                <ComboboxChipsInput placeholder={mode.length === 0 ? t("guardrailsPage.customCode.modePlaceholder") : undefined} />
               </ComboboxChips>
               <ComboboxContent anchor={anchor}>
                 <ComboboxEmpty>No matching modes</ComboboxEmpty>
@@ -554,7 +556,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
               value={selectedTemplate}
               onValueChange={(value: string | null) => value && handleTemplateChange(value)}
             >
-              <SelectTrigger className="w-full" aria-label="Template">
+              <SelectTrigger className="w-full" aria-label={t("guardrailsPage.customCode.template")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -581,7 +583,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
           </div>
           <div className="flex items-center gap-2 pt-5">
             <span className="text-sm text-muted-foreground">Default On</span>
-            <Switch checked={defaultOn} onCheckedChange={setDefaultOn} aria-label="Default On" />
+            <Switch checked={defaultOn} onCheckedChange={setDefaultOn} aria-label={t("guardrailsPage.customCode.defaultOn")} />
           </div>
         </div>
 
@@ -705,7 +707,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
                   <div className="flex items-center gap-3">
                     <Button size="sm" onClick={handleTest} disabled={isTesting} aria-busy={isTesting}>
                       {isTesting ? <UiLoadingSpinner className="size-4" /> : <PlayCircle />}
-                      {isTesting ? "Running..." : "Run Test"}
+                      {isTesting ? t("guardrailsPage.customCode.running") : t("guardrailsPage.customCode.runTest")}
                     </Button>
                     {testResult && (
                       <div
@@ -747,7 +749,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="size-4" /> {testResult.action || "Unknown"}
+                            <CheckCircle2 className="size-4" /> {testResult.action || t("guardrailsPage.customCode.unknown")}
                           </>
                         )}
                       </div>
@@ -834,7 +836,7 @@ const CustomCodeModal: React.FC<CustomCodeModalProps> = ({ visible, onClose, onS
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !guardrailName.trim()} aria-busy={isSaving}>
               {isSaving ? <UiLoadingSpinner className="size-4" /> : <Save />}
-              {isEditMode ? "Update Guardrail" : "Save Guardrail"}
+              {isEditMode ? t("guardrailsPage.customCode.update") : t("guardrailsPage.customCode.save")}
             </Button>
           </div>
         </div>

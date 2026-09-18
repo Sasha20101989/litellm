@@ -77,7 +77,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onToggleSidebar}
                 className="mr-2 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={sidebarCollapsed ? t("navbar.expandSidebar") : t("navbar.collapseSidebar")}
               >
                 <span className="text-lg">
                   {sidebarCollapsed ? (
@@ -146,7 +146,7 @@ const Navbar: React.FC<NavbarProps> = ({
               aria-label={t("navbar.documentation")}
               className={`flex min-w-0 items-center gap-2 ${showWorkerSwitch ? "border-l border-border pl-4" : ""}`}
             >
-              <DocsLink />
+              <DocsLink label={t("header.docs")} />
               <BlogDropdown />
             </nav>
 

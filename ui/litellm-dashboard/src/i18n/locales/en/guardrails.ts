@@ -87,7 +87,7 @@ export const enGuardrails = {
       providers: {
         bedrock: "AWS Bedrock Guardrails",
         google: "Google Cloud AI Safety",
-        litellm: "LiteLLM Built-in",
+        litellm: "Nexoplane Built-in",
         custom: "Custom Code",
       },
       categories: "Categories (comma-separated)",

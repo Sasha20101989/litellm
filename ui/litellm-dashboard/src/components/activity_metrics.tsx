@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Team } from "./key_team_helpers/key_list";
 import KeyModelUsageView from "./UsagePage/components/KeyModelUsageView";
 import { keyActivityLabel } from "./UsagePage/keyActivityLabel";
@@ -46,19 +47,20 @@ const ModelSection = ({
   metrics: ModelActivityData;
   hidePromptCachingMetrics?: boolean;
 }) => {
+  const { t } = useTranslation("common");
   return (
     <div className="space-y-2">
       {/* Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
         <Card>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Total Requests</p>
+            <p className="text-sm text-muted-foreground">{t("activityMetrics.totalRequests")}</p>
             <h3 className="text-lg font-medium text-foreground">{metrics.total_requests.toLocaleString()}</h3>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Total Successful Requests</p>
+            <p className="text-sm text-muted-foreground">{t("activityMetrics.totalSuccessfulRequests")}</p>
             <h3 className="text-lg font-medium text-foreground">
               {metrics.total_successful_requests.toLocaleString()}
             </h3>
@@ -66,31 +68,36 @@ const ModelSection = ({
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Total Tokens</p>
+            <p className="text-sm text-muted-foreground">{t("activityMetrics.totalTokens")}</p>
             <h3 className="text-lg font-medium text-foreground">{metrics.total_tokens.toLocaleString()}</h3>
             <p className="text-sm text-muted-foreground">
-              {Math.round(metrics.total_tokens / metrics.total_successful_requests)} avg per successful request
+              {t("activityMetrics.averagePerSuccessfulRequest", {
+                count: Math.round(metrics.total_tokens / metrics.total_successful_requests),
+              })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Total Spend</p>
+            <p className="text-sm text-muted-foreground">{t("activityMetrics.totalSpend")}</p>
             <h3 className="text-lg font-medium text-foreground">${formatNumberWithCommas(metrics.total_spend, 2)}</h3>
             <p className="text-sm text-muted-foreground">
-              ${formatNumberWithCommas(metrics.total_spend / metrics.total_successful_requests, 3)} per successful
-              request
+              {t("activityMetrics.spendPerSuccessfulRequest", {
+                amount: `$${formatNumberWithCommas(metrics.total_spend / metrics.total_successful_requests, 3)}`,
+              })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Avg Response Time</p>
+            <p className="text-sm text-muted-foreground">{t("activityMetrics.averageResponseTime")}</p>
             <h3 className="text-lg font-medium text-foreground">
               {formatResponseTime(modelAverageResponseTimeMs(metrics))}
             </h3>
             <p className="text-sm text-muted-foreground">
-              over {(metrics.total_timed_requests ?? 0).toLocaleString()} timed successful requests
+              {t("activityMetrics.timedSuccessfulRequests", {
+                count: (metrics.total_timed_requests ?? 0).toLocaleString(),
+              })}
             </p>
           </CardContent>
         </Card>
@@ -99,19 +106,26 @@ const ModelSection = ({
       {metrics.top_api_keys && metrics.top_api_keys.length > 0 && (
         <Card className="mt-4">
           <CardContent>
-            <h3 className="text-lg font-medium text-foreground">Top Virtual Keys by Spend</h3>
+            <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.topVirtualKeysBySpend")}</h3>
             <div className="mt-3">
               <div className="grid grid-cols-1 gap-2">
                 {metrics.top_api_keys.map((keyData) => (
                   <div key={keyData.api_key} className="flex justify-between items-center p-3 bg-muted rounded-lg">
                     <div>
                       <p className="font-medium">{keyData.key_alias || `${keyData.api_key.substring(0, 10)}...`}</p>
-                      {keyData.team_id && <p className="text-xs text-muted-foreground">Team: {keyData.team_id}</p>}
+                      {keyData.team_id && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("activityMetrics.team", { team: keyData.team_id })}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-medium">${formatNumberWithCommas(keyData.spend, 2)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {keyData.requests.toLocaleString()} requests | {keyData.tokens.toLocaleString()} tokens
+                        {t("activityMetrics.requestsAndTokens", {
+                          requests: keyData.requests.toLocaleString(),
+                          tokens: keyData.tokens.toLocaleString(),
+                        })}
                       </p>
                     </div>
                   </div>
@@ -128,7 +142,7 @@ const ModelSection = ({
       <Card className="mt-4">
         <CardContent>
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-foreground">Spend per day</h3>
+            <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.spendPerDay")}</h3>
             <CustomLegend categories={["metrics.spend"]} colors={["green"]} />
           </div>
           <BarChart
@@ -148,7 +162,7 @@ const ModelSection = ({
         <Card>
           <CardContent>
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium text-foreground">Total Tokens</h3>
+              <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.totalTokens")}</h3>
               <CustomLegend
                 categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
                 colors={["blue", "cyan", "indigo"]}
@@ -170,7 +184,7 @@ const ModelSection = ({
         <Card>
           <CardContent>
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium text-foreground">Requests per day</h3>
+              <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.requestsPerDay")}</h3>
               <CustomLegend categories={["metrics.api_requests"]} colors={["blue"]} />
             </div>
             <BarChart
@@ -190,7 +204,7 @@ const ModelSection = ({
           <Card>
             <CardContent>
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-foreground">Avg Response Time per day</h3>
+                <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.averageResponseTimePerDay")}</h3>
                 <CustomLegend categories={["metrics.avg_response_time_ms"]} colors={["amber"]} />
               </div>
               <LineChart
@@ -211,7 +225,7 @@ const ModelSection = ({
         <Card>
           <CardContent>
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium text-foreground">Success vs Failed Requests</h3>
+              <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.successVsFailedRequests")}</h3>
               <CustomLegend
                 categories={["metrics.successful_requests", "metrics.failed_requests"]}
                 colors={["green", "red"]}
@@ -234,7 +248,7 @@ const ModelSection = ({
           <Card>
             <CardContent>
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-foreground">Prompt Caching Metrics</h3>
+                <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.promptCachingMetrics")}</h3>
                 <CustomLegend
                   categories={["metrics.cache_read_input_tokens", "metrics.cache_creation_input_tokens"]}
                   colors={["cyan", "purple"]}
@@ -242,10 +256,14 @@ const ModelSection = ({
               </div>
               <div className="mb-2">
                 <p className="text-sm">
-                  Cache Read: {metrics.total_cache_read_input_tokens?.toLocaleString() || 0} tokens
+                  {t("activityMetrics.cacheRead", {
+                    count: metrics.total_cache_read_input_tokens?.toLocaleString() || 0,
+                  })}
                 </p>
                 <p className="text-sm">
-                  Cache Creation: {metrics.total_cache_creation_input_tokens?.toLocaleString() || 0} tokens
+                  {t("activityMetrics.cacheCreation", {
+                    count: metrics.total_cache_creation_input_tokens?.toLocaleString() || 0,
+                  })}
                 </p>
               </div>
               <AreaChart
@@ -301,6 +319,7 @@ const ModelCollapsible = ({
 };
 
 export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, hidePromptCachingMetrics = false }) => {
+  const { t } = useTranslation("common");
   const modelNames = Object.keys(modelMetrics).sort((a, b) => {
     if (a === "") return 1;
     if (b === "") return -1;
@@ -376,17 +395,17 @@ export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, 
     <div className="space-y-8">
       {/* Global Summary */}
       <div className="border rounded-lg p-4">
-        <h3 className="text-lg font-medium text-foreground">Overall Usage</h3>
+        <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.overallUsage")}</h3>
         <div className="grid grid-cols-4 gap-4 mb-4">
           <Card>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Total Requests</p>
+              <p className="text-sm text-muted-foreground">{t("activityMetrics.totalRequests")}</p>
               <h3 className="text-lg font-medium text-foreground">{totalMetrics.total_requests.toLocaleString()}</h3>
             </CardContent>
           </Card>
           <Card>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Total Successful Requests</p>
+              <p className="text-sm text-muted-foreground">{t("activityMetrics.totalSuccessfulRequests")}</p>
               <h3 className="text-lg font-medium text-foreground">
                 {totalMetrics.total_successful_requests.toLocaleString()}
               </h3>
@@ -394,13 +413,13 @@ export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, 
           </Card>
           <Card>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Total Tokens</p>
+              <p className="text-sm text-muted-foreground">{t("activityMetrics.totalTokens")}</p>
               <h3 className="text-lg font-medium text-foreground">{totalMetrics.total_tokens.toLocaleString()}</h3>
             </CardContent>
           </Card>
           <Card>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Total Spend</p>
+              <p className="text-sm text-muted-foreground">{t("activityMetrics.totalSpend")}</p>
               <h3 className="text-lg font-medium text-foreground">
                 ${formatNumberWithCommas(totalMetrics.total_spend, 2)}
               </h3>
@@ -412,7 +431,7 @@ export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, 
           <Card>
             <CardContent>
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-foreground">Total Tokens Over Time</h3>
+                <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.totalTokensOverTime")}</h3>
                 <CustomLegend
                   categories={["metrics.prompt_tokens", "metrics.completion_tokens", "metrics.total_tokens"]}
                   colors={["blue", "cyan", "indigo"]}
@@ -434,7 +453,7 @@ export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, 
           <Card>
             <CardContent>
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-foreground">Total Requests Over Time</h3>
+                <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.totalRequestsOverTime")}</h3>
                 <CustomLegend
                   categories={["metrics.successful_requests", "metrics.failed_requests"]}
                   colors={["emerald", "red"]}
@@ -465,20 +484,24 @@ export const ActivityMetrics: React.FC<ActivityMetricsProps> = ({ modelMetrics, 
             header={
               <div className="flex justify-between items-center w-full">
                 <h3 className="text-lg font-medium text-foreground">
-                  {modelMetrics[modelName].label || "Unknown Item"}
+                  {modelMetrics[modelName].label || t("activityMetrics.unknownItem")}
                 </h3>
                 <div className="flex space-x-4 text-sm text-muted-foreground">
                   <span>${formatNumberWithCommas(modelMetrics[modelName].total_spend, 2)}</span>
-                  <span>{modelMetrics[modelName].total_requests.toLocaleString()} requests</span>
+                  <span>{t("activityMetrics.requests", { count: modelMetrics[modelName].total_requests.toLocaleString() })}</span>
                   {modelAverageResponseTimeMs(modelMetrics[modelName]) != null && (
-                    <span>{formatResponseTime(modelAverageResponseTimeMs(modelMetrics[modelName]))} avg response</span>
+                    <span>
+                      {t("activityMetrics.averageResponse", {
+                        duration: formatResponseTime(modelAverageResponseTimeMs(modelMetrics[modelName])),
+                      })}
+                    </span>
                   )}
                 </div>
               </div>
             }
           >
             <ModelSection
-              modelName={modelName || "Unknown Model"}
+              modelName={modelName || t("activityMetrics.unknownModel")}
               metrics={modelMetrics[modelName]}
               hidePromptCachingMetrics={hidePromptCachingMetrics}
             />

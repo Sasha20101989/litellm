@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { toast } from "@/lib/toast";
 import {
@@ -198,6 +199,7 @@ interface ProviderParamsResponse {
 }
 
 const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, accessToken, onSuccess, preset }) => {
+  const { t } = useTranslation("gateway");
   const form = useForm<GuardrailFormValues>({ defaultValues: INITIAL_VALUES });
   const [loading, setLoading] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
@@ -259,7 +261,7 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
         populateGuardrailProviderMap(providerParamsResp);
       } catch (error) {
         console.error("Error fetching guardrail data:", error);
-        toast.fromError("Failed to load guardrail configuration");
+        toast.fromError(t("guardrailsPage.create.notifications.loadFailed"));
       }
     };
 
@@ -650,7 +652,7 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
 
       await createGuardrailCall(accessToken, guardrailData);
 
-      toast.success("Guardrail created successfully");
+      toast.success(t("guardrailsPage.create.notifications.created"));
 
       // Reset form and close modal
       resetForm();
@@ -658,7 +660,7 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
       onClose();
     } catch (error) {
       console.error("Failed to create guardrail:", error);
-      toast.fromError("Failed to create guardrail: " + (error instanceof Error ? error.message : String(error)));
+      toast.fromError(t("guardrailsPage.create.notifications.createFailed", { error: error instanceof Error ? error.message : String(error) }));
     } finally {
       setLoading(false);
     }
@@ -677,19 +679,19 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
         <GuardrailField
           control={form.control}
           name="guardrail_name"
-          label="Guardrail Name"
-          rules={requiredRule("Please enter a guardrail name")}
+          label={t("guardrailsPage.create.name")}
+          rules={requiredRule(t("guardrailsPage.create.nameRequired"))}
         >
           {({ ref, value, ...field }) => (
-            <Input {...field} ref={ref} value={asText(value)} placeholder="Enter a name for this guardrail" />
+            <Input {...field} ref={ref} value={asText(value)} placeholder={t("guardrailsPage.create.namePlaceholder")} />
           )}
         </GuardrailField>
 
         <GuardrailField
           control={form.control}
           name="provider"
-          label="Guardrail Provider"
-          rules={requiredRule("Please select a provider")}
+          label={t("guardrailsPage.create.provider")}
+          rules={requiredRule(t("guardrailsPage.create.providerRequired"))}
         >
           {({ id, value, onChange, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedBy }) => (
             <Combobox
@@ -707,11 +709,11 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
                 id={id}
                 aria-invalid={ariaInvalid}
                 aria-describedby={ariaDescribedBy}
-                placeholder="Select a guardrail provider"
+                placeholder={t("guardrailsPage.create.providerPlaceholder")}
                 className="w-full"
               />
               <ComboboxContent>
-                <ComboboxEmpty>No matching providers</ComboboxEmpty>
+                <ComboboxEmpty>{t("guardrailsPage.providerFields.empty")}</ComboboxEmpty>
                 <ComboboxList>
                   {(key: string) => (
                     <ComboboxItem key={key} value={key}>
@@ -1069,22 +1071,22 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
   const getStepConfigs = () => {
     if (shouldRenderContentFilterConfigSettings(selectedProvider)) {
       return [
-        { title: "Basic Info", optional: false },
-        { title: "Topics", optional: false },
-        { title: "Patterns", optional: false },
-        { title: "Keywords", optional: false },
-        { title: "Endpoint Settings (Optional)", optional: true },
+        { title: t("guardrailsPage.create.steps.basic"), optional: false },
+        { title: t("guardrailsPage.create.steps.topics"), optional: false },
+        { title: t("guardrailsPage.create.steps.patterns"), optional: false },
+        { title: t("guardrailsPage.create.steps.keywords"), optional: false },
+        { title: t("guardrailsPage.create.steps.endpoint"), optional: true },
       ];
     }
     if (shouldRenderPIIConfigSettings(selectedProvider)) {
       return [
-        { title: "Basic Info", optional: false },
-        { title: "PII Configuration", optional: false },
+        { title: t("guardrailsPage.create.steps.basic"), optional: false },
+        { title: t("guardrailsPage.create.steps.pii"), optional: false },
       ];
     }
     return [
-      { title: "Basic Info", optional: false },
-      { title: "Provider Configuration", optional: false },
+      { title: t("guardrailsPage.create.steps.basic"), optional: false },
+      { title: t("guardrailsPage.create.steps.provider"), optional: false },
     ];
   };
 
@@ -1100,10 +1102,13 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
           <div className="flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <DialogTitle className="m-0 text-base font-semibold text-foreground">Create guardrail</DialogTitle>
+              <DialogTitle className="m-0 text-base font-semibold text-foreground">
+                {t("guardrailsPage.create.title")}
+              </DialogTitle>
               <button
                 type="button"
                 onClick={handleClose}
+                aria-label={t("guardrailsPage.create.close")}
                 className="cursor-pointer border-none bg-transparent p-1 text-base leading-none text-muted-foreground hover:text-foreground"
               >
                 &#x2715;
@@ -1140,9 +1145,9 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
                         >
                           <span className={`text-sm ${getStepTitleClass(isDone, isCurrent)}`}>{step.title}</span>
                           {step.optional && !isCurrent && (
-                            <span className="text-[11px] text-muted-foreground">optional</span>
+                            <span className="text-[11px] text-muted-foreground">{t("guardrailsPage.create.optional")}</span>
                           )}
-                          {isDone && <span className="text-[11px] text-info hover:underline">Edit</span>}
+                          {isDone && <span className="text-[11px] text-info hover:underline">{t("guardrailsPage.create.edit")}</span>}
                         </div>
 
                         {/* Expanded form content for current step */}
@@ -1157,21 +1162,21 @@ const AddGuardrailForm: React.FC<AddGuardrailFormProps> = ({ visible, onClose, a
             {/* Bottom bar */}
             <div className="flex items-center justify-end space-x-3 border-t border-border px-6 py-3">
               <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
+                {t("guardrailsPage.create.cancel")}
               </Button>
               {currentStep > 0 && (
                 <Button type="button" variant="outline" onClick={prevStep}>
-                  Previous
+                  {t("guardrailsPage.create.previous")}
                 </Button>
               )}
               {currentStep < stepConfigs.length - 1 ? (
                 <Button type="button" onClick={nextStep}>
-                  Next
+                  {t("guardrailsPage.create.next")}
                 </Button>
               ) : (
                 <Button type="button" onClick={handleSubmit} disabled={loading}>
                   {loading && <UiLoadingSpinner className="size-4" />}
-                  Create Guardrail
+                  {t("guardrailsPage.create.submit")}
                 </Button>
               )}
             </div>

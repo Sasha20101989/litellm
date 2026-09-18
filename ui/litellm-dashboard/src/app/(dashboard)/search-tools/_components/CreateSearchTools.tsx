@@ -36,6 +36,7 @@ import parallelAiLogo from "../../../../../public/assets/logos/parallel_ai.png";
 import perplexityLogo from "../../../../../public/assets/logos/perplexity.png";
 import tavilyLogo from "../../../../../public/assets/logos/tavily.png";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 const searchProviderLogoMap: Record<string, string> = {
   perplexity: perplexityLogo.src,
@@ -104,6 +105,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
   isModalVisible,
   setModalVisible,
 }) => {
+  const { t } = useTranslation("gateway");
   const form = useZodForm(createSearchToolSchema, { defaultValues: EMPTY_VALUES });
   const [isLoading, setIsLoading] = useState(false);
   const [isTestModalVisible, setIsTestModalVisible] = useState(false);
@@ -143,13 +145,13 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
       if (accessToken != null) {
         const response = await createSearchTool(accessToken, payload);
 
-        toast.success("Search tool created successfully");
+        toast.success(t("searchTools.create.created"));
         form.reset(EMPTY_VALUES);
         setModalVisible(false);
         onCreateSuccess(response);
       }
     } catch (error) {
-      toast.error("Error creating search tool: " + error);
+      toast.error(t("searchTools.create.createFailed", { error: String(error) }));
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +165,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
   const handleTestConnection = async () => {
     const isValid = await form.trigger(["search_provider", "api_key"]);
     if (!isValid) {
-      toast.error("Please fill in Search Provider and API Key before testing");
+      toast.error(t("searchTools.create.testRequired"));
       return;
     }
 
@@ -182,7 +184,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
         <DialogHeader>
           <div className="flex items-center space-x-3 pb-4 border-b border-border">
             <span className="text-2xl">🔍</span>
-            <DialogTitle className="text-xl font-semibold text-foreground">Add New Search Tool</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-foreground">{t("searchTools.create.title")}</DialogTitle>
           </div>
         </DialogHeader>
         <div className="mt-6">
@@ -193,15 +195,15 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
                   control={form.control}
                   name="search_tool_name"
                   label={labelWithHint(
-                    "Search Tool Name",
-                    "A unique name to identify this search tool configuration (e.g., 'perplexity-search', 'tavily-news-search').",
+                    t("searchTools.create.name"),
+                    t("searchTools.create.nameTooltip"),
                   )}
                 >
                   {({ ref, ...field }) => (
                     <Input
                       {...field}
                       ref={ref}
-                      placeholder="e.g., perplexity-search, my-tavily-tool"
+                      placeholder={t("searchTools.create.namePlaceholder")}
                       className="rounded-lg"
                     />
                   )}
@@ -211,8 +213,8 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
                   control={form.control}
                   name="search_provider"
                   label={labelWithHint(
-                    "Search Provider",
-                    "Select the search provider you want to use. Each provider has different capabilities and pricing.",
+                    t("searchTools.create.provider"),
+                    t("searchTools.create.providerTooltip"),
                   )}
                 >
                   {({ id, value, onChange, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedBy }) => (
@@ -226,13 +228,13 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
                         id={id}
                         aria-invalid={ariaInvalid}
                         aria-describedby={ariaDescribedBy}
-                        placeholder="Select a search provider"
+                        placeholder={t("searchTools.create.providerPlaceholder")}
                         className="h-10 w-full rounded-lg"
                         disabled={isLoadingProviders}
                         showClear={value != null && value !== ""}
                       />
                       <ComboboxContent>
-                        <ComboboxEmpty>No matching search providers</ComboboxEmpty>
+                        <ComboboxEmpty>{t("searchTools.table.empty")}</ComboboxEmpty>
                         <ComboboxList>
                           {(providerName: string) => (
                             <ComboboxItem key={providerName} value={providerName}>
@@ -252,8 +254,8 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
                   control={form.control}
                   name="api_key"
                   label={labelWithHint(
-                    "API Key",
-                    "The API key for authenticating with the search provider. This will be securely stored.",
+                    t("searchTools.create.apiKey"),
+                    t("searchTools.create.apiKeyTooltip"),
                   )}
                 >
                   {({ ref, value, ...field }) => (
@@ -261,20 +263,20 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
                       {...field}
                       ref={ref}
                       value={value ?? ""}
-                      placeholder="Enter your API key"
+                      placeholder={t("searchTools.create.apiKeyPlaceholder")}
                       groupClassName="h-10 rounded-lg"
                     />
                   )}
                 </FormField>
 
-                <FormField control={form.control} name="description" label="Description (Optional)">
+                <FormField control={form.control} name="description" label={t("searchTools.create.description")}>
                   {({ ref, value, ...field }) => (
                     <Textarea
                       {...field}
                       ref={ref}
                       value={value ?? ""}
                       rows={3}
-                      placeholder="Brief description of this search tool's purpose"
+                      placeholder={t("searchTools.create.descriptionPlaceholder")}
                       className="rounded-lg"
                     />
                   )}
@@ -291,20 +293,20 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        Need Help?
+                        {t("searchTools.create.help")}
                       </a>
                     }
                   />
-                  <TooltipContent>Get help on our github</TooltipContent>
+                  <TooltipContent>{t("searchTools.create.helpTooltip")}</TooltipContent>
                 </Tooltip>
                 <div className="flex gap-2">
                   <Button type="submit" variant="outline" onClick={handleTestConnection} disabled={isTestingConnection}>
                     {isTestingConnection && <UiLoadingSpinner className="size-4" />}
-                    Test Connection
+                    {t("searchTools.create.test")}
                   </Button>
                   <Button type="submit" variant="outline" disabled={isLoading}>
                     {isLoading && <UiLoadingSpinner className="size-4" />}
-                    Add Search Tool
+                    {t("searchTools.create.submit")}
                   </Button>
                 </div>
               </div>
@@ -323,7 +325,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
         >
           <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[700px]">
             <DialogHeader>
-              <DialogTitle>Connection Test Results</DialogTitle>
+              <DialogTitle>{t("searchTools.create.testTitle")}</DialogTitle>
             </DialogHeader>
             {isTestModalVisible && accessToken && (
               <SearchConnectionTest
@@ -346,7 +348,7 @@ const CreateSearchTool: React.FC<CreateSearchToolProps> = ({
                   setIsTestingConnection(false);
                 }}
               >
-                Close
+                {t("searchTools.create.close")}
               </Button>
             </DialogFooter>
           </DialogContent>

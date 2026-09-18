@@ -77,7 +77,7 @@ export const ruUsage = {
     dailySpend: "Расходы по дням",
     topVirtualKeys: "Популярные виртуальные ключи",
     topPublicModels: "Популярные публичные имена моделей",
-    topLiteLLMModels: "Популярные модели LiteLLM",
+    topNexoplaneModels: "Популярные модели Nexoplane",
     topAgents: "Популярные агенты",
     provider: "Провайдер",
     spend: "Расходы",
@@ -147,7 +147,7 @@ export const ruUsage = {
   },
   modelToggle: {
     publicName: "Публичное имя модели",
-    liteLLMName: "Имя модели LiteLLM",
+    liteLLMName: "Имя модели Nexoplane",
   },
   provider: {
     title: "Расходы по провайдерам",

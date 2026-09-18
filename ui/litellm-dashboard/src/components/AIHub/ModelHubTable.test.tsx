@@ -4,6 +4,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders, screen, waitFor } from "../../../tests/test-utils";
 import ModelHubTable from "./ModelHubTable";
 
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const copy = key.split(".").reduce<unknown>((value, segment) => {
+      if (typeof value !== "object" || value === null) return undefined;
+      return (value as Record<string, unknown>)[segment];
+    }, resources.en.common);
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 const mockUseUISettings = vi.hoisted(() => vi.fn());
 const mockGetCookie = vi.hoisted(() => vi.fn());
 const mockCheckTokenValidity = vi.hoisted(() => vi.fn());

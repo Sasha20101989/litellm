@@ -52,7 +52,7 @@ export const enCostOptimization = {
   compression: {
     title: "Headroom prompt compression",
     description:
-      "Headroom is a native LiteLLM guardrail that compresses prompts before they reach the model, reducing input-token cost. Removed tokens appear as compression savings on the Overall tab.",
+      "Headroom is a native Nexoplane guardrail that compresses prompts before they reach the model, reducing input-token cost. Removed tokens appear as compression savings on the Overall tab.",
     docs: "Headroom setup docs",
     loading: "Loading...",
     empty: "No prompt compression guardrails configured yet. Add one below to start saving on input tokens.",
@@ -62,16 +62,17 @@ export const enCostOptimization = {
     name: "Name",
     nameRequired: "Name is required",
     apiBase: "Headroom API base",
-    apiBaseTooltip: "Base URL of the Headroom service. LiteLLM calls its /v1/compress endpoint.",
+    apiBaseTooltip: "Base URL of the Headroom service. Nexoplane calls its /v1/compress endpoint.",
     apiBaseExtra: "The URL where your Headroom compression service is hosted",
     apiBaseRequired: "API base is required",
     applyAll: "Apply to all requests",
     enterpriseNotice:
-      "Applying compression to all requests is available to everyone. Selective activation by key or team is a LiteLLM Enterprise feature. Get a trial key",
+      "Applying compression to all requests is available to everyone. Selective activation by key or team is a Nexoplane Enterprise feature. Get a trial key",
     add: "Add guardrail",
     created: "Compression guardrail created",
     loadError: "Failed to load compression guardrails",
     createError: "Failed to create compression guardrail",
+    here: "here",
   },
   caching: {
     title: "Prompt Caching",
@@ -82,6 +83,8 @@ export const enCostOptimization = {
     lifetimeDescription: "How long Anthropic should retain a prompt-cache entry.",
     defaultLifetime: "5m (default)",
     loadError: "Failed to load prompt caching settings",
+    analyticsDescription:
+      "Analytics for Nexoplane's <responseCache>response cache</responseCache> (e.g. Redis / in-memory): requests answered from cache without calling the LLM provider. Provider-side <promptCaching>prompt caching</promptCaching> (cached input tokens from Anthropic, OpenAI, etc.) is not shown here; see ‘Prompt Caching Metrics’ on the Usage page or individual requests in the Logs page.",
   },
   cacheLeakage: {
     titleByKey: "Cache leakage by virtual key",

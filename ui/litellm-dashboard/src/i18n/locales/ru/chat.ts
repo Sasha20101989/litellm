@@ -115,7 +115,7 @@ export const ruChat = {
     copyToClipboard: "Копировать",
     prompts: {
       salesChart: "Создай пример CSV с продажами и построй диаграмму",
-      gatewayChart: "Создай PNG-диаграмму сравнения AI-шлюзов, включая LiteLLM",
+      gatewayChart: "Создай PNG-диаграмму сравнения AI-шлюзов, включая Nexoplane",
       pricingChart: "Создай CSV с ценами LLM и линейный график",
       agentHelp: "Чем ты можешь мне помочь?",
       aboutYourself: "Расскажи о себе",

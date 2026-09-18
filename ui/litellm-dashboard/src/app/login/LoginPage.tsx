@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
+import LanguageSelector from "@/components/LanguageSelector/LanguageSelector";
 import { useZodForm } from "@/lib/forms/useZodForm";
 import { clearTokenCookies, getCookieFromDocument } from "@/utils/cookieUtils";
 import { isJwtExpired } from "@/utils/jwtUtils";
@@ -31,6 +32,12 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
+
+const LanguageToolbar = () => (
+  <div className="fixed right-4 top-4 z-overlay rounded-lg border border-border bg-card p-1 shadow-sm">
+    <LanguageSelector />
+  </div>
+);
 
 function SsoEnabledNotice() {
   const { t } = useTranslation("auth");
@@ -190,20 +197,20 @@ function LoginPageContent() {
   if (uiConfig && uiConfig.admin_ui_disabled) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
+        <LanguageToolbar />
         <Card className="w-full max-w-lg shadow-md">
           <CardContent>
             <div className="flex w-full flex-col gap-4">
               <div className="text-center">
-                <h2 className="text-3xl font-semibold text-foreground">🚅 LiteLLM</h2>
+                <h2 className="text-3xl font-semibold text-foreground">Nexoplane</h2>
               </div>
 
               <Alert variant="warning">
                 <TriangleAlert />
                 <AlertTitle>{t("login.adminDisabledTitle")}</AlertTitle>
                 <AlertDescription>
-                  <p className="text-sm">
-                    {t("common:merge.adminDisabled")}
-                  </p>
+                  <p className="text-sm">{t("login.adminDisabledDescription")}</p>
+                  <p className="mt-2 text-sm">{t("login.adminDisabledInstruction")}</p>
                   <p className="mt-2 text-sm">
                     <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">DISABLE_ADMIN_UI=False</code>
                   </p>
@@ -218,17 +225,18 @@ function LoginPageContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted">
+      <LanguageToolbar />
       <Card className="w-full max-w-lg shadow-md">
         <CardContent>
           <TooltipProvider>
             <div className="flex w-full flex-col gap-4">
               <div className="text-center">
-                <h2 className="text-3xl font-semibold text-foreground">🚅 LiteLLM</h2>
+                <h2 className="text-3xl font-semibold text-foreground">Nexoplane</h2>
               </div>
 
               <div className="text-center">
                 <h3 className="text-2xl font-semibold text-foreground">{t("login.title")}</h3>
-                <p className="text-sm text-muted-foreground">{t("common:merge.accessAdmin")}</p>
+                <p className="text-sm text-muted-foreground">{t("login.description")}</p>
               </div>
 
               {!uiConfig?.hide_default_credentials_hint && (
@@ -238,7 +246,7 @@ function LoginPageContent() {
                   <AlertDescription>
                     <p className="text-sm">
                       {t("login.defaultCredentialsBeforeUsername")} <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">admin</code>{" "}
-                      {t("common:merge.passwordIs")}{" "}
+                      {t("login.defaultCredentialsBetween")}{" "}
                       <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">MASTER_KEY</code>.
                     </p>
                     <p className="mt-2 text-sm">
@@ -283,7 +291,7 @@ function LoginPageContent() {
                     </Field>
                   )}
 
-                  <FormField control={form.control} name="username" label="Username">
+                  <FormField control={form.control} name="username" label={t("login.username")}>
                     {({ ref, ...field }) => (
                       <Input
                         {...field}
@@ -296,7 +304,7 @@ function LoginPageContent() {
                     )}
                   </FormField>
 
-                  <FormField control={form.control} name="password" label="Password">
+                  <FormField control={form.control} name="password" label={t("login.password")}>
                     {({ ref, ...field }) => (
                       <PasswordInput
                         {...field}
@@ -311,7 +319,7 @@ function LoginPageContent() {
 
                   <Button type="submit" size="lg" disabled={isLoginLoading} className="w-full">
                     {isLoginLoading && <UiLoadingSpinner className="size-4" role="img" aria-label={t("common:merge.loadingAria")} />}
-                    {isLoginLoading ? "Logging in..." : "Login"}
+                    {isLoginLoading ? t("login.submitting") : t("login.submit")}
                   </Button>
 
                   {!uiConfig?.sso_configured ? (

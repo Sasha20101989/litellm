@@ -71,7 +71,7 @@ export const enNavigation = {
     },
     badges: { beta: "Beta", new: "New" },
     controls: {
-      home: "LiteLLM home",
+      home: "Nexoplane home",
       expand: "Expand sidebar",
       collapse: "Collapse sidebar",
     },
@@ -109,7 +109,7 @@ export const enNavigation = {
       userId: "User ID",
       copyEmail: "Copy email",
       copyUserId: "Copy user ID",
-      thanks: "Thanks for using LiteLLM!",
+      thanks: "Thanks for using Nexoplane!",
       hideNew: "Hide New Feature Indicators",
       hideNewAria: "Toggle hide new feature indicators",
       hidePrompts: "Hide All Prompts",

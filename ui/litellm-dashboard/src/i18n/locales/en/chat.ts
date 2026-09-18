@@ -107,7 +107,7 @@ export const enChat = {
     copyToClipboard: "Copy to Clipboard",
     prompts: {
       salesChart: "Generate sample sales data CSV and create a chart",
-      gatewayChart: "Create a PNG bar chart comparing AI gateway providers including LiteLLM",
+      gatewayChart: "Create a PNG bar chart comparing AI gateway providers including Nexoplane",
       pricingChart: "Generate a CSV of LLM pricing data and visualize it as a line chart",
       agentHelp: "What can you help me with?",
       aboutYourself: "Tell me about yourself",

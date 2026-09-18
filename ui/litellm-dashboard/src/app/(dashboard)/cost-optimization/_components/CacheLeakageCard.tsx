@@ -99,6 +99,10 @@ const CacheLeakageCard: React.FC<CacheLeakageCardProps> = ({ activity }) => {
 
   const subject = dimension === "model" ? t("cacheLeakage.subjects.models") : t("cacheLeakage.subjects.keys");
   const firstColumn = dimension === "model" ? t("cacheLeakage.model") : t("cacheLeakage.key");
+  let emptyStateText = t("cacheLeakage.loading");
+  if (!loading && !isFetchingMore) {
+    emptyStateText = dimension === "model" ? t("cacheLeakage.emptyModel") : t("cacheLeakage.emptyKey");
+  }
 
   return (
     <TooltipProvider delay={300}>
@@ -132,11 +136,7 @@ const CacheLeakageCard: React.FC<CacheLeakageCardProps> = ({ activity }) => {
           )}
           {rows.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              {loading || isFetchingMore
-                ? t("cacheLeakage.loading")
-                : dimension === "model"
-                  ? t("cacheLeakage.emptyModel")
-                  : t("cacheLeakage.emptyKey")}
+              {emptyStateText}
             </p>
           ) : (
             <Table>

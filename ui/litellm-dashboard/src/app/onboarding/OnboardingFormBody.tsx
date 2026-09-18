@@ -32,7 +32,7 @@ export function OnboardingFormBody({ variant, userEmail, isPending, claimError, 
   const form = useZodForm(onboardingSchema, { defaultValues: { password: "" } });
   const emailFieldId = React.useId();
   const isResetPassword = variant === "reset_password";
-  const actionLabel = isResetPassword ? "Reset Password" : "Sign Up";
+  const actionLabel = t(isResetPassword ? "onboarding.resetSubmit" : "onboarding.signupSubmit");
 
   const handleSubmit = (values: OnboardingFormValues) => onSubmit({ password: values.password });
 
@@ -40,12 +40,12 @@ export function OnboardingFormBody({ variant, userEmail, isPending, claimError, 
     <div className="mx-auto w-full max-w-md mt-10">
       <Card>
         <CardContent>
-          <h5 className="text-center mb-5 text-base font-semibold text-foreground">🚅 LiteLLM</h5>
-          <h3 className="text-2xl font-semibold text-foreground">{actionLabel}</h3>
+          <h5 className="text-center mb-5 text-base font-semibold text-foreground">Nexoplane</h5>
+          <h3 className="text-2xl font-semibold text-foreground">
+            {t(isResetPassword ? "onboarding.resetTitle" : "onboarding.signupTitle")}
+          </h3>
           <p className="text-sm text-foreground">
-            {isResetPassword
-              ? "Reset your password to access Admin UI."
-              : "Claim your user account to login to Admin UI."}
+            {t(isResetPassword ? "onboarding.resetDescription" : "onboarding.signupDescription")}
           </p>
 
           {variant === "signup" && (
@@ -78,8 +78,8 @@ export function OnboardingFormBody({ variant, userEmail, isPending, claimError, 
               <FormField
                 control={form.control}
                 name="password"
-                label="Password"
-                description={isResetPassword ? "Enter your new password" : "Create a password for your account"}
+                label={t("onboarding.password")}
+                description={t(isResetPassword ? "onboarding.newPasswordHelp" : "onboarding.createPasswordHelp")}
               >
                 {({ ref, ...field }) => <PasswordInput {...field} ref={ref} />}
               </FormField>

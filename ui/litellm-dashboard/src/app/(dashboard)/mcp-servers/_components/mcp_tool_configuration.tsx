@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Wrench, CircleCheck, Search, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -169,6 +170,7 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
   externalCanFetch,
   isEditMode = false,
 }) => {
+  const { t } = useTranslation("gateway");
   const previousToolsRef = useRef<ToolEntry[]>([]);
   const [toolSearchTerm, setToolSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"crud" | "flat">("crud");
@@ -398,7 +400,7 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wrench className="size-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium">Tool Configuration</h3>
+            <h3 className="text-lg font-medium">{t("mcpServers.toolConfiguration.title")}</h3>
             {tools.length > 0 && <Badge variant="secondary">{tools.length}</Badge>}
           </div>
           {tools.length > 0 && (
@@ -408,14 +410,14 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
                 variant={viewMode === "crud" ? "default" : "outline"}
                 onClick={() => setViewMode("crud")}
               >
-                Risk Groups
+                {t("mcpServers.toolConfiguration.riskGroups")}
               </Button>
               <Button
                 size="sm"
                 variant={viewMode === "flat" ? "default" : "outline"}
                 onClick={() => setViewMode("flat")}
               >
-                Flat List
+                {t("mcpServers.toolConfiguration.flatList")}
               </Button>
             </div>
           )}
@@ -424,8 +426,7 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
         {/* Description */}
         <div className="rounded-lg border border-border bg-muted p-3">
           <p className="text-sm">
-            <strong>Select which tools users can call:</strong> Only checked tools will be available for users to
-            invoke. Unchecked tools will be blocked from execution.
+            <strong>{t("mcpServers.toolConfiguration.descriptionTitle")}</strong> {t("mcpServers.toolConfiguration.description")}
           </p>
         </div>
 
@@ -433,7 +434,7 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
         {isLoadingTools && (
           <div className="flex items-center justify-center gap-3 py-6">
             <UiLoadingSpinner className="size-6 text-muted-foreground" />
-            <p className="text-sm">Loading tools...</p>
+            <p className="text-sm">{t("mcpServers.toolConfiguration.loading")}</p>
           </div>
         )}
 
@@ -447,7 +448,7 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
         {toolsError && !isLoadingTools && !isPreviewForbidden && (
           <div className="rounded-lg border border-dashed border-destructive/40 bg-destructive/5 py-6 text-center">
             <Wrench className="mx-auto mb-2 size-6 text-destructive" />
-            <p className="text-sm font-medium text-destructive">Unable to load tools</p>
+            <p className="text-sm font-medium text-destructive">{t("mcpServers.toolConfiguration.loadFailed")}</p>
             <p className="text-sm text-destructive">{toolsError}</p>
           </div>
         )}
@@ -460,14 +461,14 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
           (keyTools && keyTools.length > 0 ? (
             <div className="rounded-lg border border-dashed py-4 text-center text-muted-foreground">
               <Wrench className="mx-auto mb-2 size-6" />
-              <p className="text-sm">No tools loaded from spec</p>
+              <p className="text-sm">{t("mcpServers.toolConfiguration.noneFromSpec")}</p>
               <p className="mt-1 block text-sm">Expected tools: {keyTools.map((t) => t.name).join(", ")}</p>
             </div>
           ) : (
             <div className="rounded-lg border border-dashed py-6 text-center text-muted-foreground">
               <Wrench className="mx-auto mb-2 size-6" />
-              <p className="text-sm">No tools available for configuration</p>
-              <p className="text-sm">Connect to an MCP server with tools to configure them</p>
+              <p className="text-sm">{t("mcpServers.toolConfiguration.noneAvailable")}</p>
+              <p className="text-sm">{t("mcpServers.toolConfiguration.noneAvailableHint")}</p>
             </div>
           ))}
 
@@ -475,8 +476,8 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
         {!canFetchTools && (formValues.url || formValues.spec_path) && (
           <div className="rounded-lg border border-dashed py-6 text-center text-muted-foreground">
             <Wrench className="mx-auto mb-2 size-6" />
-            <p className="text-sm">Complete required fields to configure tools</p>
-            <p className="text-sm">Fill in URL, Transport, and Authentication to load available tools</p>
+              <p className="text-sm">{t("mcpServers.toolConfiguration.completeRequired")}</p>
+              <p className="text-sm">{t("mcpServers.toolConfiguration.completeHint")}</p>
           </div>
         )}
 
@@ -497,7 +498,7 @@ const MCPToolConfiguration: React.FC<MCPToolConfigurationProps> = ({
                 <Search className="size-4 text-muted-foreground" />
               </InputGroupAddon>
               <InputGroupInput
-                placeholder="Search tools by name or description..."
+                placeholder={t("mcpServers.toolConfiguration.search")}
                 value={toolSearchTerm}
                 onChange={(e) => setToolSearchTerm(e.target.value)}
               />

@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { getMajorAirlines } from "@/components/networking";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -49,33 +50,30 @@ const DEFAULT_CONFIG: CompetitorIntentConfig = {
   threshold_low: 0.3,
 };
 
-const INTENT_TYPES = [
-  { value: "airline", label: "Airline (auto-load competitors from IATA)" },
-  { value: "generic", label: "Generic (specify competitors manually)" },
-] as const;
-
-const COMPETITOR_COMPARISON_POLICIES = [
-  { value: "refuse", label: "Refuse (block request)" },
-  { value: "reframe", label: "Reframe (suggest alternative)" },
-] as const;
-
-const POSSIBLE_COMPETITOR_COMPARISON_POLICIES = [
-  { value: "refuse", label: "Refuse (block request)" },
-  { value: "reframe", label: "Reframe (suggest alternative to backend LLM)" },
-] as const;
-
-const THRESHOLDS = [
-  { field: "threshold_high", label: "High", hint: "e.g. 0.7", fallback: 0.7 },
-  { field: "threshold_medium", label: "Medium", hint: "e.g. 0.45", fallback: 0.45 },
-  { field: "threshold_low", label: "Low", hint: "e.g. 0.3", fallback: 0.3 },
-] as const;
-
 const CompetitorIntentConfiguration: React.FC<CompetitorIntentConfigurationProps> = ({
   enabled,
   config,
   onChange,
   accessToken,
 }) => {
+  const { t } = useTranslation("gateway");
+  const INTENT_TYPES = [
+    { value: "airline", label: "Airline (auto-load competitors from IATA)" },
+    { value: "generic", label: t("guardrailsPage.contentFilter.competitor.genericType") },
+  ] as const;
+  const COMPETITOR_COMPARISON_POLICIES = [
+    { value: "refuse", label: t("guardrailsPage.contentFilter.competitor.refuse") },
+    { value: "reframe", label: t("guardrailsPage.contentFilter.competitor.reframe") },
+  ] as const;
+  const POSSIBLE_COMPETITOR_COMPARISON_POLICIES = [
+    { value: "refuse", label: t("guardrailsPage.contentFilter.competitor.refuse") },
+    { value: "reframe", label: t("guardrailsPage.contentFilter.competitor.reframeBackend") },
+  ] as const;
+  const THRESHOLDS = [
+    { field: "threshold_high", label: t("guardrailsPage.contentFilter.severity.high"), hint: "e.g. 0.7", fallback: 0.7 },
+    { field: "threshold_medium", label: t("guardrailsPage.contentFilter.severity.medium"), hint: "e.g. 0.45", fallback: 0.45 },
+    { field: "threshold_low", label: t("guardrailsPage.contentFilter.severity.low"), hint: "e.g. 0.3", fallback: 0.3 },
+  ] as const;
   const effectiveConfig = config ?? DEFAULT_CONFIG;
   const [airlineOptions, setAirlineOptions] = useState<MajorAirline[]>([]);
   const [loadingAirlines, setLoadingAirlines] = useState(false);
@@ -220,7 +218,7 @@ const CompetitorIntentConfiguration: React.FC<CompetitorIntentConfigurationProps
               placeholder={
                 effectiveConfig.competitor_intent_type === "airline"
                   ? "Search or select airline, or type to add custom"
-                  : "Type and press Enter to add"
+                  : t("guardrailsPage.contentFilter.competitor.tagsPlaceholder")
               }
             />
             <FieldDescription>
@@ -238,7 +236,7 @@ const CompetitorIntentConfiguration: React.FC<CompetitorIntentConfigurationProps
                 value={effectiveConfig.locations ?? []}
                 onValueChange={(v) => handleNestedArrayChange("locations", v)}
                 tokenSeparators={[","]}
-                placeholder="Type and press Enter to add"
+                placeholder={t("guardrailsPage.contentFilter.competitor.tagsPlaceholder")}
               />
               <FieldDescription>Countries, cities, airports for disambiguation (e.g. qatar, doha)</FieldDescription>
             </Field>
@@ -252,7 +250,7 @@ const CompetitorIntentConfiguration: React.FC<CompetitorIntentConfigurationProps
                 value={effectiveConfig.competitors ?? []}
                 onValueChange={(v) => handleNestedArrayChange("competitors", v)}
                 tokenSeparators={[","]}
-                placeholder="Type and press Enter to add"
+                placeholder={t("guardrailsPage.contentFilter.competitor.tagsPlaceholder")}
               />
               <FieldDescription>Competitor names to detect (required for generic type)</FieldDescription>
             </Field>

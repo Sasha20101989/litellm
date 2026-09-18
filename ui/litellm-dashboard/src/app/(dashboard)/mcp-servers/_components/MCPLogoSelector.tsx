@@ -85,7 +85,6 @@ const MCPLogoSelector: React.FC<MCPLogoSelectorProps> = ({ value, onChange }) =>
             <Logo
               src={selectedWellKnown?.src ?? value}
               label={t("mcpServers.logo.selected")}
-              alt={t("mcpServers.logo.selected")}
               className="h-10 w-10 rounded-sm object-contain"
             />
             <div className="min-w-0 flex-1">

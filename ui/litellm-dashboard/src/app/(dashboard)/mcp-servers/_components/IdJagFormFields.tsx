@@ -1,5 +1,6 @@
 import { Info } from "lucide-react";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { SimpleTooltip } from "@/components/ui/tooltip";
 
 import { MountedFormField } from "@/components/common_components/MountedFormField";
@@ -29,7 +30,8 @@ const FieldLabel: React.FC<{ label: string; tooltip: string }> = ({ label, toolt
 const PRIVATE_KEY_PATH = ["credentials", "client_private_key"] as const;
 
 const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) => {
-  const placeholderSuffix = isEditing ? " (leave blank to keep existing)" : "";
+  const { t } = useTranslation("gateway");
+  const placeholderSuffix = isEditing ? t("mcpServers.forms.common.keepExisting") : "";
   const requiredWhenCreating = (message: string) =>
     isEditing ? undefined : { validate: { required: requiredRule(message) } };
 
@@ -38,18 +40,18 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
       <MountedFormField
         label={
           <FieldLabel
-            label="Org Token Endpoint (leg 1)"
-            tooltip="Your IdP org authorization server's token endpoint. LiteLLM exchanges the user's identity assertion here for an ID-JAG assertion (RFC 8693 with requested_token_type=urn:ietf:params:oauth:token-type:id-jag)."
+            label={t("mcpServers.forms.idJag.orgEndpoint")}
+            tooltip={t("mcpServers.forms.idJag.orgEndpointTooltip")}
           />
         }
         name="token_exchange_endpoint"
         required={!isEditing}
-        rules={requiredWhenCreating("The org token endpoint is required for ID-JAG")}
+        rules={requiredWhenCreating(t("mcpServers.forms.idJag.orgEndpointRequired"))}
       >
         {(control) => (
           <Input
             {...textControl(control)}
-            placeholder="https://your-org.okta.com/oauth2/v1/token"
+            placeholder={t("mcpServers.forms.idJag.orgEndpointPlaceholder")}
             className={fieldClassName}
           />
         )}
@@ -57,32 +59,32 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
       <MountedFormField
         label={
           <FieldLabel
-            label="Resource Token Endpoint (leg 2)"
-            tooltip="The upstream resource authorization server's token endpoint. LiteLLM posts the ID-JAG assertion here as an RFC 7523 jwt-bearer grant to get the access token the MCP server accepts."
+            label={t("mcpServers.forms.idJag.resourceEndpoint")}
+            tooltip={t("mcpServers.forms.idJag.resourceEndpointTooltip")}
           />
         }
         name={["credentials", "id_jag_resource_token_endpoint"]}
         required={!isEditing}
-        rules={requiredWhenCreating("The resource token endpoint is required for ID-JAG")}
+        rules={requiredWhenCreating(t("mcpServers.forms.idJag.resourceEndpointRequired"))}
       >
         {(control) => (
           <Input
             {...textControl(control)}
-            placeholder="https://upstream.example.com/oauth2/token"
+            placeholder={t("mcpServers.forms.idJag.resourceEndpointPlaceholder")}
             className={fieldClassName}
           />
         )}
       </MountedFormField>
       <MountedFormField
-        label={<FieldLabel label="Client ID" tooltip="OAuth2 client ID LiteLLM authenticates as on both legs." />}
+        label={<FieldLabel label={t("mcpServers.forms.idJag.clientId")} tooltip={t("mcpServers.forms.idJag.clientIdTooltip")} />}
         name={["credentials", "client_id"]}
         required={!isEditing}
-        rules={requiredWhenCreating("Client ID is required for ID-JAG")}
+        rules={requiredWhenCreating(t("mcpServers.forms.idJag.clientIdRequired"))}
       >
         {(control) => (
           <PasswordInput
             {...textControl(control)}
-            placeholder={`Enter OAuth client ID${placeholderSuffix}`}
+            placeholder={t("mcpServers.forms.tokenExchange.clientIdPlaceholder", { suffix: placeholderSuffix })}
             groupClassName={fieldClassName}
           />
         )}
@@ -90,8 +92,8 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
       <MountedFormField
         label={
           <FieldLabel
-            label="Client Secret"
-            tooltip="Authenticates LiteLLM as the OAuth client via client_secret_post. Leave blank when using a private key instead; a private key takes precedence over this secret."
+            label={t("mcpServers.forms.idJag.clientSecret")}
+            tooltip={t("mcpServers.forms.idJag.clientSecretTooltip")}
           />
         }
         name={["credentials", "client_secret"]}
@@ -103,7 +105,7 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
                 validate: {
                   secretOrPrivateKey: requiredUnlessSiblingSet(
                     PRIVATE_KEY_PATH,
-                    "Provide either a client secret or a client private key",
+                    t("mcpServers.forms.idJag.credentialRequired"),
                   ),
                 },
               }
@@ -112,7 +114,7 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
         {(control) => (
           <PasswordInput
             {...textControl(control)}
-            placeholder={`Enter OAuth client secret${placeholderSuffix}`}
+            placeholder={t("mcpServers.forms.tokenExchange.clientSecretPlaceholder", { suffix: placeholderSuffix })}
             groupClassName={fieldClassName}
           />
         )}
@@ -120,8 +122,8 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
       <MountedFormField
         label={
           <FieldLabel
-            label="Client Private Key (PEM)"
-            tooltip="PEM private key signing the RFC 7523 private_key_jwt client assertion. Okta Cross App Access normally requires this. When set it takes precedence over the client secret."
+            label={t("mcpServers.forms.idJag.privateKey")}
+            tooltip={t("mcpServers.forms.idJag.privateKeyTooltip")}
           />
         }
         name={PRIVATE_KEY_PATH}
@@ -138,56 +140,56 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
       <MountedFormField
         label={
           <FieldLabel
-            label="Private Key ID (optional)"
-            tooltip="The kid advertised in the client assertion JWT header, so the IdP can select the right registered key."
+            label={t("mcpServers.forms.idJag.privateKeyId")}
+            tooltip={t("mcpServers.forms.idJag.privateKeyIdTooltip")}
           />
         }
         name={["credentials", "client_private_key_id"]}
       >
-        {(control) => <Input {...textControl(control)} placeholder="my-signing-key-1" className={fieldClassName} />}
+        {(control) => <Input {...textControl(control)} placeholder={t("mcpServers.forms.idJag.privateKeyIdPlaceholder")} className={fieldClassName} />}
       </MountedFormField>
       <MountedFormField
         label={
           <FieldLabel
-            label="Client Assertion Signing Algorithm (optional)"
-            tooltip="Algorithm signing the client assertion JWT. Defaults to RS256."
+            label={t("mcpServers.forms.idJag.signingAlgorithm")}
+            tooltip={t("mcpServers.forms.idJag.signingAlgorithmTooltip")}
           />
         }
         name={["credentials", "client_assertion_signing_alg"]}
       >
-        {(control) => <Input {...textControl(control)} placeholder="RS256" className={fieldClassName} />}
+        {(control) => <Input {...textControl(control)} placeholder={t("mcpServers.forms.idJag.signingAlgorithmPlaceholder")} className={fieldClassName} />}
       </MountedFormField>
       <MountedFormField
         label={
           <FieldLabel
-            label="Audience (optional)"
-            tooltip="RFC 8693 audience sent on leg 1, identifying the upstream the ID-JAG assertion is minted for."
+            label={t("mcpServers.forms.idJag.audience")}
+            tooltip={t("mcpServers.forms.idJag.audienceTooltip")}
           />
         }
         name="audience"
       >
         {(control) => (
-          <Input {...textControl(control)} placeholder="https://upstream.example.com" className={fieldClassName} />
+          <Input {...textControl(control)} placeholder={t("mcpServers.forms.idJag.audiencePlaceholder")} className={fieldClassName} />
         )}
       </MountedFormField>
       <MountedFormField
         label={
           <FieldLabel
-            label="Resource Indicator (optional)"
-            tooltip="RFC 8707 resource indicator sent on leg 1. Separate from Audience, which is the RFC 8693 parameter."
+            label={t("mcpServers.forms.idJag.resource")}
+            tooltip={t("mcpServers.forms.idJag.resourceTooltip")}
           />
         }
         name={["credentials", "id_jag_resource"]}
       >
         {(control) => (
-          <Input {...textControl(control)} placeholder="https://upstream.example.com/mcp" className={fieldClassName} />
+          <Input {...textControl(control)} placeholder={t("mcpServers.forms.idJag.resourcePlaceholder")} className={fieldClassName} />
         )}
       </MountedFormField>
       <MountedFormField
         label={
           <FieldLabel
-            label="Subject Token Type (optional)"
-            tooltip="Type of the identity assertion exchanged on leg 1. Defaults to urn:ietf:params:oauth:token-type:id_token."
+            label={t("mcpServers.forms.idJag.subjectType")}
+            tooltip={t("mcpServers.forms.idJag.subjectTypeTooltip")}
           />
         }
         name="subject_token_type"
@@ -195,16 +197,16 @@ const IdJagFormFields: React.FC<IdJagFormFieldsProps> = ({ isEditing = false }) 
         {(control) => (
           <Input
             {...textControl(control)}
-            placeholder="urn:ietf:params:oauth:token-type:id_token"
+                placeholder={t("mcpServers.forms.idJag.subjectTypePlaceholder")}
             className={fieldClassName}
           />
         )}
       </MountedFormField>
       <MountedFormField
-        label={<FieldLabel label="Scopes (optional)" tooltip="Scopes requested on leg 1 of the exchange." />}
+        label={<FieldLabel label={t("mcpServers.forms.idJag.scopes")} tooltip={t("mcpServers.forms.idJag.scopesTooltip")} />}
         name={["credentials", "scopes"]}
       >
-        {(control) => <MultiSelect {...tagsControl(control)} placeholder="Add scopes" className="rounded-lg" />}
+        {(control) => <MultiSelect {...tagsControl(control)} placeholder={t("mcpServers.forms.common.addScopes")} className="rounded-lg" />}
       </MountedFormField>
       <UpstreamTokenHeaderField />
     </>

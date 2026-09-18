@@ -92,7 +92,7 @@ export const ruGuardrails = {
       providers: {
         bedrock: "Ограничители AWS Bedrock",
         google: "Безопасность Google Cloud AI",
-        litellm: "Встроенный LiteLLM",
+        litellm: "Встроенный Nexoplane",
         custom: "Свой код",
       },
       categories: "Категории (через запятую)",

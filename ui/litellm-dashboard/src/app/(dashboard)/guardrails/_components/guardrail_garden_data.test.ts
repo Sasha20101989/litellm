@@ -42,7 +42,7 @@ describe("guardrail_garden_data logos", () => {
     }
   });
 
-  it("uses the LiteLLM logo for every content filter card", () => {
+  it("uses the Nexoplane logo for every content filter card", () => {
     for (const card of LITELLM_CONTENT_FILTER_CARDS) {
       expect(card.logo, `card ${card.id}`).toContain("nexoplane_logo.jpg");
     }

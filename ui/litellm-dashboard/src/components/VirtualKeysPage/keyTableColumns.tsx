@@ -44,32 +44,32 @@ export const KEY_TABLE_SORT_FIELDS: readonly string[] = [
   ...SPEND_BUDGET_SORT_FIELDS.map((field) => field.id),
 ];
 
-const getKeyStatus = (key: KeyResponse): KeyStatus => {
+const getKeyStatus = (key: KeyResponse, t: TFunction<"gateway">): KeyStatus => {
   if (key.deleted_at) {
     return {
       tone: "neutral",
-      label: "Deleted",
-      tooltip: `Deleted ${new Date(key.deleted_at).toLocaleString()}${key.deleted_by ? ` by ${key.deleted_by}` : ""}. Kept for audit and spend history; requests using this key are rejected.`,
+      label: t("virtualKeys.status.deleted"),
+      tooltip: t("virtualKeys.status.deletedTooltip", { date: new Date(key.deleted_at).toLocaleString(), user: key.deleted_by ?? "" }),
     };
   }
   if (key.blocked === true) {
     const isScimBlocked = (key.metadata as Record<string, unknown> | null | undefined)?.scim_blocked === true;
     return {
       tone: "error",
-      label: "Blocked",
+      label: t("virtualKeys.status.blocked"),
       tooltip: isScimBlocked
-        ? "Blocked by SCIM (external identity provider deactivated or deleted the owning user)."
-        : "Blocked. Requests using this key will be rejected with 401.",
+        ? t("virtualKeys.status.scimBlockedTooltip")
+        : t("virtualKeys.status.blockedTooltip"),
     };
   }
   const expiresAt = key.expires ? Date.parse(key.expires) : Number.NaN;
   if (!Number.isNaN(expiresAt) && expiresAt < Date.now()) {
-    return { tone: "warning", label: "Expired", tooltip: "This key has passed its expiry date." };
+    return { tone: "warning", label: t("virtualKeys.status.expired"), tooltip: t("virtualKeys.status.expiredTooltip") };
   }
   return {
     tone: "success",
-    label: "Active",
-    tooltip: "This key is not blocked and has not expired.",
+    label: t("virtualKeys.status.active"),
+    tooltip: t("virtualKeys.status.activeTooltip"),
   };
 };
 
@@ -115,7 +115,7 @@ export const getKeyTableColumns = ({
     size: 260,
     enableSorting: true,
     cell: ({ row }) => {
-      const status = getKeyStatus(row.original);
+      const status = getKeyStatus(row.original, t);
       return (
         <IdentityCell
           title={row.original.key_alias || "-"}
@@ -187,7 +187,7 @@ export const getKeyTableColumns = ({
     accessorKey: "user",
     meta: { title: "User" },
     header: () => (
-      <InfoHeader label="User" tooltip="Displays the first available value: User Alias, User Email, or User ID." />
+      <InfoHeader label={t("virtualKeys.columns.user")} tooltip={t("virtualKeys.columns.userTooltip")} />
     ),
     size: 160,
     enableSorting: false,
@@ -248,7 +248,7 @@ export const getKeyTableColumns = ({
     meta: { title: "Last Active" },
     header: () => (
       <InfoHeader
-        label="Last Active"
+        label={t("virtualKeys.columns.lastActive")}
         tooltip="This is a new field and is not backfilled. Only new key usage will update this value."
       />
     ),
@@ -291,7 +291,7 @@ export const getKeyTableColumns = ({
     meta: { title: "Lifetime Spend" },
     header: () => (
       <InfoHeader
-        label="Lifetime Spend"
+        label={t("virtualKeys.columns.lifetimeSpend")}
         tooltip="Cumulative spend across every budget period. Budget resets do not touch this value. Keys created before this field existed only count spend from then on."
       />
     ),

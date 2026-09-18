@@ -69,8 +69,8 @@ const PromptTable: React.FC<PromptTableProps> = ({
   }, [accessToken]);
 
   const columns = useMemo(
-    () => getPromptTableColumns({ modelHubData, isAdmin, onPromptClick, onDeleteClick, t }),
-    [modelHubData, isAdmin, onPromptClick, onDeleteClick, t],
+    () => getPromptTableColumns({ modelHubData, isAdmin, onPromptClick, onDeleteClick }),
+    [modelHubData, isAdmin, onPromptClick, onDeleteClick],
   );
 
   return (

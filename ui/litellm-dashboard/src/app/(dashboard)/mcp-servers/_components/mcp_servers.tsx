@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useMCPServers } from "@/app/(dashboard)/hooks/mcpServers/useMCPServers";
 import { useMCPServerHealth } from "@/app/(dashboard)/hooks/mcpServers/useMCPServerHealth";
@@ -109,6 +110,7 @@ const readToolsOAuthServerId = (): string | null => {
 };
 
 const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID }) => {
+  const { t } = useTranslation("gateway");
   const { data: mcpServers, isLoading: isLoadingServers, refetch } = useMCPServers();
 
   // Fetch health status for all servers
@@ -415,7 +417,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
   }, [refetch]);
 
   if (!accessToken || !userRole || !userID) {
-    return <div className="p-6 text-center text-muted-foreground">Missing required authentication parameters.</div>;
+    return <div className="p-6 text-center text-muted-foreground">{t("mcpServers.missingAuth")}</div>;
   }
 
   return (
@@ -424,7 +426,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
         <AlertDialog open={isDeleteModalOpen} onOpenChange={(open) => !open && cancelDelete()}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete MCP Server?</AlertDialogTitle>
+              <AlertDialogTitle>{t("mcpServers.delete.title")}</AlertDialogTitle>
             </AlertDialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
@@ -478,10 +480,10 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold">MCP Servers</h1>
+              <h1 className="text-xl font-semibold">{t("mcpServers.title")}</h1>
               {filteredServers.length > 0 && <Badge variant="secondary">{filteredServers.length}</Badge>}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">Configure and manage your MCP servers</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("mcpServers.description")}</p>
           </div>
           <div className="flex items-center gap-2">
             {isAdminRole(userRole) && (
@@ -581,7 +583,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                   <div className="flex flex-col space-y-4">
                     <div className="flex items-center gap-6 rounded-lg border border-border bg-card px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium whitespace-nowrap text-muted-foreground">Team</p>
+                        <p className="text-sm font-medium whitespace-nowrap text-muted-foreground">{t("mcpServers.filters.team")}</p>
                         <Select
                           items={teamSelectItems}
                           value={selectedTeam}
@@ -594,7 +596,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                             <SelectItem value="all">
                               {isInternalUser ? "All Available Servers" : "All Servers"}
                             </SelectItem>
-                            <SelectItem value="personal">Personal</SelectItem>
+                            <SelectItem value="personal">{t("mcpServers.filters.personal")}</SelectItem>
                             {uniqueTeams.map((team) => (
                               <SelectItem key={team.team_id} value={team.team_id}>
                                 {team.team_alias || team.team_id}
@@ -612,7 +614,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                               render={
                                 <CircleHelp
                                   className="ml-1 size-3.5 text-muted-foreground"
-                                  aria-label="About access groups"
+                                  aria-label={t("mcpServers.filters.accessGroupAbout")}
                                 />
                               }
                             />
@@ -631,7 +633,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Access Groups</SelectItem>
+                            <SelectItem value="all">{t("mcpServers.filters.allAccessGroups")}</SelectItem>
                             {uniqueMcpAccessGroups.map((group) => (
                               <SelectItem key={group} value={group}>
                                 {group}
@@ -649,13 +651,13 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                       <Search className="size-4 text-muted-foreground" />
                     </InputGroupAddon>
                     <InputGroupInput
-                      placeholder="Search by name, alias, URL, or ID"
+                      placeholder={t("mcpServers.filters.search")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </InputGroup>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium whitespace-nowrap text-muted-foreground">Sort</p>
+                    <p className="text-sm font-medium whitespace-nowrap text-muted-foreground">{t("mcpServers.filters.sort")}</p>
                     <Select
                       items={SORT_OPTIONS}
                       value={sortKey}
@@ -681,7 +683,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                   {isLoadingServers ? (
                     <div className="flex items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card p-12">
                       <UiLoadingSpinner className="size-6 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Loading MCP servers...</p>
+                      <p className="text-sm text-muted-foreground">{t("mcpServers.loading")}</p>
                     </div>
                   ) : displayedServers.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">

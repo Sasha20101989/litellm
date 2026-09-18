@@ -50,7 +50,7 @@ const config: ViteUserConfig = {
           globals: true,
           testTimeout: 60_000,
           hookTimeout: 30_000,
-          include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "tests/**/*.test.ts", "scripts/**/*.test.ts"],
           exclude: ["node_modules/**", ...TEST_TS_FILES_THAT_RENDER_REACT],
         },
       },

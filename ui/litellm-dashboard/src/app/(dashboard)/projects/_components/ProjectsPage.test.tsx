@@ -5,6 +5,33 @@ import { fireEvent, renderWithProviders, screen, waitFor, within } from "../../.
 import { ProjectsPage } from "./ProjectsPage";
 import { ProjectResponse } from "@/app/(dashboard)/hooks/projects/useProjects";
 
+const localization = vi.hoisted(() => ({ language: "en" as "en" | "ru" }));
+
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const segments = key.split(".");
+    const copy = [
+      resources[localization.language].management,
+      resources[localization.language].common,
+      resources[localization.language].gateway,
+    ]
+      .map((namespace) =>
+        segments.reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, namespace),
+      )
+      .find((value): value is string => typeof value === "string");
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 const mockUseProjects = vi.fn();
 vi.mock("@/app/(dashboard)/hooks/projects/useProjects", () => ({
   useProjects: () => mockUseProjects(),
@@ -75,6 +102,7 @@ const mockProjects: ProjectResponse[] = [
 describe("ProjectsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localization.language = "en";
     mockUseTeams.mockReturnValue({ data: [], isLoading: false });
   });
 
@@ -84,6 +112,18 @@ describe("ProjectsPage", () => {
     expect(screen.getByRole("heading", { name: /projects/i })).toBeInTheDocument();
     expect(screen.getByText("Manage projects within your teams")).toBeInTheDocument();
     expect(document.querySelector(".lucide-folder")).not.toBeNull();
+  });
+
+  it("renders project controls in Russian", () => {
+    localization.language = "ru";
+    mockUseProjects.mockReturnValue({ data: [], isLoading: false });
+
+    renderWithProviders(<ProjectsPage />);
+
+    expect(screen.getByRole("heading", { name: "Проекты" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Создать проект" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Поиск по названию, ID, описанию или команде...")).toBeInTheDocument();
+    expect(screen.getByText("Проектов пока нет")).toBeInTheDocument();
   });
 
   it("should show a 'Create Project' button", () => {

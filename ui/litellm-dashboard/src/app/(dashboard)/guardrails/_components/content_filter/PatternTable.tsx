@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
@@ -23,20 +24,21 @@ interface PatternTableProps {
 }
 
 const PatternTable: React.FC<PatternTableProps> = ({ patterns, onActionChange, onRemove }) => {
+  const { t } = useTranslation("gateway");
   const columns: ColumnDef<Pattern>[] = [
     {
-      header: "Type",
+      header: t("guardrailsPage.contentFilter.type"),
       accessorKey: "type",
       size: 100,
-      cell: ({ row }) => <Badge variant="secondary">{row.original.type === "prebuilt" ? "Prebuilt" : "Custom"}</Badge>,
+      cell: ({ row }) => <Badge variant="secondary">{row.original.type === "prebuilt" ? t("guardrailsPage.contentFilter.prebuilt") : t("guardrailsPage.contentFilter.custom")}</Badge>,
     },
     {
-      header: "Pattern name",
+      header: t("guardrailsPage.contentFilter.patternName"),
       accessorKey: "name",
       cell: ({ row }) => row.original.display_name || row.original.name,
     },
     {
-      header: "Regex pattern",
+      header: t("guardrailsPage.contentFilter.regexPattern"),
       accessorKey: "pattern",
       cell: ({ row }) =>
         row.original.pattern ? (
@@ -46,7 +48,7 @@ const PatternTable: React.FC<PatternTableProps> = ({ patterns, onActionChange, o
         ),
     },
     {
-      header: "Action",
+      header: t("guardrailsPage.contentFilter.action"),
       accessorKey: "action",
       size: 150,
       cell: ({ row }) => (
@@ -55,7 +57,7 @@ const PatternTable: React.FC<PatternTableProps> = ({ patterns, onActionChange, o
           value={row.original.action}
           onValueChange={(value: string | null) => value && onActionChange(row.original.id, value as "BLOCK" | "MASK")}
         >
-          <SelectTrigger size="sm" className="w-[120px]" aria-label="Action">
+          <SelectTrigger size="sm" className="w-[120px]" aria-label={t("guardrailsPage.contentFilter.action")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -4,6 +4,16 @@ import { describe, expect, it, vi } from "vitest";
 import { DataTable } from "@/components/shared/DataTable";
 import { Plugin } from "@/components/claude_code_plugins/types";
 import { getSkillHubTableColumns } from "./SkillHubTableColumns";
+import { resources } from "@/i18n/catalog";
+
+const t = (key: string, values?: Record<string, unknown>): string => {
+  const copy = key.split(".").reduce<unknown>((value, segment) => {
+    if (typeof value !== "object" || value === null) return undefined;
+    return (value as Record<string, unknown>)[segment];
+  }, resources.en.common);
+  if (typeof copy !== "string") return key;
+  return Object.entries(values ?? {}).reduce((text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)), copy);
+};
 
 const mockSkill: Plugin = {
   id: "skill-1",
@@ -19,7 +29,7 @@ function renderTable(data: Plugin[], onSkillClick = vi.fn()) {
   render(
     <DataTable
       data={data}
-      columns={getSkillHubTableColumns({ onSkillClick })}
+      columns={getSkillHubTableColumns({ onSkillClick, t })}
       getRowId={(skill, index) => skill.id || String(index)}
       sortingMode="client"
       size="compact"

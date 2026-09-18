@@ -7,7 +7,6 @@ import { DataTableSortHeader } from "@/components/shared/DataTable";
 import { DateCell, IdCell, MoneyCell } from "@/components/shared/table_cells";
 import type { budgetItem } from "@/app/(dashboard)/hooks/budgets/useBudgets";
 import { buttonVariants } from "@/components/ui/button";
-import { getBudgetDurationLabel } from "@/components/common_components/budget_duration_dropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +37,22 @@ function BudgetDurationCell({ value, t }: { value: string | null | undefined; t:
   if (!value) {
     return <span className="text-muted-foreground">{t("budgets.table.notSet")}</span>;
   }
-  return <span className="whitespace-nowrap">{getBudgetDurationLabel(value, t)}</span>;
+  let label = value;
+  switch (value) {
+    case "1h":
+      label = t("budgets.duration.hourly");
+      break;
+    case "24h":
+      label = t("budgets.duration.daily");
+      break;
+    case "7d":
+      label = t("budgets.duration.weekly");
+      break;
+    case "30d":
+      label = t("budgets.duration.monthly");
+      break;
+  }
+  return <span className="whitespace-nowrap">{label}</span>;
 }
 
 interface BudgetRowActionsProps {
@@ -138,7 +152,7 @@ export const getBudgetTableColumns = ({
     meta: { title: "TPD (batch)", numeric: true },
     header: ({ column }) => <DataTableSortHeader column={column} title="TPD (batch)" />,
     size: 110,
-    cell: ({ row }) => <RateLimitCell value={row.original.tpd_limit} />,
+    cell: ({ row }) => <RateLimitCell value={row.original.tpd_limit} t={t} />,
   },
   {
     id: "budget_duration",

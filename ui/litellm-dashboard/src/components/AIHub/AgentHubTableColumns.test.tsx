@@ -3,6 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DataTable } from "@/components/shared/DataTable";
 import { getAgentHubTableColumns, AgentHubData } from "./AgentHubTableColumns";
+import { resources } from "@/i18n/catalog";
+
+const t = (key: string, values?: Record<string, unknown>): string => {
+  const pluralKey = typeof values?.count === "number" && values.count !== 1 ? `${key}_other` : key;
+  const copy = pluralKey.split(".").reduce<unknown>((value, segment) => {
+    if (typeof value !== "object" || value === null) return undefined;
+    return (value as Record<string, unknown>)[segment];
+  }, resources.en.common);
+  if (typeof copy !== "string") return String(values?.defaultValue ?? key);
+  return Object.entries(values ?? {}).reduce((text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)), copy);
+};
 
 const mockAgent: AgentHubData = {
   agent_id: "agent-1",
@@ -26,7 +37,7 @@ function renderTable(data: AgentHubData[], onAgentClick = vi.fn()) {
   render(
     <DataTable
       data={data}
-      columns={getAgentHubTableColumns({ onAgentClick })}
+      columns={getAgentHubTableColumns({ onAgentClick, t })}
       getRowId={(agent, index) => agent.agent_id || String(index)}
       sortingMode="client"
       size="compact"
@@ -70,7 +81,7 @@ describe("getAgentHubTableColumns", () => {
 
   it("should show only true capabilities as badges", () => {
     renderTable([mockAgent]);
-    expect(screen.getByText("streaming")).toBeInTheDocument();
+    expect(screen.getByText("Streaming")).toBeInTheDocument();
     expect(screen.queryByText("caching")).not.toBeInTheDocument();
   });
 

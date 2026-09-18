@@ -18,7 +18,7 @@ export default function Onboarding() {
     <Suspense
       fallback={
         <>
-          <div className="fixed right-4 top-4 z-50 rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
+          <div className="fixed right-4 top-4 z-chrome rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
             <LanguageSelector />
           </div>
           <div className="flex items-center justify-center min-h-screen">{t("states.loading")}</div>

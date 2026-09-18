@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,13 +21,14 @@ interface KeywordTableProps {
 }
 
 const KeywordTable: React.FC<KeywordTableProps> = ({ keywords, onActionChange, onRemove }) => {
+  const { t } = useTranslation("gateway");
   const columns: ColumnDef<BlockedWord>[] = [
     {
-      header: "Keyword",
+      header: t("guardrailsPage.contentFilter.keyword"),
       accessorKey: "keyword",
     },
     {
-      header: "Action",
+      header: t("guardrailsPage.contentFilter.action"),
       accessorKey: "action",
       size: 150,
       cell: ({ row }) => (
@@ -35,7 +37,7 @@ const KeywordTable: React.FC<KeywordTableProps> = ({ keywords, onActionChange, o
           value={row.original.action}
           onValueChange={(value: string | null) => value && onActionChange(row.original.id, "action", value)}
         >
-          <SelectTrigger size="sm" className="w-[120px]" aria-label="Action">
+          <SelectTrigger size="sm" className="w-[120px]" aria-label={t("guardrailsPage.contentFilter.action")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -49,7 +51,7 @@ const KeywordTable: React.FC<KeywordTableProps> = ({ keywords, onActionChange, o
       ),
     },
     {
-      header: "Description",
+      header: t("guardrailsPage.contentFilter.description"),
       accessorKey: "description",
       cell: ({ row }) => row.original.description || "-",
     },

@@ -101,7 +101,7 @@ describe("SidebarAccountMenu", () => {
     renderWithProviders(<SidebarAccountMenu onLogout={mockOnLogout} />);
 
     await user.click(screen.getByRole("button", { name: /меню аккаунта/i }));
-    await waitFor(() => expect(screen.getByTestId("sidebar-account-menu-panel")).toBeInTheDocument());
+    expect(await screen.findByTestId("sidebar-account-menu-panel")).toBeInTheDocument();
 
     [
       "Уровень",
@@ -141,6 +141,7 @@ describe("SidebarAccountMenu", () => {
     await openMenu(user);
 
     expect(screen.getAllByText("test@example.com").length).toBeGreaterThan(0);
+    expect(screen.getByText("Nexoplane")).toBeInTheDocument();
     expect(screen.getByText("test-user-id")).toBeInTheDocument();
     expect(screen.getAllByText("Admin").length).toBeGreaterThan(0);
   });
@@ -196,7 +197,7 @@ describe("SidebarAccountMenu", () => {
     const user = userEvent.setup();
     renderWithProviders(<SidebarAccountMenu onLogout={mockOnLogout} />);
     await openMenu(user);
-    expect(screen.getByTitle("Thanks for using LiteLLM!")).toBeInTheDocument();
+    expect(screen.getByTitle("Thanks for using Nexoplane!")).toBeInTheDocument();
   });
 
   it("should hide the bouncing icon when Hide Bouncing Icon is enabled", async () => {
@@ -204,7 +205,7 @@ describe("SidebarAccountMenu", () => {
     mockUseDisableBouncingIconImpl = () => true;
     renderWithProviders(<SidebarAccountMenu onLogout={mockOnLogout} />);
     await openMenu(user);
-    expect(screen.queryByTitle("Thanks for using LiteLLM!")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Thanks for using Nexoplane!")).not.toBeInTheDocument();
   });
 
   it("wires the email row to the shared copy button", async () => {

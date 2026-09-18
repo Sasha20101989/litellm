@@ -102,7 +102,7 @@ vi.mock("./ContentFilterDisplay", () => ({
   ),
 }));
 
-const UNSAVED_CHANGES_TEXT = /You have unsaved changes to patterns or keywords/;
+const UNSAVED_CHANGES_TEXT = /You have unsaved filter changes/;
 
 describe("ContentFilterManager", () => {
   beforeEach(() => {
@@ -138,9 +138,7 @@ describe("ContentFilterManager", () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId("divider")).toHaveTextContent("Настройка фильтра содержимого");
-    });
+    expect(await screen.findByText("Настройка фильтра содержимого")).toBeInTheDocument();
   });
 
   it("should return null when guardrail is not litellm_content_filter", () => {

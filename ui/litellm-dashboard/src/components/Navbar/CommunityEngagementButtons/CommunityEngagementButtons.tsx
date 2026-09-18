@@ -10,13 +10,13 @@ const COMMUNITY_LINKS = [
   {
     href: "https://www.litellm.ai/support",
     label: "Join Slack",
-    tooltip: "LiteLLM Slack community",
+    tooltip: "Nexoplane Slack community",
     Icon: Slack,
   },
   {
     href: "https://github.com/BerriAI/litellm",
-    label: "LiteLLM on GitHub",
-    tooltip: "LiteLLM on GitHub",
+    label: "Nexoplane on GitHub",
+    tooltip: "Nexoplane on GitHub",
     Icon: Github,
   },
 ] as const;

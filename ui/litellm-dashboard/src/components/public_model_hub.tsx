@@ -75,7 +75,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
   const [proxyConfigured, setProxyConfigured] = useState<boolean>(false);
   const [agentHubData, setAgentHubData] = useState<AgentCard[] | null>(null);
   const [mcpHubData, setMcpHubData] = useState<MCPServerData[] | null>(null);
-  const [pageTitle, setPageTitle] = useState<string>("LiteLLM Gateway");
+  const [pageTitle, setPageTitle] = useState<string>("Nexoplane Gateway");
   const [customDocsDescription, setCustomDocsDescription] = useState<string | null>(null);
   const [litellmVersion, setLitellmVersion] = useState<string>("");
   const [usefulLinks, setUsefulLinks] = useState<Record<string, string | { url: string; index: number }>>({});
@@ -246,7 +246,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard!");
+    toast.success(t("publicHub.details.copied"));
   };
 
   const formatCapabilityName = (key: string) => {
@@ -324,7 +324,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                 <p className="text-foreground mb-6 text-base leading-relaxed">
                   {customDocsDescription
                     ? customDocsDescription
-                    : "Proxy Server to call 100+ LLMs in the OpenAI format."}
+                    : t("publicHub.defaultDescription")}
                 </p>
                 <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                   <span className="flex items-center">
@@ -497,14 +497,14 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                     onPaginationChange={models.onPaginationChange}
                     rowCount={models.rowCount}
                     isLoading={models.isLoading}
-                    loadingMessage="Loading models…"
+                    loadingMessage={t("publicHub.loading.models")}
                     noDataMessage={
                       <PublicHubEmptyState
-                        title={models.hasActiveQuery ? "No matching models" : "No models available"}
+                        title={t(models.hasActiveQuery ? "publicHub.empty.modelsFilteredTitle" : "publicHub.empty.modelsTitle")}
                         body={
                           models.hasActiveQuery
-                            ? "Adjust the search or filters to see more models."
-                            : "Models made public by the proxy admin will appear here."
+                            ? t("publicHub.empty.modelsFilteredBody")
+                            : t("publicHub.empty.modelsBody")
                         }
                       />
                     }
@@ -561,11 +561,11 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                       sorting={agentSorting}
                       onSortingChange={setAgentSorting}
                       isLoading={agentLoading}
-                      loadingMessage="Loading agents…"
+                      loadingMessage={t("publicHub.loading.agents")}
                       noDataMessage={
                         <PublicHubEmptyState
                           title={t("publicHub.empty.agentsTitle")}
-                          body="Adjust the search or skill filter to see more agents."
+                          body={t("publicHub.empty.agentsBody")}
                         />
                       }
                       size="compact"
@@ -628,11 +628,11 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                       sorting={mcpSorting}
                       onSortingChange={setMcpSorting}
                       isLoading={mcpLoading}
-                      loadingMessage="Loading MCP servers…"
+                      loadingMessage={t("publicHub.loading.mcp")}
                       noDataMessage={
                         <PublicHubEmptyState
                           title={t("publicHub.empty.mcpTitle")}
-                          body="Adjust the search or transport filter to see more servers."
+                          body={t("publicHub.empty.mcpBody")}
                         />
                       }
                       size="compact"
@@ -659,7 +659,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
             <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[1000px]">
               <DialogHeader>
                 <DialogTitle className="flex min-w-0 items-center space-x-2">
-                  <span className="break-words">{selectedModel?.model_group || "Model Details"}</span>
+                  <span className="break-words">{selectedModel?.model_group || t("publicHub.details.modelDetails")}</span>
                   {selectedModel && (
                     <Tooltip>
                       <TooltipTrigger
@@ -687,7 +687,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                       </div>
                       <div>
                         <p className="font-medium">{t("publicHub.filters.mode")}</p>
-                        <p>{selectedModel.mode || "Not specified"}</p>
+                        <p>{selectedModel.mode || t("publicHub.details.notSpecified")}</p>
                       </div>
                       <div>
                         <p className="font-medium">{t("publicHub.details.providers")}</p>
@@ -751,18 +751,18 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="font-medium">{t("publicHub.details.maxInputTokens")}</p>
-                        <p>{selectedModel.max_input_tokens?.toLocaleString() || "Not specified"}</p>
+                        <p>{selectedModel.max_input_tokens?.toLocaleString() || t("publicHub.details.notSpecified")}</p>
                       </div>
                       <div>
                         <p className="font-medium">{t("publicHub.details.maxOutputTokens")}</p>
-                        <p>{selectedModel.max_output_tokens?.toLocaleString() || "Not specified"}</p>
+                        <p>{selectedModel.max_output_tokens?.toLocaleString() || t("publicHub.details.notSpecified")}</p>
                       </div>
                       <div>
                         <p className="font-medium">{t("publicHub.details.inputCost")}</p>
                         <p>
                           {selectedModel.input_cost_per_token
                             ? formatCost(selectedModel.input_cost_per_token)
-                            : "Not specified"}
+                            : t("publicHub.details.notSpecified")}
                         </p>
                       </div>
                       <div>
@@ -770,7 +770,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                         <p>
                           {selectedModel.output_cost_per_token
                             ? formatCost(selectedModel.output_cost_per_token)
-                            : "Not specified"}
+                            : t("publicHub.details.notSpecified")}
                         </p>
                       </div>
                     </div>
@@ -896,7 +896,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
             <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[1000px]">
               <DialogHeader>
                 <DialogTitle className="flex min-w-0 items-center space-x-2">
-                  <span className="break-words">{selectedAgent?.name || "Agent Details"}</span>
+                  <span className="break-words">{selectedAgent?.name || t("publicHub.details.agentDetails")}</span>
                   {selectedAgent && (
                     <Tooltip>
                       <TooltipTrigger
@@ -1199,7 +1199,7 @@ print(response.model_dump(mode='json', exclude_none=True))`;
             <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[1000px]">
               <DialogHeader>
                 <DialogTitle className="flex min-w-0 items-center space-x-2">
-                  <span className="break-words">{selectedMcpServer?.server_name || "MCP Server Details"}</span>
+                  <span className="break-words">{selectedMcpServer?.server_name || t("publicHub.details.mcpDetails")}</span>
                   {selectedMcpServer && (
                     <Tooltip>
                       <TooltipTrigger

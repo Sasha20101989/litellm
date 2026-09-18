@@ -76,7 +76,7 @@ export const enUsage = {
     dailySpend: "Daily Spend",
     topVirtualKeys: "Top Virtual Keys",
     topPublicModels: "Top Public Model Names",
-    topLiteLLMModels: "Top LiteLLM Models",
+    topNexoplaneModels: "Top Nexoplane Models",
     topAgents: "Top Agents",
     provider: "Provider",
     spend: "Spend",
@@ -146,7 +146,7 @@ export const enUsage = {
   },
   modelToggle: {
     publicName: "Public Model Name",
-    liteLLMName: "LiteLLM Model Name",
+    liteLLMName: "Nexoplane Model Name",
   },
   provider: {
     title: "Spend by Provider",

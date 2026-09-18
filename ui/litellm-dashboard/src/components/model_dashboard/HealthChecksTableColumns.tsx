@@ -104,6 +104,16 @@ function runButtonLabel(isLoading: boolean, hasExistingStatus: boolean, t: TFunc
   return t("models.health.run");
 }
 
+function lastCheckLabel(model: HealthCheckData, t: TFunction<"gateway">): string {
+  if (model.health_loading) {
+    return t("models.health.checkInProgress");
+  }
+  if (model.last_check === NONE) {
+    return t("models.health.none");
+  }
+  return model.last_check;
+}
+
 function RunButtonIcon({ isLoading, hasExistingStatus }: { isLoading: boolean; hasExistingStatus: boolean }) {
   if (isLoading) {
     return <DotPulse className="size-1 bg-border" />;
@@ -390,11 +400,7 @@ export const getHealthChecksTableColumns = ({
     },
     cell: ({ row }) => (
       <span className="text-sm text-muted-foreground">
-        {row.original.health_loading
-          ? t("models.health.checkInProgress")
-          : row.original.last_check === NONE
-            ? t("models.health.none")
-            : row.original.last_check}
+        {lastCheckLabel(row.original, t)}
       </span>
     ),
   },

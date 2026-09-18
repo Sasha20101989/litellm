@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
@@ -30,9 +31,10 @@ const CategoryTable: React.FC<CategoryTableProps> = ({
   onRemove,
   readOnly = false,
 }) => {
+  const { t } = useTranslation("gateway");
   const columns: ColumnDef<ContentCategory>[] = [
     {
-      header: "Category",
+      header: t("guardrailsPage.contentFilter.category"),
       accessorKey: "display_name",
       cell: ({ row }) => {
         const { category, display_name: displayName } = row.original;
@@ -45,7 +47,7 @@ const CategoryTable: React.FC<CategoryTableProps> = ({
       },
     },
     {
-      header: "Severity Threshold",
+      header: t("guardrailsPage.contentFilter.severityThreshold"),
       accessorKey: "severity_threshold",
       size: 180,
       cell: ({ row }) => {
@@ -61,7 +63,7 @@ const CategoryTable: React.FC<CategoryTableProps> = ({
               value && onSeverityChange?.(id, value as "high" | "medium" | "low")
             }
           >
-            <SelectTrigger size="sm" className="w-[150px]" aria-label="Severity Threshold">
+            <SelectTrigger size="sm" className="w-[150px]" aria-label={t("guardrailsPage.contentFilter.severityThreshold")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -76,7 +78,7 @@ const CategoryTable: React.FC<CategoryTableProps> = ({
       },
     },
     {
-      header: "Action",
+      header: t("guardrailsPage.contentFilter.action"),
       accessorKey: "action",
       size: 150,
       cell: ({ row }) => {
@@ -90,7 +92,7 @@ const CategoryTable: React.FC<CategoryTableProps> = ({
             value={action}
             onValueChange={(value: string | null) => value && onActionChange?.(id, value as "BLOCK" | "MASK")}
           >
-            <SelectTrigger size="sm" className="w-[120px]" aria-label="Action">
+            <SelectTrigger size="sm" className="w-[120px]" aria-label={t("guardrailsPage.contentFilter.action")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

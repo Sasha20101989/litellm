@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cva.config";
@@ -15,30 +16,31 @@ interface GuardrailDetailViewProps {
 }
 
 const GuardrailDetailView: React.FC<GuardrailDetailViewProps> = ({ card, onBack, accessToken, onGuardrailCreated }) => {
+  const { t } = useTranslation("gateway");
   const [isAddFormVisible, setIsAddFormVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
   const detailRows = [
-    { property: "Provider", value: card.category === "litellm" ? "LiteLLM Content Filter" : "Partner Guardrail" },
-    ...(card.subcategory ? [{ property: "Subcategory", value: card.subcategory }] : []),
-    ...(card.category === "litellm" ? [{ property: "Cost", value: "$0 / request" }] : []),
-    ...(card.category === "litellm" ? [{ property: "External Dependencies", value: "None" }] : []),
-    ...(card.category === "litellm" ? [{ property: "Latency", value: card.eval?.latency || "<1ms" }] : []),
+    { property: t("guardrailsPage.garden.detail.provider"), value: card.category === "litellm" ? "Nexoplane Content Filter" : t("guardrailsPage.garden.detail.partnerGuardrail") },
+    ...(card.subcategory ? [{ property: t("guardrailsPage.garden.detail.subcategory"), value: card.subcategory }] : []),
+    ...(card.category === "litellm" ? [{ property: t("guardrailsPage.garden.detail.cost"), value: t("guardrailsPage.garden.detail.free") }] : []),
+    ...(card.category === "litellm" ? [{ property: t("guardrailsPage.garden.detail.externalDependencies"), value: t("guardrailsPage.garden.detail.none") }] : []),
+    ...(card.category === "litellm" ? [{ property: t("guardrailsPage.garden.detail.latency"), value: card.eval?.latency || "<1ms" }] : []),
   ];
 
   const evalRows = card.eval
     ? [
-        { metric: "Precision", value: `${card.eval.precision}%` },
-        { metric: "Recall", value: `${card.eval.recall}%` },
-        { metric: "F1 Score", value: `${card.eval.f1}%` },
-        { metric: "Test Cases", value: String(card.eval.testCases) },
-        { metric: "False Positives", value: "0" },
-        { metric: "False Negatives", value: "0" },
-        { metric: "Latency (p50)", value: card.eval.latency },
+        { metric: t("guardrailsPage.garden.detail.precision"), value: `${card.eval.precision}%` },
+        { metric: t("guardrailsPage.garden.detail.recall"), value: `${card.eval.recall}%` },
+        { metric: t("guardrailsPage.garden.detail.f1Score"), value: `${card.eval.f1}%` },
+        { metric: t("guardrailsPage.garden.detail.testCases"), value: String(card.eval.testCases) },
+        { metric: t("guardrailsPage.garden.detail.falsePositives"), value: "0" },
+        { metric: t("guardrailsPage.garden.detail.falseNegatives"), value: "0" },
+        { metric: t("guardrailsPage.garden.detail.latencyP50"), value: card.eval.latency },
       ]
     : [];
 
-  const tabs = [{ key: "overview", label: "Overview" }, ...(card.eval ? [{ key: "eval", label: "Eval Results" }] : [])];
+  const tabs = [{ key: "overview", label: t("guardrailsPage.garden.detail.overview") }, ...(card.eval ? [{ key: "eval", label: t("guardrailsPage.garden.detail.evalResults") }] : [])];
 
   return (
     <div className="mx-auto max-w-[960px]">
@@ -127,7 +129,7 @@ const GuardrailDetailView: React.FC<GuardrailDetailViewProps> = ({ card, onBack,
             <div className="mb-7">
               <div className="mb-1 text-xs text-muted-foreground">Type</div>
               <div className="text-[13px] text-foreground">
-                {card.category === "litellm" ? "Content Filter" : "Partner"}
+                {card.category === "litellm" ? t("guardrailsPage.garden.detail.contentFilter") : t("guardrailsPage.garden.detail.partner")}
               </div>
             </div>
 

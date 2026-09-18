@@ -3,6 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DataTable } from "@/components/shared/DataTable";
 import { getModelHubTableColumns, ModelHubData } from "./ModelHubTableColumns";
+import { resources } from "@/i18n/catalog";
+
+const t = (key: string, values?: Record<string, unknown>): string => {
+  const pluralKey = typeof values?.count === "number" && values.count !== 1 ? `${key}_other` : key;
+  const copy = pluralKey.split(".").reduce<unknown>((value, segment) => {
+    if (typeof value !== "object" || value === null) return undefined;
+    return (value as Record<string, unknown>)[segment];
+  }, resources.en.common);
+  if (typeof copy !== "string") return String(values?.defaultValue ?? key);
+  return Object.entries(values ?? {}).reduce((text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)), copy);
+};
 
 const mockModel: ModelHubData = {
   model_group: "gpt-4o",
@@ -22,7 +33,7 @@ function renderTable(data: ModelHubData[], onModelClick = vi.fn()) {
   render(
     <DataTable
       data={data}
-      columns={getModelHubTableColumns({ onModelClick })}
+      columns={getModelHubTableColumns({ onModelClick, t })}
       getRowId={(model, index) => model.model_group || String(index)}
       sortingMode="client"
       size="compact"
@@ -55,8 +66,8 @@ describe("getModelHubTableColumns", () => {
   it("shows capability badges only for supported features", () => {
     renderTable([mockModel]);
     expect(screen.getByText("Vision")).toBeInTheDocument();
-    expect(screen.getByText("Function Calling")).toBeInTheDocument();
-    expect(screen.queryByText("Parallel Function Calling")).not.toBeInTheDocument();
+    expect(screen.getByText("Function calling")).toBeInTheDocument();
+    expect(screen.queryByText("Parallel function calling")).not.toBeInTheDocument();
   });
 
   it("shows the public status badge", () => {

@@ -4,6 +4,27 @@ import { renderWithProviders, screen } from "../../../../../tests/test-utils";
 import { ProjectKeysTable } from "./ProjectKeysTable";
 import { KeyResponse } from "@/components/key_team_helpers/key_list";
 
+vi.mock("react-i18next", async () => {
+  const { resources } = await import("@/i18n/catalog");
+  const t = (key: string, values?: Record<string, unknown>) => {
+    const segments = key.split(".");
+    const copy = [resources.en.management, resources.en.common, resources.en.gateway]
+      .map((namespace) =>
+        segments.reduce<unknown>((value, segment) => {
+          if (typeof value !== "object" || value === null) return undefined;
+          return (value as Record<string, unknown>)[segment];
+        }, namespace),
+      )
+      .find((value): value is string => typeof value === "string");
+    if (typeof copy !== "string") return key;
+    return Object.entries(values ?? {}).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value)),
+      copy,
+    );
+  };
+  return { useTranslation: () => ({ t }) };
+});
+
 vi.mock("@/components/common_components/DefaultProxyAdminTag", () => ({
   default: ({ userId }: { userId: string }) => <span data-testid="owner-tag">{userId}</span>,
 }));

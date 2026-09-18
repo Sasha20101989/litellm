@@ -24,6 +24,7 @@ import { useZodForm } from "@/lib/forms/useZodForm";
 import { toast } from "@/lib/toast";
 import { displayToolName, getMCPToolsetTableColumns } from "./MCPToolsetTableColumns";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 interface MCPToolsetsTabProps {
   accessToken: string | null;
@@ -376,6 +377,7 @@ function ToolsetUsageGuide() {
 }
 
 export function MCPToolsetsTab({ accessToken, userRole }: MCPToolsetsTabProps) {
+  const { t } = useTranslation("gateway");
   const queryClient = useQueryClient();
   const { data: toolsets = [], isLoading } = useMCPToolsets();
   const { data: mcpServers = [] } = useMCPServers();
@@ -425,9 +427,10 @@ export function MCPToolsetsTab({ accessToken, userRole }: MCPToolsetsTabProps) {
       serverPrefixById,
       onEditClick: setEditToolset,
       onDeleteClick: setDeleteId,
+      t,
     };
     return getMCPToolsetTableColumns(deps);
-  }, [isAdmin, serverPrefixById]);
+  }, [isAdmin, serverPrefixById, t]);
 
   return (
     <div className="mt-4">

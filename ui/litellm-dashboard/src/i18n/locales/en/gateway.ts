@@ -54,7 +54,7 @@ export const enGateway = {
       confirmation: "Are you sure you want to delete this model?",
       information: "Model Information",
       modelName: "Model Name",
-      litellmName: "LiteLLM Model Name",
+      litellmName: "Nexoplane Model Name",
       provider: "Provider",
       createdBy: "Created By",
       notSet: "Not Set",
@@ -66,18 +66,19 @@ export const enGateway = {
       createdBy: "Created By",
       updatedAt: "Updated At",
       costs: "Costs",
+      source: "Source",
       teamId: "Team ID",
       accessGroup: "Model Access Group",
       status: "Status",
       actions: "Actions",
     },
     unknownProvider: "Unknown provider",
-    copyLiteLlmName: "Copy LiteLLM model name",
-    litellmNameCopied: "LiteLLM model name copied",
+    copyLiteLlmName: "Copy Nexoplane model name",
+    litellmNameCopied: "Nexoplane model name copied",
     credentialTypes: "Credential types",
     aboutCredentialTypes: "About credential types",
     reusable: "Reusable",
-    reusableDescription: "Credentials saved in LiteLLM that can be added to models repeatedly.",
+    reusableDescription: "Credentials saved in Nexoplane that can be added to models repeatedly.",
     manual: "Manual",
     manualDescription: "Credentials added during model creation or defined in the config file.",
     definedInConfig: "Defined in config",
@@ -114,8 +115,8 @@ export const enGateway = {
       selectTeamTooltip: "Select the team for which you want to add this model",
       teamSelectionTitle: "Team Selection Required",
       teamSelectionDescription: "As a team admin, select your team before adding models.",
-      modelName: "LiteLLM Model Name(s)",
-      modelNameTooltip: "The model name LiteLLM will send to the LLM API",
+      modelName: "Nexoplane Model Name(s)",
+      modelNameTooltip: "The model name Nexoplane will send to the LLM API",
       deploymentRequired: "Please enter a deployment name.",
       modelRequired: "Please enter at least one model.",
       selectModels: "Select models",
@@ -125,19 +126,19 @@ export const enGateway = {
       azureDeploymentPlaceholder: "Enter Azure deployment name",
       customModelPlaceholder: "Enter custom model name",
       azureModelHint:
-        "Your deployment name will be saved as the public model name, and LiteLLM will use 'azure/deployment-name' internally",
+        "Your deployment name will be saved as the public model name, and Nexoplane will use 'azure/deployment-name' internally",
       mappings: "Model Mappings",
-      mappingsTooltip: "Map public model names to LiteLLM model names for load balancing",
+      mappingsTooltip: "Map public model names to Nexoplane model names for load balancing",
       publicName: "Public Model Name",
-      publicNameTooltip: "The name you specify in your API calls to LiteLLM Proxy",
+      publicNameTooltip: "The name you specify in your API calls to Nexoplane Proxy",
       publicNameExample: "Example:",
       publicNameExampleText: "If you name your public model",
       publicNameExampleChoice: "and choose",
-      publicNameExampleSuffix: "as the LiteLLM model",
+      publicNameExampleSuffix: "as the Nexoplane model",
       publicNameUsage: "Usage:",
-      publicNameUsageText: "You make an API call to the LiteLLM proxy with",
+      publicNameUsageText: "You make an API call to the Nexoplane proxy with",
       publicNameResult: "Result:",
-      publicNameResultText: "LiteLLM sends",
+      publicNameResultText: "Nexoplane sends",
       publicNameResultSuffix: "to the provider",
       mappingRequired: "At least one model mapping is required",
       mappingNamesRequired: "All model mappings must have valid public names",
@@ -156,7 +157,7 @@ export const enGateway = {
         ocr: "OCR - /ocr",
       },
       optional: "Optional",
-      modeHint: "LiteLLM endpoint to use when health checking this model",
+      modeHint: "Nexoplane endpoint to use when health checking this model",
       learnMore: "Learn more",
       credentialChoice: "Either select existing credentials or enter new provider credentials below",
       existingCredentials: "Existing Credentials",
@@ -205,21 +206,21 @@ export const enGateway = {
         positiveNumber: "Please enter a valid positive number",
         passThrough: "Use in pass-through routes",
         passThroughTooltip: "Allow using these credentials in pass-through routes.",
-        litellmParams: "LiteLLM Params",
-        litellmParamsTooltip: "Optional LiteLLM parameters used for a litellm.completion() call.",
-        litellmParamsHint: "Pass JSON with parameters supported by LiteLLM",
+        litellmParams: "Nexoplane Params",
+        litellmParamsTooltip: "Optional Nexoplane parameters used for a litellm.completion() call.",
+        litellmParamsHint: "Pass JSON with parameters supported by Nexoplane",
         completionCall: "litellm.completion() call",
         modelInfo: "Model Info",
         modelInfoTooltip: "Optional model information returned by the /model/info endpoint.",
         cacheControl: "Cache Control Injection Points",
         cacheControlTooltip:
-          "Tell LiteLLM where to inject cache-control checkpoints: by role or by a specific message index.",
+          "Tell Nexoplane where to inject cache-control checkpoints: by role or by a specific message index.",
         cacheControlDescription:
-          "Providers such as Anthropic and Bedrock require cache-control checkpoints. LiteLLM can add them automatically to reduce costs.",
+          "Providers such as Anthropic and Bedrock require cache-control checkpoints. Nexoplane can add them automatically to reduce costs.",
         type: "Type",
         message: "Message",
         role: "Role",
-        roleTooltip: "LiteLLM will mark all messages with this role as cacheable",
+        roleTooltip: "Nexoplane will mark all messages with this role as cacheable",
         selectRole: "Select a role",
         user: "User",
         system: "System",
@@ -293,7 +294,7 @@ export const enGateway = {
       rawJson: "Raw JSON",
       provider: "Provider",
       notSet: "Not Set",
-      litellmModel: "LiteLLM Model",
+      litellmModel: "Nexoplane Model",
       pricing: "Pricing",
       inputPrice: "Input: ${{cost}}/1M tokens",
       outputPrice: "Output: ${{cost}}/1M tokens",
@@ -305,8 +306,8 @@ export const enGateway = {
       editDisabledTooltip: "Only DB models can be edited. You must be an admin or the creator of the model to edit it.",
       modelName: "Model Name",
       enterModelName: "Enter model name",
-      litellmModelName: "LiteLLM Model Name",
-      enterLitellmModelName: "Enter LiteLLM model name",
+      litellmModelName: "Nexoplane Model Name",
+      enterLitellmModelName: "Enter Nexoplane model name",
       inputCost: "Input Cost (per 1M tokens)",
       enterInputCost: "Enter input cost",
       outputCost: "Output Cost (per 1M tokens)",
@@ -361,15 +362,15 @@ export const enGateway = {
       role: "Role",
       index: "Index",
       modelInfo: "Model Info",
-      litellmParams: "LiteLLM Params",
+      litellmParams: "Nexoplane Params",
       litellmParamsTooltip:
-        "Optional LiteLLM parameters used for a litellm.completion() call. Some parameters are added automatically.",
+        "Optional Nexoplane parameters used for a litellm.completion() call. Some parameters are added automatically.",
       teamId: "Team ID",
       cancel: "Cancel",
       saveChanges: "Save Changes",
       storingCredential: "Storing credential...",
       credentialStored: "Credential stored successfully",
-      invalidLitellmParams: "Invalid JSON in LiteLLM Params",
+      invalidLitellmParams: "Invalid JSON in Nexoplane Params",
       invalidModelInfo: "Invalid JSON in Model Info",
       updated: "Model settings updated successfully",
       updateFailed: "Failed to update model settings",
@@ -733,7 +734,7 @@ export const enGateway = {
         methods: "Methods",
         methodsTooltip: "HTTP methods supported by this endpoint",
         authentication: "Authentication",
-        authenticationTooltip: "LiteLLM Virtual Key required to call endpoint",
+        authenticationTooltip: "Nexoplane Virtual Key required to call endpoint",
         headers: "Headers",
         actions: "Actions",
       },
@@ -766,7 +767,7 @@ export const enGateway = {
         createFailed: "Error creating pass-through endpoint: {{error}}",
         infoTitle: "What is a Pass-Through Endpoint?",
         infoDescription:
-          "Route requests from your LiteLLM proxy to any external API. Perfect for custom models, image generation APIs, or any service you want to proxy through LiteLLM.",
+          "Route requests from your Nexoplane proxy to any external API. Perfect for custom models, image generation APIs, or any service you want to proxy through Nexoplane.",
         routeTitle: "Route Configuration",
         routeDescription: "Configure how requests to your domain will be forwarded to the target API",
         path: "Path Prefix",
@@ -826,10 +827,10 @@ export const enGateway = {
       },
       security: {
         title: "Security",
-        description: "When enabled, requests to this endpoint will require a valid LiteLLM Virtual Key",
+        description: "When enabled, requests to this endpoint will require a valid Nexoplane Virtual Key",
         premium: "Authentication (Premium)",
         enterprisePrefix:
-          "Setting authentication for pass-through endpoints is a LiteLLM Enterprise feature. Get a trial key",
+          "Setting authentication for pass-through endpoints is a Nexoplane Enterprise feature. Get a trial key",
         here: "here",
       },
       guardrails: {
@@ -1366,11 +1367,26 @@ export const enGateway = {
       providerRequired: "Please select a provider",
       pgVector: {
         title: "PG Vector Setup Required",
-        intro: "LiteLLM provides a server to connect to PG Vector. To use this provider:",
+        intro: "Nexoplane provides a server to connect to PG Vector. To use this provider:",
         deploy: "Deploy the litellm-pgvector server from:",
         configure: "Configure your PostgreSQL database with pgvector extension",
         start: "Start the server and note the API base URL and API key",
         enter: "Enter those details in the fields below",
+      },
+      valkey: {
+        title: "Valkey Setup Required",
+        intro:
+          "Nexoplane searches documents you have already stored in Valkey. It does not create the index or upload documents for you. Before creating this vector store, make sure:",
+        vectorSearch:
+          "Your Valkey server has vector search enabled (the valkey-search module, included in the valkey-bundle image and in AWS ElastiCache / MemoryDB for Valkey)",
+        index:
+          "You have already created a search index and loaded your documents and their embeddings into it. Enter that index name as the Vector Store ID",
+        embeddingModel:
+          "You know which embedding model created those stored embeddings. That model must be added to this proxy under Models so you can pick it below. Using a different model returns wrong results",
+        fields:
+          'You know the field names your documents use for their text and their embedding. If they are not "text" and "embedding", set them below',
+        query:
+          "When a query comes in, Nexoplane converts it to an embedding with the model below and returns the closest matching documents from your index.",
       },
       vertexRag: {
         title: "Vertex AI RAG Engine Setup",
@@ -1393,19 +1409,19 @@ export const enGateway = {
         dataStore:
           "For most data store types (Cloud Storage, BigQuery, Media): copy the data store ID and enter it in the Vector Store ID field below.",
         engine:
-          "For website, healthcare, and connector-based sources (Drive, Gmail, Slack, Jira, etc.): create a search app on top of the data store, then copy the Engine ID and enter it in the Engine ID field. The Vector Store ID is still required as the LiteLLM-side name for this record, but it isn't used in the GCP URL when Engine ID is set.",
+          "For website, healthcare, and connector-based sources (Drive, Gmail, Slack, Jira, etc.): create a search app on top of the data store, then copy the <strong>Engine ID</strong> and enter it in the Engine ID field. The Vector Store ID is still required as the Nexoplane-side name for this record, but it isn't used in the GCP URL when Engine ID is set.",
       },
       id: "Vector Store ID",
       idTooltip: "Enter the vector store ID from your API provider",
       idRequired: "Please input the vector store ID from your API provider",
       corpusPlaceholder: '6917529027641081856 (corpus ID from Vertex AI / "RAG Engine" console)',
-      localIdPlaceholder: "Any identifier you'll use to reference this in LiteLLM",
+      localIdPlaceholder: "Any identifier you'll use to reference this in Nexoplane",
       dataStorePlaceholder: 'my-datastore_1234567890 (data store ID from Vertex AI / "Agent Search" console)',
       idPlaceholder: "Enter vector store ID from your provider",
       selectRequired: "Please select the {{field}}",
       inputRequired: "Please input the {{field}}",
       name: "Vector Store Name",
-      nameTooltip: "Custom name you want to give to the vector store. This name will be shown in the LiteLLM UI.",
+      nameTooltip: "Custom name you want to give to the vector store. This name will be shown in the Nexoplane UI.",
       description: "Description",
       credentials: "Existing Credentials",
       credentialsTooltip: "Optionally select API provider credentials for this vector store, e.g. a Bedrock API key",
@@ -1590,7 +1606,7 @@ export const enGateway = {
         "Matches tags from key/team metadata.tags or tags passed dynamically in the request body (metadata.tags). Use this to enforce policies across groups, for example all keys tagged healthcare get HIPAA guardrails. Supports wildcards (prod-*).",
       documentation: "Learn more about attachments →",
       enterpriseTitle: "Enterprise Feature Notice",
-      enterpriseDescription: "Parts of policy attachments will be on LiteLLM Enterprise in subsequent releases.",
+      enterpriseDescription: "Parts of policy attachments will be on Nexoplane Enterprise in subsequent releases.",
     },
     addAttachment: "+ Add New Attachment",
     attachmentDeleteModal: {
@@ -1674,6 +1690,7 @@ export const enGateway = {
       noModelCondition: "No model condition (applies to all models)",
     },
     simulator: {
+      noOptions: "No options found",
       title: "Policy Simulator",
       description:
         'Simulate a request to see which policies and guardrails would apply. Select a team, key, model, or tags below and click "Simulate" to see the results.',
@@ -1763,6 +1780,7 @@ export const enGateway = {
       policies: "Policies",
       policiesRequired: "Please select at least one policy",
       policiesPlaceholder: "Select policies to attach",
+      noMatchingPolicies: "No matching policies",
       scope: "Scope",
       scopeType: "Scope Type",
       specific: "Specific (teams, keys, models, or tags)",
@@ -1773,21 +1791,28 @@ export const enGateway = {
         "These teams don't exist: {{teams}}. Choose an existing team, or use a wildcard like team-* to match by prefix.",
       teamsLoading: "Loading teams...",
       teamsPlaceholder: "Select or enter team aliases",
+      noMatchingTeams: "No matching teams",
       keys: "Keys",
       keysTooltip: "Select key aliases or enter custom patterns. Supports wildcards (e.g., dev-*)",
       keysLoading: "Loading keys...",
       keysPlaceholder: "Select or enter key aliases",
+      noMatchingKeys: "No matching keys",
       models: "Models",
       modelsTooltip:
         "Model names this attachment applies to. Supports wildcards (e.g., gpt-4*). Leave empty to apply to all models.",
       modelsLoading: "Loading models...",
       modelsPlaceholder: "Select or enter model names (e.g., gpt-4, bedrock/*)",
+      noMatchingModels: "No matching models",
       tags: "Tags",
       tagsTooltip:
         "Match against tags set in key or team metadata. Use exact values (e.g., healthcare) or wildcard patterns (e.g., health-*) where * matches any suffix.",
       tagsExtra:
         "Matches tags from key/team metadata.tags or tags passed dynamically in the request body. Use * as a suffix wildcard (e.g., prod-* matches prod-us, prod-eu).",
       tagsPlaceholder: "Type a tag and press Enter (e.g. healthcare, prod-*)",
+      priority: "Priority",
+      priorityTooltip: "Lower numbers run first. Attachments with a priority run before attachments without one.",
+      priorityDescription: "Optional. Leave blank to keep the default order: global, then teams, keys, tags, models.",
+      priorityPlaceholder: "e.g. 10",
       cancel: "Cancel",
       estimate: "Estimate Impact",
       create: "Create Attachment",
@@ -1947,6 +1972,7 @@ export const enGateway = {
         response: "Response",
         complianceDataset: "Compliance dataset",
         matchedExpected: "{{matched}} / {{total}} matched expected",
+        duration: "({{duration}} ms)",
         expected: "expected",
         actual: "actual",
         empty: 'Choose a test source above (quick chat or a compliance dataset) and click "Run Test"',
@@ -2036,6 +2062,7 @@ export const enGateway = {
         generatedCompetitors: "Generated Competitors ({{count}})",
         input: "Input Text",
         keyboardHint: "Press Enter to submit. Use Shift+Enter for new line.",
+        enterKey: "Enter",
         characters: "Characters: {{count}}",
         inputPlaceholder: "Enter text to test against all selected policy guardrails...",
         press: "Press",
@@ -2139,6 +2166,8 @@ export const enGateway = {
     emptyDescription: "Memories your agents store under /v1/memory will appear here.",
     noMatches: "No matching memories",
     noMatchesDescription: "No memories have keys starting with your search.",
+    tableNoMatchesDescription: "No memories match your search.",
+    tableSearch: "Search by key prefix or memory ID…",
     columns: {
       id: "ID",
       name: "Name",
@@ -2257,8 +2286,8 @@ export const enGateway = {
       closeDetails: "Close detail panel",
       endpoint: "Endpoint",
       method: "Method",
-      forwardLitellmKey: "Forward LiteLLM API Key",
-      forwardKeyDescriptionPrefix: "When enabled, the caller's LiteLLM API key is forwarded as an",
+      forwardLitellmKey: "Forward Nexoplane API Key",
+      forwardKeyDescriptionPrefix: "When enabled, the caller's Nexoplane API key is forwarded as an",
       forwardKeyDescriptionSuffix:
         "header to your guardrail endpoint. This allows your guardrail to authenticate model calls using the original caller's credentials.",
       staticHeadersHelp: "Sent with every request to the guardrail.",
@@ -2274,7 +2303,7 @@ export const enGateway = {
       equivalentConfig: "Equivalent config",
       separateInstancePrefix:
         "This guardrail runs on a separate instance. It receives the user request and forwards the result to the next step in the pipeline. See",
-      documentation: "LiteLLM Generic Guardrail API docs",
+      documentation: "Nexoplane Generic Guardrail API docs",
       separateInstanceSuffix: "for configuration details.",
       testEndpoint: "Test Endpoint",
       loadFailed: "Failed to load submissions",
@@ -2312,6 +2341,7 @@ export const enGateway = {
         selectTeam: "Select a team",
         name: "Guardrail Name",
         enterName: "Enter a guardrail name",
+        namePlaceholder: "e.g. pii-detection",
         mode: "Mode",
         selectMode: "Select a mode",
         preCall: "Pre Call",
@@ -2319,13 +2349,16 @@ export const enGateway = {
         duringCall: "During Call",
         apiBase: "API Base URL",
         enterApiBase: "Enter the API base URL",
+        apiBasePlaceholder: "https://your-guardrail-api.com/v1/check",
         validUrl: "Must be a valid URL",
         additionalParams: "Additional litellm_params (optional)",
+        additionalParamsPlaceholder: '{"forward_api_key": true, "headers": {"X-Custom": "value"}}',
         additionalParamsTooltip:
           "JSON object merged into litellm_params, for example forward_api_key, headers, model, or unreachable_fallback.",
         jsonObject: "Must be a JSON object",
         invalidJson: "Invalid JSON",
         info: "Guardrail Info (optional)",
+        infoPlaceholder: "Detects PII in requests",
       },
     },
     details: {
@@ -2446,16 +2479,258 @@ export const enGateway = {
     },
     garden: {
       searchPlaceholder: "Search guardrails",
-      litellmTitle: "LiteLLM Content Filter",
+      litellmTitle: "Nexoplane Content Filter",
       litellmDescription:
-        "Built-in guardrails powered by LiteLLM. Zero latency, no external dependencies, no additional cost.",
+        "Built-in guardrails powered by Nexoplane. Zero latency, no external dependencies, no additional cost.",
       partnerTitle: "Partner Guardrails",
       partnerDescription: "Third-party guardrail integrations from leading AI security providers.",
       showLess: "Show less",
       showAll: "Show all ({{count}})",
       testCases: "{{count}} test cases",
-      labels: {},
-      cards: {},
+      f1: "F1:",
+      labels: {
+        "Content Category": "Content Category",
+        "Topic Blocker": "Topic Blocker",
+        Safety: "Safety",
+        Bias: "Bias",
+        "Prompt Injection": "Prompt Injection",
+        Toxicity: "Toxicity",
+        Patterns: "Patterns",
+        PII: "PII",
+        Regex: "Regex",
+        "Data Protection": "Data Protection",
+        Keywords: "Keywords",
+        Blocklist: "Blocklist",
+        "Code Safety": "Code Safety",
+        Code: "Code",
+        Competitor: "Competitor",
+        Microsoft: "Microsoft",
+        AWS: "AWS",
+        "Content Safety": "Content Safety",
+        Security: "Security",
+        "Content Moderation": "Content Moderation",
+        "Google Cloud": "Google Cloud",
+        "Open Source": "Open Source",
+        Validation: "Validation",
+        Enterprise: "Enterprise",
+        "Threat Detection": "Threat Detection",
+        Hallucination: "Hallucination",
+        Policy: "Policy",
+        Compliance: "Compliance",
+        Governance: "Governance",
+        Gateway: "Gateway",
+        Monitoring: "Monitoring",
+        Grounding: "Grounding",
+        Firewall: "Firewall",
+        Agentic: "Agentic",
+        "Tool Misuse": "Tool Misuse",
+        Skills: "Skills",
+      },
+      cards: {
+        cf_denied_financial: {
+          name: "Denied Financial Advice",
+          description:
+            "Detects requests for personalized financial advice, investment recommendations, or financial planning.",
+        },
+        cf_denied_insults: {
+          name: "Insults & Personal Attacks",
+          description:
+            "Detects insults, name-calling, and personal attacks directed at the chatbot, staff, or other people.",
+        },
+        cf_denied_legal: {
+          name: "Denied Legal Advice",
+          description: "Detects requests for unauthorized legal advice, case analysis, or legal recommendations.",
+        },
+        cf_denied_medical: {
+          name: "Denied Medical Advice",
+          description: "Detects requests for medical diagnosis, treatment recommendations, or health advice.",
+        },
+        cf_harmful_violence: {
+          name: "Harmful Violence",
+          description: "Detects content related to violence, criminal planning, attacks, and violent threats.",
+        },
+        cf_harmful_self_harm: {
+          name: "Harmful Self-Harm",
+          description: "Detects content related to self-harm, suicide, and dangerous self-destructive behavior.",
+        },
+        cf_harmful_child_safety: {
+          name: "Harmful Child Safety",
+          description: "Detects content that could endanger child safety or exploit minors.",
+        },
+        cf_harmful_illegal_weapons: {
+          name: "Harmful Illegal Weapons",
+          description: "Detects content related to illegal weapons manufacturing, distribution, or acquisition.",
+        },
+        cf_bias_gender: {
+          name: "Bias: Gender",
+          description: "Detects gender-based discrimination, stereotypes, and biased language.",
+        },
+        cf_bias_racial: {
+          name: "Bias: Racial",
+          description: "Detects racial discrimination, stereotypes, and racially biased content.",
+        },
+        cf_bias_religious: {
+          name: "Bias: Religious",
+          description: "Detects religious discrimination, intolerance, and religiously biased content.",
+        },
+        cf_bias_sexual_orientation: {
+          name: "Bias: Sexual Orientation",
+          description: "Detects discrimination based on sexual orientation and related biased content.",
+        },
+        cf_prompt_injection_jailbreak: {
+          name: "Prompt Injection: Jailbreak",
+          description: "Detects jailbreak attempts designed to bypass AI safety guidelines and restrictions.",
+        },
+        cf_prompt_injection_data_exfil: {
+          name: "Prompt Injection: Data Exfiltration",
+          description: "Detects attempts to extract sensitive data through prompt manipulation.",
+        },
+        cf_prompt_injection_sql: {
+          name: "Prompt Injection: SQL",
+          description: "Detects SQL injection attempts embedded in prompts.",
+        },
+        cf_prompt_injection_malicious_code: {
+          name: "Prompt Injection: Malicious Code",
+          description: "Detects attempts to inject malicious code through prompts.",
+        },
+        cf_prompt_injection_system_prompt: {
+          name: "Prompt Injection: System Prompt",
+          description: "Detects attempts to extract or override system prompts.",
+        },
+        cf_toxic_abuse: {
+          name: "Toxic & Abusive Language",
+          description: "Detects toxic, abusive, and hateful language across multiple languages (EN, AU, DE, ES, FR).",
+        },
+        cf_patterns: {
+          name: "Pattern Matching",
+          description:
+            "Detect and block sensitive data patterns like SSNs, credit card numbers, API keys, and custom regex patterns.",
+        },
+        cf_keywords: {
+          name: "Keyword Blocking",
+          description:
+            "Block or mask content containing specific keywords or phrases. Upload custom word lists or add individual terms.",
+        },
+        block_code_execution: {
+          name: "Block Code Execution",
+          description:
+            "Detects markdown fenced code blocks in requests and responses. Block or mask executable code (e.g. Python, JavaScript, Bash) by language with configurable confidence.",
+        },
+        cf_competitor_intent: {
+          name: "Competitor Name Blocking",
+          description:
+            "Block or reframe competitor comparison and ranking intent. Detect when users ask to compare or recommend competitors (airline or generic competitor lists).",
+        },
+        presidio: {
+          name: "Presidio PII",
+          description:
+            "Microsoft Presidio for PII detection and anonymization. Supports 30+ entity types with configurable actions.",
+        },
+        bedrock: {
+          name: "Bedrock Guardrail",
+          description:
+            "AWS Bedrock Guardrails for content filtering, topic avoidance, and sensitive information detection.",
+        },
+        lakera: {
+          name: "Lakera",
+          description: "AI security platform protecting against prompt injections, data leakage, and harmful content.",
+        },
+        openai_moderation: {
+          name: "OpenAI Moderation",
+          description: "OpenAI's content moderation API for detecting harmful content across multiple categories.",
+        },
+        google_model_armor: {
+          name: "Google Cloud Model Armor",
+          description: "Google Cloud's model protection service for safe and responsible AI deployments.",
+        },
+        guardrails_ai: {
+          name: "Guardrails AI",
+          description: "Open-source framework for adding structural, type, and quality guarantees to LLM outputs.",
+        },
+        zscaler: {
+          name: "Zscaler AI Guard",
+          description: "Enterprise AI security from Zscaler for monitoring and protecting AI/ML workloads.",
+        },
+        panw: {
+          name: "PANW Prisma AIRS",
+          description: "Palo Alto Networks Prisma AI Runtime Security for securing AI applications in production.",
+        },
+        cisco_ai_defense: {
+          name: "Cisco AI Defense",
+          description:
+            "Cisco AI Defense Inspection API for runtime protection: prompt injection, PII/PCI/PHI, harassment, hate speech, profanity, violence, and code detection.",
+        },
+        noma: {
+          name: "Noma Security",
+          description: "AI security platform for detecting and preventing AI-specific threats and vulnerabilities.",
+        },
+        aporia: {
+          name: "Aporia AI",
+          description: "Real-time AI guardrails for hallucination detection, topic control, and policy enforcement.",
+        },
+        aim: {
+          name: "AIM Guardrail",
+          description: "AIM Security guardrails for comprehensive AI threat detection and mitigation.",
+        },
+        cato_networks: {
+          name: "Cato Networks Guardrail",
+          description: "Cato Networks guardrails for comprehensive AI threat detection and mitigation.",
+        },
+        prompt_security: {
+          name: "Prompt Security",
+          description: "Protect against prompt injection attacks, data leakage, and other LLM security threats.",
+        },
+        lasso: {
+          name: "Lasso Guardrail",
+          description: "Content moderation and safety guardrails for responsible AI deployments.",
+        },
+        pangea: {
+          name: "Pangea Guardrail",
+          description: "Pangea's AI guardrails for secure, compliant, and trustworthy AI applications.",
+        },
+        enkryptai: {
+          name: "EnkryptAI",
+          description: "AI security and governance platform for enterprise AI safety and compliance.",
+        },
+        javelin: {
+          name: "Javelin Guardrails",
+          description: "AI gateway with built-in guardrails for secure and compliant AI operations.",
+        },
+        pillar: {
+          name: "Pillar Guardrail",
+          description: "AI safety platform for monitoring, testing, and securing AI systems.",
+        },
+        akto: {
+          name: "Akto Guardrail",
+          description:
+            "AI security platform from Akto.io with automatic monitoring and guardrails for AI/ML applications.",
+        },
+        promptguard: {
+          name: "PromptGuard",
+          description:
+            "AI security gateway with prompt injection detection, PII redaction, topic filtering, entity blocklists, and hallucination detection. Self-hostable with drop-in proxy integration.",
+        },
+        xecguard: {
+          name: "XecGuard",
+          description:
+            "CyCraft XecGuard AI security gateway. Multi-policy scanning (prompt injection, harmful content, PII, system-prompt enforcement) plus RAG context grounding.",
+        },
+        deepkeep: {
+          name: "DeepKeep AI Firewall",
+          description:
+            "DeepKeep AI Firewall for comprehensive LLM security — prompt injection detection, PII protection, content moderation, and policy enforcement with configurable guardrail pipelines.",
+        },
+        repelloai: {
+          name: "RepelloAI Argus",
+          description:
+            "RepelloAI Argus scans prompts and responses against policies configured per asset in the Repello dashboard.",
+        },
+        straiker: {
+          name: "Straiker",
+          description:
+            "Defend AI Agentic Guardrails: Indirect/Direct Prompt Injection, Tool Misuse, Malicious MCP and Skills",
+        },
+      },
       detail: {
         provider: "Provider",
         partnerGuardrail: "Partner Guardrail",
@@ -2563,7 +2838,7 @@ export const enGateway = {
       weightsInvalid: " — must add up to 100%",
     },
     toolPermission: {
-      title: "LiteLLM Tool Permission Guardrail",
+      title: "Nexoplane Tool Permission Guardrail",
       description:
         "Provide regex patterns (for example ^mcp__github_.*$) for tool names or types and optionally constrain payload fields.",
       addRule: "Add Rule",
@@ -2601,6 +2876,7 @@ export const enGateway = {
       type: "PII Type",
       action: "Action",
       noMatches: "No PII types match your filter criteria",
+      noMatchingCategories: "No matching categories",
       mask: "Mask",
       block: "Block",
     },
@@ -2617,6 +2893,7 @@ export const enGateway = {
       required: "{{field}} is required",
     },
     providerFields: {
+      invalidJson: "Enter a valid JSON object for this configuration",
       loadFailed: "Failed to load provider parameters",
       loading: "Loading provider parameters...",
       empty: "No configuration fields available for this provider.",
@@ -2867,6 +3144,7 @@ export const enGateway = {
       createdBy: "Created By",
       updatedAt: "Updated At",
       lastActive: "Last Active",
+      lifetimeSpend: "Lifetime Spend",
       lastActiveTooltip: "This is a new field and is not backfilled. Only new key usage will update this value.",
       expires: "Expires",
       spend: "Spend",
@@ -2877,6 +3155,9 @@ export const enGateway = {
       rateLimits: "Rate Limits",
     },
     status: {
+      deleted: "Deleted",
+      deletedTooltip:
+        "Deleted {{date}}{{user}}. Kept for audit and spend history; requests using this key are rejected.",
       blocked: "Blocked",
       blockedTooltip: "Blocked. Requests using this key will be rejected with 401.",
       scimBlockedTooltip: "Blocked by SCIM (external identity provider deactivated or deleted the owning user).",
@@ -2908,7 +3189,7 @@ export const enGateway = {
       unblockedNotification: "Key unblocked",
       dateTime: "{{date}} at {{time}}",
       virtualKey: "Virtual Key",
-      enterpriseFeature: "This is a LiteLLM Enterprise feature, and requires a valid key to use.",
+      enterpriseFeature: "This is a Nexoplane Enterprise feature, and requires a valid key to use.",
       deleteKey: "Delete Key",
       deleteWarning:
         "This action is irreversible and will immediately revoke access for any applications using this key.",
@@ -3012,7 +3293,7 @@ export const enGateway = {
       userSearchHint: "Search by email to find users",
       selectAgent: "Select Agent",
       selectAgentPlaceholder: "Select an agent",
-      agentHint: "This key will be used by the selected agent to make requests to LiteLLM",
+      agentHint: "This key will be used by the selected agent to make requests to Nexoplane",
       organization: "Organization",
       allOrganizations: "All Organizations",
       organizationTooltip:
@@ -3424,6 +3705,7 @@ export const enGateway = {
       maxBudgetUsd: "Max Budget (USD)",
       tpm: "TPM",
       rpm: "RPM",
+      tpd: "TPD (batch)",
       reset: "Reset",
       created: "Created",
       actions: "Actions",
@@ -3480,7 +3762,7 @@ export const enGateway = {
     },
   },
   organizations: {
-    enterprise: "This is a LiteLLM Enterprise feature, and requires a valid key to use. Get a trial key",
+    enterprise: "This is a Nexoplane Enterprise feature, and requires a valid key to use. Get a trial key",
     here: "here",
     create: "Create New Organization",
     detailsHint: "Click on an organization ID to view its details.",
@@ -3830,7 +4112,7 @@ export const enGateway = {
         memberAdded: "Team member added successfully",
         addMemberFailed: "Failed to add team member",
         adminsPremium:
-          "Assigning admins is an enterprise-only feature. Please upgrade your LiteLLM plan to enable this.",
+          "Assigning admins is an enterprise-only feature. Please upgrade your Nexoplane plan to enable this.",
         memberUpdated: "Team member updated successfully",
         updateMemberFailed: "Failed to update team member",
         memberRemoved: "Team member removed successfully",
@@ -4125,6 +4407,28 @@ export const enGateway = {
       submitted: "Submitted MCPs",
     },
     newBadge: "New",
+    byokCredentialModal: {
+      service: "Service",
+      apiKeyRequired: "Please enter your API key",
+      connected: "Connected to {{server}}",
+      connectFailed: "Failed to connect",
+      back: "Back",
+      connect: "Connect {{server}}",
+      accessNeeded: "Nexoplane needs access to {{server}} to complete your request.",
+      howItWorks: "How it works",
+      bridge: "Nexoplane acts as a secure bridge. Your requests are routed through our MCP client directly to {{server}}'s API.",
+      requestedAccess: "Requested Access",
+      continue: "Continue to Authentication",
+      cancel: "Cancel",
+      provideApiKey: "Provide API Key",
+      authorizeConnection: "Enter your {{server}} API key to authorize this connection.",
+      apiKeyLabel: "{{server}} API Key",
+      apiKeyPlaceholder: "Enter your API key",
+      apiKeyHelp: "Where do I find my API key?",
+      saveKey: "Save key for future use",
+      securityNote: "Your key is stored securely and transmitted over HTTPS. It is never shared with third parties.",
+      connectAuthorize: "Connect & Authorize",
+    },
     view: {
       back: "Back to All Servers",
       unnamed: "Unnamed Server",
@@ -4185,6 +4489,11 @@ export const enGateway = {
     },
     toolTest: {
       testTool: "Test Tool:",
+      duration: "{{value}}s",
+      json: "JSON",
+      close: "Close",
+      provider: "Provider: {{name}}",
+      serverLogo: "{{name}} logo",
       copyToolName: "Click to copy tool name",
       resultCopied: "Result copied to clipboard",
       resultCopyFailed: "Failed to copy result",
@@ -4236,6 +4545,11 @@ export const enGateway = {
       customCount: "• {{count}} tool(s) with custom pricing",
     },
     forms: {
+      upstreamTokenHeader: {
+        label: "Token Header (optional)",
+        tooltip:
+          "Which upstream header carries the token Nexoplane resolves for this server. Leave blank to send it as 'Authorization: Bearer <token>', which is the default and what most servers expect. Set a header name when the upstream expects it elsewhere, for example an API gateway that terminates its own credential on 'esb-oauth' while a separate Authorization from Static Headers passes through to the server behind it.",
+      },
       common: {
         optional: "optional",
         keepExisting: " (leave blank to keep existing)",
@@ -4244,6 +4558,7 @@ export const enGateway = {
       openapi: {
         popular: "Popular APIs",
         pickerHint: "Select an API to pre-fill the spec URL and OAuth 2.0 settings, or enter your own spec URL below.",
+        specPlaceholder: "https://petstore3.swagger.io/api/v3/openapi.json",
         specTooltip:
           "URL to an OpenAPI specification (JSON or YAML). MCP tools will be generated automatically from the API endpoints in the specification.",
       },
@@ -4263,6 +4578,8 @@ export const enGateway = {
         sessionTokenPlaceholder: "Enter session token (optional)",
         rolePlaceholder: "arn:aws:iam::123456789012:role/MyRole (optional)",
         sessionNamePlaceholder: "litellm-prod (optional, generated automatically if blank)",
+        regionPlaceholder: "us-east-1",
+        servicePlaceholder: "bedrock-agentcore",
       },
       byok: {
         title: "BYOK (Bring Your Own Key)",
@@ -4277,6 +4594,7 @@ export const enGateway = {
         accessDescriptionPlaceholder: "Add access description items (press Enter after each)",
         helpUrl: "API Key Help URL",
         helpUrlTooltip: "Optional link that helps users find their API key",
+        helpUrlPlaceholder: "https://docs.example.com/api-keys",
       },
       tokenExchange: {
         profile: "Profile",
@@ -4285,6 +4603,7 @@ export const enGateway = {
         rfc: "RFC 8693 (standard)",
         entra: "Microsoft Entra OBO",
         endpoint: "Token Exchange Endpoint (optional)",
+        endpointPlaceholder: "https://idp.example.com/oauth2/token",
         endpointTooltip:
           "RFC 8693 token endpoint. The proxy exchanges the incoming user token here for a scoped token used to call the upstream MCP server. Leave blank for automatic discovery.",
         clientId: "Client ID",
@@ -4296,8 +4615,10 @@ export const enGateway = {
         clientSecretRequired: "Client Secret is required for token exchange",
         clientSecretPlaceholder: "Enter OAuth client secret{{suffix}}",
         audience: "Audience (optional)",
+        audiencePlaceholder: "https://upstream.example.com",
         audienceTooltip: "Target audience for the exchanged token (RFC 8693 audience).",
         subjectType: "Subject Token Type (optional)",
+        subjectTypePlaceholder: "urn:ietf:params:oauth:token-type:access_token",
         subjectTypeTooltip: "Type of the incoming user token. Defaults to the RFC 8693 access-token type.",
         scopes: "Scopes",
         scopesOptional: "Scopes (optional)",
@@ -4308,30 +4629,38 @@ export const enGateway = {
       },
       idJag: {
         orgEndpoint: "Org Token Endpoint (leg 1)",
+        orgEndpointPlaceholder: "https://your-org.okta.com/oauth2/v1/token",
         orgEndpointTooltip:
           "Your identity provider organization authorization server token endpoint used for the first ID-JAG exchange.",
         orgEndpointRequired: "The org token endpoint is required for ID-JAG",
         resourceEndpoint: "Resource Token Endpoint (leg 2)",
+        resourceEndpointPlaceholder: "https://upstream.example.com/oauth2/token",
         resourceEndpointTooltip:
           "The upstream resource authorization server token endpoint used to obtain the MCP access token.",
         resourceEndpointRequired: "The resource token endpoint is required for ID-JAG",
         clientId: "Client ID",
-        clientIdTooltip: "OAuth2 client ID LiteLLM authenticates as on both exchange legs.",
+        clientIdTooltip: "OAuth2 client ID Nexoplane authenticates as on both exchange legs.",
         clientIdRequired: "Client ID is required for ID-JAG",
         clientSecret: "Client Secret",
-        clientSecretTooltip: "Authenticates LiteLLM through client_secret_post. Leave blank when using a private key.",
+        clientSecretTooltip:
+          "Authenticates Nexoplane through client_secret_post. Leave blank when using a private key.",
         credentialRequired: "Provide either a client secret or a client private key",
         privateKey: "Client Private Key (PEM)",
         privateKeyTooltip: "PEM private key used to sign the RFC 7523 client assertion.",
         privateKeyId: "Private Key ID (optional)",
+        privateKeyIdPlaceholder: "my-signing-key-1",
         privateKeyIdTooltip: "The kid value advertised in the client assertion JWT header.",
         signingAlgorithm: "Client Assertion Signing Algorithm (optional)",
+        signingAlgorithmPlaceholder: "RS256",
         signingAlgorithmTooltip: "Algorithm used to sign the client assertion JWT. Defaults to RS256.",
         audience: "Audience (optional)",
+        audiencePlaceholder: "https://upstream.example.com",
         audienceTooltip: "RFC 8693 audience sent during the first exchange leg.",
         resource: "Resource Indicator (optional)",
+        resourcePlaceholder: "https://upstream.example.com/mcp",
         resourceTooltip: "RFC 8707 resource indicator sent during the first exchange leg.",
         subjectType: "Subject Token Type (optional)",
+        subjectTypePlaceholder: "urn:ietf:params:oauth:token-type:id_token",
         subjectTypeTooltip: "Type of the identity assertion exchanged during the first leg.",
         scopes: "Scopes (optional)",
         scopesTooltip: "Scopes requested during the first exchange leg.",
@@ -4413,12 +4742,12 @@ export const enGateway = {
     connectGuide: {
       title: "Connect to your MCP client",
       description:
-        "Use tools directly from any MCP client with LiteLLM MCP. Enable your AI assistant to perform real-world tasks through a simple, secure connection.",
-      tabs: { openai: "OpenAI API", proxy: "LiteLLM Proxy", cursor: "Cursor", http: "Streamable HTTP" },
+        "Use tools directly from any MCP client with Nexoplane MCP. Enable your AI assistant to perform real-world tasks through a simple, secure connection.",
+      tabs: { openai: "OpenAI API", proxy: "Nexoplane Proxy", cursor: "Cursor", http: "Streamable HTTP" },
       common: {
         environmentVariable: "Environment Variable",
         serverInfo: "MCP Server Information",
-        serverInfoDescription: "Connection details for your LiteLLM MCP server",
+        serverInfoDescription: "Connection details for your Nexoplane MCP server",
         serverUrl: "Server URL",
         implementation: "Implementation Example",
         configuration: "Configuration",
@@ -4430,17 +4759,17 @@ export const enGateway = {
         sampleInput: "Run available tools",
       },
       proxy: {
-        title: "LiteLLM Proxy API Integration",
+        title: "Nexoplane Proxy API Integration",
         description:
-          "Connect to LiteLLM Proxy Responses API for seamless tool integration with multiple model providers",
+          "Connect to Nexoplane Proxy Responses API for seamless tool integration with multiple model providers",
         keyTitle: "Virtual Key Setup",
-        keyDescription: "Configure your LiteLLM Proxy Virtual Key for authentication",
-        keyHint: "Get your Virtual Key from your LiteLLM Proxy dashboard or contact your administrator",
-        implementationDescription: "Complete cURL example for using the LiteLLM Proxy Responses API",
+        keyDescription: "Configure your Nexoplane Proxy Virtual Key for authentication",
+        keyHint: "Get your Virtual Key from your Nexoplane Proxy dashboard or contact your administrator",
+        implementationDescription: "Complete cURL example for using the Nexoplane Proxy Responses API",
       },
       openai: {
         title: "OpenAI Responses API Integration",
-        description: "Connect OpenAI Responses API to your LiteLLM MCP server for seamless tool integration",
+        description: "Connect OpenAI Responses API to your Nexoplane MCP server for seamless tool integration",
         keyTitle: "API Key Setup",
         keyDescription: "Configure your OpenAI API key for authentication",
         keyBeforeLink: "Get your API key from the",
@@ -4450,7 +4779,7 @@ export const enGateway = {
       cursor: {
         title: "Cursor IDE Integration",
         description:
-          "Use tools directly from Cursor IDE with LiteLLM MCP. Enable your AI assistant to perform real-world tasks without leaving your coding environment.",
+          "Use tools directly from Cursor IDE with Nexoplane MCP. Enable your AI assistant to perform real-world tasks without leaving your coding environment.",
         setup: "Setup Instructions",
         step1: "Open Cursor Settings",
         step1Hint: "Use the keyboard shortcut",
@@ -4466,7 +4795,7 @@ export const enGateway = {
       http: {
         title: "Streamable HTTP Transport",
         description:
-          "Connect to LiteLLM MCP using HTTP transport. Compatible with any MCP client that supports HTTP streaming.",
+          "Connect to Nexoplane MCP using HTTP transport. Compatible with any MCP client that supports HTTP streaming.",
         connection: "Universal MCP Connection",
         connectionDescription: "Use this URL with any MCP client that supports HTTP transport",
         hint: "Each MCP client supports different transports. Refer to your client documentation to determine the appropriate transport method.",
@@ -4510,7 +4839,7 @@ export const enGateway = {
         requiredCount: "{{count}} required fields",
         none: "no rules set",
         description:
-          "Select which fields must be filled in before a submission is considered compliant. LiteLLM will show ✓ / ✗ for each rule on every submission card below.",
+          "Select which fields must be filled in before a submission is considered compliant. Nexoplane will show ✓ / ✗ for each rule on every submission card below.",
         saving: "Saving…",
         save: "Save Rules",
         cancel: "Cancel",
@@ -4640,7 +4969,7 @@ export const enGateway = {
       delete: "Delete",
       oauthUnset: "OAuth flow not set",
       oauthUnsetHint:
-        "This OAuth server has no flow set. Open it and choose an OAuth Flow Type so LiteLLM authenticates it as intended.",
+        "This OAuth server has no flow set. Open it and choose an OAuth Flow Type so Nexoplane authenticates it as intended.",
       public: "Public",
       internal: "Internal",
       missingFields: "{{count}} user field missing",
@@ -4690,6 +5019,7 @@ export const enGateway = {
       descriptionRequired: "Please enter a server description",
       descriptionPlaceholder: "Brief description of what this server does",
       sourceUrl: "GitHub / Source URL",
+      sourceUrlPlaceholder: "https://github.com/org/mcp-server",
       transport: "Transport Type",
       transportRequired: "Please select a transport type",
       selectTransport: "Select transport",
@@ -4698,10 +5028,11 @@ export const enGateway = {
       stdio: "Standard Input/Output (stdio)",
       openapi: "OpenAPI Spec",
       serverUrl: "MCP Server URL",
+      serverUrlPlaceholder: "https://your-mcp-server.com",
       serverUrlRequired: "Please enter a server URL",
       concurrency: "Max Concurrent Requests (optional)",
       concurrencyHint:
-        "Maximum number of tool calls LiteLLM runs against this server at the same time. Additional calls wait for a free slot. Leave blank for no limit.",
+        "Maximum number of tool calls Nexoplane runs against this server at the same time. Additional calls wait for a free slot. Leave blank for no limit.",
       concurrencyPlaceholder: "e.g. 10",
       authentication: "Authentication",
       authRequired: "Please select an auth type",
@@ -4716,7 +5047,7 @@ export const enGateway = {
         exchange: "OAuth Token Exchange (OBO)",
         idJag: "ID-JAG (Okta Cross App Access)",
         aws: "AWS SigV4 (Bedrock AgentCore MCPs)",
-        passthrough: "True Passthrough (no LiteLLM auth)",
+        passthrough: "True Passthrough (no Nexoplane auth)",
         delegate: "OAuth Delegate (client-supplied upstream token)",
       },
       authValue: "Authentication Value",
@@ -4734,7 +5065,7 @@ export const enGateway = {
       submitFailed: "Error submitting MCP Server: {{reason}}",
       oauthAuthorized: "OAuth authorization successful. Click 'Create MCP Server' to save the configuration.",
       tokenHeld:
-        "Token held for this browser session. Tools can now be previewed and configured; the token is not saved to LiteLLM.",
+        "Token held for this browser session. Tools can now be previewed and configured; the token is not saved to Nexoplane.",
       errors: {
         invalidToolName:
           "Tool display name '{{name}}' is invalid. Only letters, digits, underscores, and hyphens are allowed; spaces are not allowed.",
@@ -4750,6 +5081,9 @@ export const enGateway = {
       updated: "MCP Server updated successfully",
       updateFailed: "Failed to update MCP Server{{reason}}",
       oauthPersistFailed: "MCP Server updated, but failed to persist OAuth token{{reason}}",
+      oauthAuthorized: "OAuth authorization successful. Click 'Update MCP Server' to save the credentials.",
+      authorizeTools:
+        "Authorize with the upstream in the Authentication section to load and configure this server's tools.",
       specUrl: "OpenAPI Spec URL",
       specUrlHint:
         "URL to an OpenAPI specification (JSON or YAML). MCP tools are generated automatically from the endpoints in the specification.",
@@ -4767,7 +5101,7 @@ export const enGateway = {
       authValueExisting: "Enter token or secret (leave blank to keep existing)",
       oauthUnset: "This server has no OAuth flow set",
       oauthUnsetDescription:
-        "Choose Machine-to-Machine (M2M) or Interactive (PKCE), then save. Until a flow is selected, LiteLLM uses interactive per-user authentication.",
+        "Choose Machine-to-Machine (M2M) or Interactive (PKCE), then save. Until a flow is selected, Nexoplane uses interactive per-user authentication.",
       awsDescription: "For MCP servers hosted on AWS Bedrock AgentCore.",
       docs: "View docs →",
       awsRegion: "AWS Region",
@@ -4820,7 +5154,7 @@ export const enGateway = {
     permissions: {
       title: "Permission Management / Access Control",
       description: "Configure access permissions and security settings (Optional)",
-      allowAll: "Allow All LiteLLM Keys",
+      allowAll: "Allow All Nexoplane Keys",
       allowAllTooltip: "When enabled, every API key can access this MCP server.",
       allowAllHint: 'Enable if this server should be "public" to all keys.',
       internalOnly: "Internal network only",
@@ -4829,7 +5163,7 @@ export const enGateway = {
       internalOnlyHint: "Turn on to restrict access to callers within your internal network only.",
       delegate: "Delegate auth to upstream (PKCE passthrough)",
       delegateTooltip:
-        "LiteLLM skips its own API key/SSO check and lets the client complete PKCE directly with the upstream MCP server. No spend tracking or per-key rate limiting runs on this route.",
+        "Nexoplane skips its own API key/SSO check and lets the client complete PKCE directly with the upstream MCP server. No spend tracking or per-key rate limiting runs on this route.",
       delegateHint: "Clients authenticate directly with the upstream OAuth MCP server.",
       passthrough: "OAuth pass-through",
       passthroughTooltip:
@@ -4852,6 +5186,8 @@ export const enGateway = {
       headerNamePlaceholder: "Header name (e.g., X-API-Key)",
       headerValueRequired: "Header value is required",
       headerValuePlaceholder: "Header value",
+      clearHeaderName: "Clear header name",
+      clearHeaderValue: "Clear header value",
       addStaticHeader: "Add Static Header",
     },
     costs: {
@@ -4954,6 +5290,7 @@ export const enGateway = {
         clientSecretPlaceholder: "Enter OAuth client secret{{suffix}}",
         clientSecretShortPlaceholder: "Enter client secret{{suffix}}",
         tokenUrl: "Token URL",
+        tokenUrlPlaceholder: "https://auth.example.com/oauth/token",
         tokenUrlOptional: "Token URL (optional)",
         tokenUrlTooltip: "Token endpoint URL for the client_credentials grant.",
         tokenUrlOptionalTooltip: "Optional override for the token endpoint.",
@@ -4964,21 +5301,26 @@ export const enGateway = {
           "Optional scopes requested during token exchange. Separate them with enter or commas.",
         addScopes: "Add scopes",
         resource: "Resource Indicator (optional)",
+        resourcePlaceholder: "auto, or https://mcp.example.com/mcp",
         resourceTooltip:
           "RFC 8707 resource indicator sent to the authorization server. Leave blank for the provider default, use 'auto' for this server URL, or enter an exact identifier.",
         createApp: "Create OAuth App →",
         issuer: "Issuer (optional)",
+        issuerPlaceholder: "https://issuer.example.com",
         issuerTooltip:
           "OAuth 2.0 authorization server issuer. Leave blank to discover endpoints or set it to pin the trusted issuer.",
         authorizationUrl: "Authorization URL (optional)",
+        authorizationUrlPlaceholder: "https://example.com/oauth/authorize",
         authorizationUrlTooltip: "Optional override for the authorization endpoint.",
         registrationUrl: "Registration URL (optional)",
+        registrationUrlPlaceholder: "https://example.com/oauth/register",
         registrationUrlTooltip: "Optional override for the dynamic client registration endpoint.",
         validationRules: "Token Validation Rules (optional)",
         validationRulesTooltip:
           "JSON rules checked against the OAuth token response before it is stored. Dot notation is supported for nested fields.",
         validJson: "Must be valid JSON",
         storageTtl: "Token Storage TTL (seconds, optional)",
+        storageTtlPlaceholder: "e.g. 3600",
         storageTtlTooltip:
           "How long to cache a user's OAuth token in Redis. Leave blank to derive it from the token lifetime.",
         authorizeHint: "Use OAuth to fetch a fresh access token and hold it temporarily in this browser session.",
@@ -4995,9 +5337,9 @@ export const enGateway = {
         default: "Default (Client Secret Post)",
       },
       truePassthrough: {
-        title: "True Passthrough disables LiteLLM authentication for this server",
+        title: "True Passthrough disables Nexoplane authentication for this server",
         description:
-          "Anyone who can reach the gateway can call this server without a LiteLLM key. The upstream receives the caller's Authorization header and is fully responsible for authentication. Per-key and per-team limits and spend tracking do not apply.",
+          "Anyone who can reach the gateway can call this server without a Nexoplane key. The upstream receives the caller's Authorization header and is fully responsible for authentication. Per-key and per-team limits and spend tracking do not apply.",
       },
       passthrough: {
         waiting: "Waiting for authorization...",
@@ -5012,14 +5354,14 @@ export const enGateway = {
         changedAuthHint:
           "Changing the authentication type discards the saved app. Enter a client ID or use dynamic client registration.",
         description:
-          "Callers provide their own upstream token, so LiteLLM never stores it. Authorize here to preview tools; the token remains only in this browser session. The OAuth app configured below is saved with the server.",
+          "Callers provide their own upstream token, so Nexoplane never stores it. Authorize here to preview tools; the token remains only in this browser session. The OAuth app configured below is saved with the server.",
         upstreamChanged:
           "The upstream URL or endpoints changed. Update the OAuth client ID or clear it to use dynamic client registration.",
         clientId: "OAuth Client ID (optional)",
         clientSecret: "OAuth Client Secret (optional)",
         removeApp: "Remove the saved OAuth app when saving and return to dynamic client registration",
         tokenHeld:
-          "Token held for this browser session. Tools can now be previewed and configured; the token was not saved to LiteLLM.",
+          "Token held for this browser session. Tools can now be previewed and configured; the token was not saved to Nexoplane.",
       },
       dcr: {
         label: "Gateway-hosted sign-in (DCR bridge)",
@@ -5184,7 +5526,11 @@ export const enGateway = {
     deleteFailed: "Failed to delete agent",
     emptyTitle: "No agents yet",
     emptyDescription: "Add an agent to make it available in your organization.",
+    noMatches: "No matching agents",
+    noMatchesDescription: "Adjust the search to see more agents.",
     loading: "Loading agents…",
+    search: "Search agents by name, ID, or description...",
+    clearSearch: "Clear search",
     healthCheck: "Health Check",
     healthCheckHint: "When enabled, only agents with reachable URLs are shown",
     columns: {
@@ -5281,7 +5627,7 @@ export const enGateway = {
         skills: "Skills",
         capabilities: "Capabilities",
         optional: "Optional Settings",
-        litellm: "LiteLLM Parameters",
+        litellm: "Nexoplane Parameters",
         cost: "Cost Configuration",
       },
       fields: {
@@ -5292,8 +5638,8 @@ export const enGateway = {
         protocolVersion: {
           label: "Protocol Version",
           tooltip:
-            "The A2A protocol version LiteLLM serves to clients for this agent. LiteLLM converts upstream responses to the selected version.",
-          help: "LiteLLM serves this version to clients and converts upstream responses to match it.",
+            "The A2A protocol version Nexoplane serves to clients for this agent. Nexoplane converts upstream responses to the selected version.",
+          help: "Nexoplane serves this version to clients and converts upstream responses to match it.",
         },
         streaming: { label: "Streaming" },
         pushNotifications: { label: "Push Notifications" },
@@ -5459,10 +5805,10 @@ export const enGateway = {
       rediscover: "Re-discover",
       title: "Discover from agent URL",
       titleHint:
-        "LiteLLM fetches the agent card from this URL and lets you choose which skills and capabilities to expose through the proxy.",
+        "Nexoplane fetches the agent card from this URL and lets you choose which skills and capabilities to expose through the proxy.",
       connectionDetails: "Using the connection details entered above. We will fetch:",
       fillFields: "Fill in the fields above first",
-      manualHint: "Paste the upstream agent's base URL. LiteLLM will try the standard agent-card endpoints in order.",
+      manualHint: "Paste the upstream agent's base URL. Nexoplane will try the standard agent-card endpoints in order.",
       loaded: "Upstream card loaded",
       name: "Name (shown to API clients)",
       namePlaceholder: "Agent name",
@@ -5473,7 +5819,7 @@ export const enGateway = {
       noSkills: "Upstream card has no skills",
       capabilities: "Capabilities",
       capabilitiesHint:
-        "Only capabilities LiteLLM can faithfully proxy today are listed. Support for others is coming soon.",
+        "Only capabilities Nexoplane can faithfully proxy today are listed. Support for others is coming soon.",
       streaming: "Streaming",
       notAdvertised: "not advertised upstream",
     },
@@ -5668,7 +6014,7 @@ export const enGateway = {
       complete: "User creation complete",
       nextStep: "Next step:",
       nextStepDescription:
-        "Download the credentials file containing Virtual Keys and invitation links. Users will need these Virtual Keys to make LLM requests through LiteLLM.",
+        "Download the credentials file containing Virtual Keys and invitation links. Users will need these Virtual Keys to make LLM requests through Nexoplane.",
       startNew: "Start New Bulk Import",
       downloadCredentials: "Download User Credentials",
       errors: {

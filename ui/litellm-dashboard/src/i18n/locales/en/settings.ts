@@ -18,7 +18,7 @@ export const enSettings = {
     title: "Routing Settings",
     description: "Configure how requests are routed to deployments",
     strategy: "Routing Strategy",
-    strategyDescription: "Choose how LiteLLM distributes requests between available deployments",
+    strategyDescription: "Choose how Nexoplane distributes requests between available deployments",
     tagFiltering: "Enable Tag Filtering",
     tagFilteringDescription: "Route requests only to deployments whose tags match the request",
     learnMore: "Learn more",
@@ -93,6 +93,8 @@ export const enSettings = {
       refresh: "Refresh",
       create: "Create Group",
       showing_one: "Showing {{count}} result",
+      showing_few: "Showing {{count}} results",
+      showing_many: "Showing {{count}} results",
       showing_other: "Showing {{count}} results",
       created: 'Created routing group "{{name}}"',
       updated: 'Updated routing group "{{name}}"',
@@ -113,7 +115,7 @@ export const enSettings = {
       groupMax: "Must be {{count}} characters or fewer",
       groupPattern: "Only letters, numbers, dot, underscore, and dash are allowed",
       groupExists: "A group with this name already exists",
-      groupHelp: "Use this name as the model in API calls — LiteLLM routes the request to one of the group's models.",
+      groupHelp: "Use this name as the model in API calls — Nexoplane routes the request to one of the group's models.",
       models: "Models",
       modelRequired: "Select at least one model",
       modelsHelp: "Models from your model list that this group routes between.",
@@ -132,7 +134,7 @@ export const enSettings = {
       edit: "Edit",
       howItWorks: "How routing works for this group",
       usage:
-        "Callers request any model in the group by name; LiteLLM selects a deployment using the {{strategy}} strategy.",
+        "Callers request any model in the group by name; Nexoplane selects a deployment using the {{strategy}} strategy.",
     },
   },
   caching: {
@@ -146,7 +148,7 @@ export const enSettings = {
     refresh: "Refresh",
     responseCache: "response cache",
     promptCaching: "prompt caching",
-    analyticsBefore: "Analytics for LiteLLM's",
+    analyticsBefore: "Analytics for Nexoplane's",
     analyticsMiddle:
       "(for example Redis or in-memory): requests answered from cache without calling the LLM provider. Provider-side",
     analyticsAfter:
@@ -197,7 +199,7 @@ export const enSettings = {
     },
     settings: {
       title: "Cache Settings",
-      description: "Configure Redis cache for LiteLLM",
+      description: "Configure Redis cache for Nexoplane",
       loadFailed: "Failed to load cache settings",
       testSuccess: "Cache connection test successful!",
       testFailed: "Connection test failed: {{error}}",
@@ -317,7 +319,7 @@ export const enSettings = {
       saving: "Saving...",
       save: "Save Changes",
       addTitle: "Add Logging Callback",
-      addDescription: "Configure a callback to send LiteLLM request data to an external service.",
+      addDescription: "Configure a callback to send Nexoplane request data to an external service.",
       docs: "View callback documentation",
       editTitle: "Edit Callback Settings",
       deleteTitle: "Delete Callback",
@@ -376,7 +378,7 @@ export const enSettings = {
       save: "Save Changes",
       reset: "Reset to Defaults",
       serverSettings: "Email Server Settings",
-      docs: "LiteLLM Docs: email alerts",
+      docs: "Nexoplane Docs: email alerts",
       hideCredential: "Hide credential",
       showCredential: "Show credential",
       settingsUpdated: "Email settings updated successfully",
@@ -397,7 +399,7 @@ export const enSettings = {
       loading: "Loading CloudZero settings...",
       loadFailed: "Error loading CloudZero settings: {{error}}",
       empty: "No CloudZero Integration Found",
-      emptyDescription: "Connect your CloudZero account to track and analyze cloud costs directly from LiteLLM.",
+      emptyDescription: "Connect your CloudZero account to track and analyze cloud costs directly from Nexoplane.",
       add: "Add CloudZero Integration",
       createTitle: "Create CloudZero Integration",
       editTitle: "Edit CloudZero Integration",
@@ -567,14 +569,14 @@ export const enSettings = {
       urlInvalid: "Must be a valid URL",
       urlHelp: "Base URL of the plugin service",
       keyHelp:
-        "Optional. The plugin's own credential. LiteLLM injects it as Authorization: Bearer <key> only when reverse-proxying API calls to the plugin backend. Leave blank for plugins that use the forwarded LiteLLM user token.",
+        "Optional. The plugin's own credential. Nexoplane injects it as Authorization: Bearer <key> only when reverse-proxying API calls to the plugin backend. Leave blank for plugins that use the forwarded Nexoplane user token.",
       keepKey: "Leave blank to keep current key",
       optionalKey: "sk-... (optional)",
     },
     scim: {
       title: "SCIM Configuration",
       description:
-        "System for Cross-domain Identity Management (SCIM) automatically provisions and manages users and groups in LiteLLM.",
+        "System for Cross-domain Identity Management (SCIM) automatically provisions and manages users and groups in Nexoplane.",
       loginRequired: "You need to be logged in to create a SCIM token",
       tokenCreated: "SCIM token created successfully",
       tokenFailed: "Failed to create SCIM token: {{error}}",
@@ -734,6 +736,8 @@ export const enSettings = {
         title: "Internal User Page Visibility",
         notSet: "Not set (all pages visible)",
         selected_one: "{{count}} page selected",
+        selected_few: "{{count}} pages selected",
+        selected_many: "{{count}} pages selected",
         selected_other: "{{count}} pages selected",
         description:
           "By default, all pages are visible to internal users. Select specific pages to restrict visibility.",
@@ -762,7 +766,7 @@ export const enSettings = {
       docs: "View documentation",
       empty: "No Vault Configuration Found",
       emptyDescription:
-        "Configure Hashicorp Vault to securely manage provider API keys and secrets for your LiteLLM deployment.",
+        "Configure Hashicorp Vault to securely manage provider API keys and secrets for your Nexoplane deployment.",
       configure: "Configure Vault",
       deleteTitle: "Delete Hashicorp Vault Configuration?",
       deleteMessage:
@@ -805,9 +809,11 @@ export const enSettings = {
   },
   theme: {
     title: "UI Theme Customization",
-    description: "Customize the LiteLLM admin dashboard with your logo and favicon.",
+    description: "Customize the Nexoplane admin dashboard with your logo and favicon.",
     logoUrl: "Custom Logo URL",
     logoHint: "Enter a URL for your custom logo or leave it empty to use the default.",
+    logoUrlDark: "Custom Logo URL (dark mode)",
+    logoDarkHint: "Enter a URL for a logo suited to dark backgrounds, or leave it empty to reuse the logo above.",
     faviconUrl: "Custom Favicon URL",
     faviconHint: "Enter a URL for a custom favicon (.ico, .png, or .svg) or leave it empty to use the default.",
     save: "Save Changes",

@@ -10,11 +10,13 @@ vi.mock("react-i18next", async () => {
   const { resources } = await import("@/i18n/catalog");
   return {
     useTranslation: () => ({
-      t: (key: string) =>
-        key.split(".").reduce<unknown>((copy, segment) => {
+      t: (key: string) => {
+        const [namespace, path] = key.includes(":") ? key.split(":", 2) : ["auth", key];
+        return path.split(".").reduce<unknown>((copy, segment) => {
           if (typeof copy !== "object" || copy === null) return undefined;
           return (copy as Record<string, unknown>)[segment];
-        }, resources[translationState.language].auth) ?? key,
+        }, (resources[translationState.language] as Record<string, unknown>)[namespace]) ?? key;
+      },
     }),
   };
 });

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, useDashboardLanguage } from "./I18nProvider";
 import { LANGUAGE_STORAGE_KEY } from "./language";
@@ -52,7 +52,7 @@ describe("I18nProvider", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "change" }));
 
-    await waitFor(() => expect(screen.getByText("ru")).toBeInTheDocument());
+    expect(await screen.findByText("ru")).toBeInTheDocument();
     expect(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("ru");
     expect(document.documentElement.lang).toBe("ru");
   });
