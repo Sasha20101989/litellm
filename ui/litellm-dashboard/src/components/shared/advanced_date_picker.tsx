@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cva.config";
 import type { DateRangePickerValue } from "./date_picker_types";
 import moment from "moment";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface AdvancedDatePickerProps {
@@ -75,7 +75,22 @@ const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({
   showTimeRange = true,
   align = "right",
 }) => {
-  const { t } = useTranslation("gateway");
+  const { t, i18n } = useTranslation("gateway");
+  const dateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(i18n.language || "en", { year: "numeric", month: "short", day: "numeric" }),
+    [i18n.language],
+  );
+  const rangeFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.language || "en", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }),
+    [i18n.language],
+  );
   const options = useMemo(() => relativeTimeOptions(t), [t]);
   const resolvedLabel = label ?? t("virtualKeys.savings.selectTimeRange");
   const [isOpen, setIsOpen] = useState(false);
@@ -171,12 +186,12 @@ const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({
       if (!from || !to) return t("virtualKeys.savings.selectDateRange");
 
       const formatDateTime = (date: Date) => {
-        return moment(date).format("D MMM, HH:mm");
+        return rangeFormatter.format(date);
       };
 
       return `${formatDateTime(from)} - ${formatDateTime(to)}`;
     },
-    [t],
+    [t, rangeFormatter],
   );
 
   // CRITICAL: Apply the same date adjustment logic as the original component
@@ -353,7 +368,7 @@ const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({
                             isSelected ? "text-info bg-info/15" : "text-muted-foreground bg-muted"
                           }`}
                         >
-                          {option.shortLabel}
+                          {option.shortLabel === "today" ? t("virtualKeys.savings.today") : option.shortLabel}
                         </span>
                       </button>
                     );
@@ -426,14 +441,14 @@ const AdvancedDatePicker: React.FC<AdvancedDatePickerProps> = ({
                       <div className="text-xs text-info">
                         <span className="font-medium">{t("virtualKeys.savings.from")}</span>{" "}
                         {t("virtualKeys.savings.dateTime", {
-                          date: moment(tempValue.from).format("MMM D, YYYY"),
+                          date: dateFormatter.format(tempValue.from),
                           time: moment(tempValue.from).format("HH:mm:ss"),
                         })}
                       </div>
                       <div className="text-xs text-info">
                         <span className="font-medium">{t("virtualKeys.savings.to")}</span>{" "}
                         {t("virtualKeys.savings.dateTime", {
-                          date: moment(tempValue.to).format("MMM D, YYYY"),
+                          date: dateFormatter.format(tempValue.to),
                           time: moment(tempValue.to).format("HH:mm:ss"),
                         })}
                       </div>

@@ -19,8 +19,8 @@ export const classificationRatePer1kTurns = (classifierCost: number, turns: numb
 
 export const pct = (ratio: number): string => `${formatNumberWithCommas(ratio * 100, 1)}%`;
 
-export const shortDate = (iso: string): string =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+export const shortDate = (iso: string, locale = "en-US"): string =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString(locale, { month: "short", day: "numeric" });
 
 export const compressionOf = (m: SpendMetrics): number => m.compression_savings_spend ?? 0;
 export const cachingOf = (m: SpendMetrics): number => m.prompt_caching_savings_spend ?? 0;
@@ -218,11 +218,11 @@ export const sumOverDays = (results: readonly DailyData[], of: (m: SpendMetrics)
  * total from the same driver list is what keeps a tile, a timeline and the
  * donut from quietly plotting different metrics for the same driver name.
  */
-export const savingsSeriesOf = (results: readonly DailyData[]): SavingsPoint[] =>
+export const savingsSeriesOf = (results: readonly DailyData[], locale = "en-US"): SavingsPoint[] =>
   [...results]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((d) => ({
-      date: shortDate(d.date),
+      date: shortDate(d.date, locale),
       ...(Object.fromEntries(SAVINGS_DRIVERS.map(({ name, of }) => [name, of(d.metrics)])) as Record<
         SavingsDriverName,
         number

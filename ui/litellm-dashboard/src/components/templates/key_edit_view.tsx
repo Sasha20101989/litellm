@@ -24,7 +24,7 @@ import PassThroughRoutesSelector from "../common_components/PassThroughRoutesSel
 import OrganizationDropdown from "../common_components/OrganizationDropdown";
 import RouterSettingsAccordion, { RouterSettingsAccordionRef } from "../common_components/RouterSettingsAccordion";
 import { routerSettingsEditorValue, routerSettingsUpdate } from "../common_components/routerSettingsPayload";
-import { estimateTooltips, withNormalizedEstimates } from "./estimatedOutputTokens";
+import { withNormalizedEstimates } from "./estimatedOutputTokens";
 import {
   currentValuePlaceholder,
   keyTypeFromRoutes,
@@ -42,7 +42,7 @@ import {
 } from "./KeyEditViewControls";
 import {
   KeyEditFormValues,
-  keyEditFormSchema,
+  createKeyEditFormSchema,
   McpServersAndGroups,
   toKeyEditFormValues,
   toSubmittedValues,
@@ -98,8 +98,11 @@ export function KeyEditView({
   const canViewPolicies = hasCapability(userRole, "viewPolicies");
   const canViewPrompts = hasCapability(userRole, "viewPrompts");
   const canEditEstimates = userRole != null && isProxyAdminRole(userRole);
-  const estimateTooltip = estimateTooltips(canEditEstimates);
-  const form = useZodForm<KeyEditFormValues, KeyEditFormValues>(keyEditFormSchema, {
+  const estimateTooltip = {
+    estimate: canEditEstimates ? t("virtualKeys.edit.estimateHint") : t("virtualKeys.edit.estimateAdminHint"),
+    perModel: canEditEstimates ? t("virtualKeys.edit.perModelEstimateHint") : t("virtualKeys.edit.estimateAdminHint"),
+  };
+  const form = useZodForm<KeyEditFormValues, KeyEditFormValues>(createKeyEditFormSchema(t), {
     defaultValues: toKeyEditFormValues(keyData),
   });
   const [promptsList, setPromptsList] = useState<string[]>([]);
@@ -335,7 +338,10 @@ export function KeyEditView({
   };
 
   const modelOptions = [
-    ...modelSentinelOptions(keyData.team_id, team != null),
+    ...modelSentinelOptions(keyData.team_id, team != null, {
+      allProxyModels: t("virtualKeys.createKey.allProxyModels"),
+      allTeamModels: t("virtualKeys.createKey.allTeamModels"),
+    }),
     ...availableModels.map((model) => ({
       value: model,
       label: model,
@@ -644,7 +650,10 @@ export function KeyEditView({
                     premiumUser,
                     keyData.metadata?.prompts,
                     t("virtualKeys.edit.promptsUpgrade"),
-                    t("virtualKeys.edit.selectOrEnterPrompts"),
+                    {
+                      emptyHint: t("virtualKeys.edit.selectOrEnterPrompts"),
+                      formatCurrent: (values) => t("virtualKeys.edit.currentValues", { values }),
+                    },
                   )}
                 />
               )}
@@ -683,7 +692,10 @@ export function KeyEditView({
                   premiumUser,
                   keyData.metadata?.allowed_passthrough_routes,
                   t("virtualKeys.edit.passThroughUpgrade"),
-                  t("virtualKeys.edit.selectPassThroughRoutes"),
+                  {
+                    emptyHint: t("virtualKeys.edit.selectPassThroughRoutes"),
+                    formatCurrent: (values) => t("virtualKeys.edit.currentValues", { values }),
+                  },
                 )}
                 disabled={!premiumUser}
               />

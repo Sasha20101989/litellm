@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { z } from "zod/v4";
 
 import { KeyResponse } from "../key_team_helpers/key_list";
@@ -167,6 +168,16 @@ export const keyEditFormSchema = z.object({
   auto_rotate: z.custom<boolean | undefined>(),
   rotation_interval: z.custom<string | undefined>(),
 });
+
+export const createKeyEditFormSchema = (t: TFunction<"gateway">) =>
+  keyEditFormSchema.extend({
+    default_estimated_output_tokens: z
+      .custom<number | string | null | undefined>()
+      .refine(estimateChecks.positive.isValid, t("virtualKeys.edit.positiveInteger")),
+    default_estimated_output_tokens_per_model: z
+      .custom<string | undefined>()
+      .refine(estimateChecks.perModel.isValid, t("virtualKeys.edit.positiveIntegerJson")),
+  });
 
 export interface MountedFieldGates {
   canViewPolicies: boolean;

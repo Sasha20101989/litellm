@@ -3,6 +3,7 @@
  * Handles primary model selection and fallback chain configuration
  */
 
+import { useTranslation } from "react-i18next";
 import { MultiSelect } from "@/components/shared/MultiSelect";
 import { SearchSelect } from "@/components/shared/SearchSelect";
 import { AlertCircle, ArrowDown, X } from "lucide-react";
@@ -29,6 +30,7 @@ export function FallbackGroupConfig({
   maxFallbacks,
   disablePrimaryModel = false,
 }: FallbackGroupConfigProps) {
+  const { t } = useTranslation("gateway");
   // Filter available options for fallbacks (exclude primary only, allow already selected to be shown for deselection)
   const availableFallbackOptions = availableModels.filter((m) => m !== group.primaryModel);
 
@@ -67,22 +69,22 @@ export function FallbackGroupConfig({
       {/* Primary Model Section */}
       <div className="relative">
         <label htmlFor={primaryModelInputId} className="block text-sm font-semibold text-foreground mb-2">
-          Primary Model <span className="text-destructive">*</span>
+          {t("virtualKeys.edit.primaryModel")} <span className="text-destructive">*</span>
         </label>
         <SearchSelect
           inputId={primaryModelInputId}
           options={availableModels.map((m) => ({ label: m, value: m }))}
           value={group.primaryModel}
           onValueChange={handlePrimaryChange}
-          placeholder="Select primary model"
-          emptyText="No models found"
+          placeholder={t("virtualKeys.edit.selectPrimaryModel")}
+          emptyText={t("virtualKeys.edit.noModelsFound")}
           disabled={disablePrimaryModel}
           className="h-12"
         />
         {!disablePrimaryModel && !group.primaryModel && (
           <div className="mt-2 flex items-center gap-2 text-warning text-xs bg-warning/10 p-2 rounded-sm">
             <AlertCircle className="w-4 h-4" />
-            <span>Select a model to begin configuring fallbacks</span>
+            <span>{t("virtualKeys.edit.selectModelForFallbacks")}</span>
           </div>
         )}
       </div>
@@ -91,7 +93,7 @@ export function FallbackGroupConfig({
       <div className="flex items-center justify-center -my-4 z-raised">
         <div className="bg-indigo-50 text-indigo-500 px-4 py-1 rounded-full text-xs font-bold border border-indigo-100 flex items-center gap-2 shadow-xs dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-900">
           <ArrowDown className="w-4 h-4" />
-          IF FAILS, TRY...
+          {t("virtualKeys.edit.ifFailsTry")}
         </div>
       </div>
 
@@ -100,9 +102,9 @@ export function FallbackGroupConfig({
         className={`transition-opacity duration-300 ${!group.primaryModel ? "opacity-50 pointer-events-none" : "opacity-100"}`}
       >
         <label className="block text-sm font-semibold text-foreground mb-2">
-          Fallback Chain <span className="text-destructive">*</span>
+          {t("virtualKeys.edit.fallbackChain")} <span className="text-destructive">*</span>
           <span className="text-xs text-muted-foreground font-normal ml-2">
-            (Max {maxFallbacks} fallbacks at a time)
+            {t("virtualKeys.edit.maxFallbacks", { max: maxFallbacks })}
           </span>
         </label>
 
@@ -114,16 +116,18 @@ export function FallbackGroupConfig({
               value={group.fallbackModels}
               onValueChange={handleFallbackSelect}
               placeholder={
-                canAddMoreFallbacks ? "Select fallback models to add..." : `Maximum ${maxFallbacks} fallbacks reached`
+                canAddMoreFallbacks
+                  ? t("virtualKeys.edit.selectFallbackModels")
+                  : t("virtualKeys.edit.fallbackLimitReached", { max: maxFallbacks })
               }
-              emptyText="No models found"
+              emptyText={t("virtualKeys.edit.noModelsFound")}
               disabled={!group.primaryModel}
               className="w-full"
             />
             <p className="text-xs text-muted-foreground mt-1 ml-1">
               {canAddMoreFallbacks
-                ? `Search and select multiple models. Selected models will appear below in order. (${group.fallbackModels.length}/${maxFallbacks} used)`
-                : `Maximum ${maxFallbacks} fallbacks reached. Remove some to add more.`}
+                ? t("virtualKeys.edit.fallbackSelectionHint", { used: group.fallbackModels.length, max: maxFallbacks })
+                : t("virtualKeys.edit.fallbackLimitHint", { max: maxFallbacks })}
             </p>
           </div>
 
@@ -131,11 +135,11 @@ export function FallbackGroupConfig({
           <div className="space-y-2 min-h-[100px]">
             {group.fallbackModels.length === 0 ? (
               <div className="h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground">
-                <span className="text-sm">No fallback models selected</span>
-                <span className="text-xs mt-1">Add models from the dropdown above</span>
+                <span className="text-sm">{t("virtualKeys.edit.noFallbackModels")}</span>
+                <span className="text-xs mt-1">{t("virtualKeys.edit.addFallbackModelsHint")}</span>
               </div>
             ) : (
-              <ol aria-label="Fallback chain" className="space-y-2">
+              <ol aria-label={t("virtualKeys.edit.fallbackChain")} className="space-y-2">
                 {group.fallbackModels.map((modelValue, index) => (
                   <li
                     key={`${modelValue}-${index}`}
@@ -152,7 +156,7 @@ export function FallbackGroupConfig({
 
                     <button
                       type="button"
-                      aria-label={`Remove ${modelValue}`}
+                      aria-label={t("virtualKeys.edit.removeNamed", { name: modelValue })}
                       onClick={() => removeFallback(index)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
                     >

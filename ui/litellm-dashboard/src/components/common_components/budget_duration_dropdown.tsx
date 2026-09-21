@@ -1,15 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const NEVER_RESETS_BUDGET_DURATION = "none";
-
-const DURATION_LABELS: Record<string, string> = {
-  [NEVER_RESETS_BUDGET_DURATION]: "Never resets",
-  "1h": "hourly",
-  "24h": "daily",
-  "7d": "weekly",
-  "30d": "monthly",
-};
 
 interface BudgetDurationDropdownProps {
   id?: string;
@@ -27,21 +20,32 @@ const BudgetDurationDropdown: React.FC<BudgetDurationDropdownProps> = ({
   onChange,
   className = "",
   style = {},
-  placeholder = "n/a",
+  placeholder,
   showNeverResets = false,
 }) => {
+  const { t } = useTranslation("gateway");
+  const resolvedPlaceholder = placeholder ?? t("virtualKeys.edit.notSet");
+  const durationLabels: Record<string, string> = {
+    [NEVER_RESETS_BUDGET_DURATION]: t("virtualKeys.edit.neverResets"),
+    "1h": t("virtualKeys.edit.hourly"),
+    "24h": t("virtualKeys.edit.daily"),
+    "7d": t("virtualKeys.edit.weekly"),
+    "30d": t("virtualKeys.edit.monthly"),
+  };
   return (
-    <Select items={DURATION_LABELS} value={value || null} onValueChange={onChange}>
+    <Select items={durationLabels} value={value || null} onValueChange={onChange}>
       <SelectTrigger id={id} className={`w-full ${className}`} style={style}>
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder={resolvedPlaceholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={null}>{placeholder}</SelectItem>
-        {showNeverResets ? <SelectItem value={NEVER_RESETS_BUDGET_DURATION}>Never resets</SelectItem> : null}
-        <SelectItem value="1h">hourly</SelectItem>
-        <SelectItem value="24h">daily</SelectItem>
-        <SelectItem value="7d">weekly</SelectItem>
-        <SelectItem value="30d">monthly</SelectItem>
+        <SelectItem value={null}>{resolvedPlaceholder}</SelectItem>
+        {Object.entries(durationLabels)
+          .filter(([duration]) => showNeverResets || duration !== NEVER_RESETS_BUDGET_DURATION)
+          .map(([duration, label]) => (
+            <SelectItem key={duration} value={duration}>
+              {label}
+            </SelectItem>
+          ))}
       </SelectContent>
     </Select>
   );

@@ -29,9 +29,10 @@ export const parseAllowedRoutes = (value: unknown): string[] =>
 export const modelSentinelOptions = (
   keyTeamId: string | null | undefined,
   teamLoaded: boolean,
+  labels = { allProxyModels: "All Proxy Models", allTeamModels: "All Team Models" },
 ): { value: string; label: string }[] => {
-  if (keyTeamId == null) return [{ value: "all-proxy-models", label: "All Proxy Models" }];
-  return teamLoaded ? [{ value: "all-team-models", label: "All Team Models" }] : [];
+  if (keyTeamId == null) return [{ value: "all-proxy-models", label: labels.allProxyModels }];
+  return teamLoaded ? [{ value: "all-team-models", label: labels.allTeamModels }] : [];
 };
 
 export type MovedMetadataTags = {
@@ -71,8 +72,10 @@ export const currentValuePlaceholder = (
   premiumUser: boolean,
   current: unknown,
   premiumHint: string,
-  emptyHint: string,
+  display: string | { emptyHint: string; formatCurrent: (values: string) => string },
 ): string => {
   if (!premiumUser) return premiumHint;
-  return Array.isArray(current) && current.length > 0 ? `Current: ${current.join(", ")}` : emptyHint;
+  const emptyHint = typeof display === "string" ? display : display.emptyHint;
+  const formatCurrent = typeof display === "string" ? (values: string) => `Current: ${values}` : display.formatCurrent;
+  return Array.isArray(current) && current.length > 0 ? formatCurrent(current.join(", ")) : emptyHint;
 };

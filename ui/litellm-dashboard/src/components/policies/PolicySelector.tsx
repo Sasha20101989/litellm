@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import useCan from "@/app/(dashboard)/hooks/useCan";
 import { Policy } from "./types";
 import { getPoliciesList } from "../networking";
@@ -56,6 +57,7 @@ const PolicySelector: React.FC<PolicySelectorProps> = ({
   placeholder,
   disabledPlaceholder,
 }) => {
+  const { t } = useTranslation("gateway");
   const canViewPolicies = useCan("viewPolicies");
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(false);
@@ -95,8 +97,8 @@ const PolicySelector: React.FC<PolicySelectorProps> = ({
         disabled={disabled}
         placeholder={
           disabled
-            ? disabledPlaceholder ?? "Setting policies is a premium feature."
-            : placeholder ?? "Select policies (production or published versions)"
+            ? disabledPlaceholder ?? t("virtualKeys.edit.policiesPremium")
+            : placeholder ?? t("virtualKeys.edit.selectPolicyVersions")
         }
         onValueChange={handlePolicyChange}
         value={value}

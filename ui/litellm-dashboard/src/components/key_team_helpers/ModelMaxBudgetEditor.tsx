@@ -43,6 +43,8 @@ const readPeriod = (raw: unknown): string | null => (typeof raw === "string" && 
 
 const DEFAULT_PERIOD = "30d";
 
+export const MODEL_MAX_BUDGET_PREMIUM_HINT = "Premium feature - Upgrade to set per-model budgets";
+
 export const entriesToModelMaxBudget = (entries: readonly ModelBudgetEntry[]): ModelMaxBudget =>
   Object.fromEntries(
     entries
@@ -200,8 +202,8 @@ export function ModelMaxBudgetEditor({
 
             {spent !== undefined && (
               <div className="text-[11px] text-muted-foreground mt-2 ml-1">
-                Current window spend: ${spent}
-                {entry.budgetLimit !== null && ` of $${entry.budgetLimit}`}
+                {t("virtualKeys.edit.currentWindowSpend", { spend: spent })}
+                {entry.budgetLimit !== null && t("virtualKeys.edit.ofBudget", { budget: entry.budgetLimit })}
               </div>
             )}
           </div>

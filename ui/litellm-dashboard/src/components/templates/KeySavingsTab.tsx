@@ -38,7 +38,8 @@ interface KeySavingsTabProps {
 }
 
 const KeySavingsTab: React.FC<KeySavingsTabProps> = ({ accessToken, keyToken, userId, userRole, activity }) => {
-  const { t } = useTranslation("gateway");
+  const { t, i18n } = useTranslation("gateway");
+  const locale = i18n.language || "en";
   // Proxy admins read the whole key. For anyone else the endpoint applies the caller's own user_id
   // alongside the key filter, so the figures cover only that viewer's requests on this key -- said
   // plainly in the scope note below rather than left to be misread as the key's total.
@@ -53,16 +54,16 @@ const KeySavingsTab: React.FC<KeySavingsTabProps> = ({ accessToken, keyToken, us
 
   const [accumulation, setAccumulation] = useState<SavingsAccumulation>("cumulative");
 
-  const perInterval = useMemo<SavingsPoint[]>(() => savingsSeriesOf(results), [results]);
+  const perInterval = useMemo<SavingsPoint[]>(() => savingsSeriesOf(results, locale), [results, locale]);
 
   const overTime = useMemo(() => {
     if (accumulation !== "cumulative") return perInterval;
-    const startLabel = startTime ? shortDate(localIsoDay(startTime)) : "";
+    const startLabel = startTime ? shortDate(localIsoDay(startTime), locale) : "";
     return withStartAnchor(toCumulative(perInterval), startLabel);
-  }, [accumulation, perInterval, startTime]);
+  }, [accumulation, perInterval, startTime, locale]);
 
   const intervalLabel = t("virtualKeys.savings.perDay");
-  const rangeLabel = formatRangeLabel(startTime ?? undefined, endTime ?? undefined);
+  const rangeLabel = formatRangeLabel(startTime ?? undefined, endTime ?? undefined, locale);
   const savingsSubtitle = [
     accumulation === "cumulative" ? t("virtualKeys.savings.runningTotal") : t("virtualKeys.savings.savedPerDay"),
     rangeLabel && `${rangeLabel} (UTC)`,
@@ -72,10 +73,19 @@ const KeySavingsTab: React.FC<KeySavingsTabProps> = ({ accessToken, keyToken, us
 
   const isLoading = loading || isFetchingMore;
   const hasRows = results.length > 0;
+  const seriesLabels = [
+    t("virtualKeys.savings.compression"),
+    t("virtualKeys.savings.promptCaching"),
+    t("virtualKeys.savings.autoRouter"),
+  ];
+  const chartData = overTime.map((point) => ({
+    date: point.date,
+    ...Object.fromEntries(SAVINGS_SERIES.map((series, index) => [seriesLabels[index], point[series]])),
+  }));
   const chartProps = {
-    data: overTime,
+    data: chartData,
     index: "date",
-    categories: SAVINGS_SERIES,
+    categories: seriesLabels,
     colors: SAVINGS_COLORS,
     valueFormatter: usd,
     showLegend: false,
@@ -101,7 +111,7 @@ const KeySavingsTab: React.FC<KeySavingsTabProps> = ({ accessToken, keyToken, us
           <CardTitle>{t("virtualKeys.savings.title")}</CardTitle>
           <CardDescription>{savingsSubtitle}</CardDescription>
           <CardAction className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-            <CustomLegend categories={SAVINGS_SERIES} colors={SAVINGS_COLORS} />
+            <CustomLegend categories={seriesLabels} colors={SAVINGS_COLORS} />
             <Tabs value={accumulation} onValueChange={(value) => setAccumulation(value as SavingsAccumulation)}>
               <TabsList>
                 <TabsTrigger value="cumulative">{t("virtualKeys.savings.cumulative")}</TabsTrigger>

@@ -9,6 +9,7 @@
  * Output is the same `string[]` of allowed tool names that the backend accepts.
  */
 
+import { useTranslation } from "react-i18next";
 import React, { useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
@@ -76,6 +77,21 @@ const McpCrudPermissionPanel: React.FC<McpCrudPermissionPanelProps> = ({
   readOnly = false,
   searchFilter = "",
 }) => {
+  const { t } = useTranslation("gateway");
+  const labels = {
+    read: t("virtualKeys.edit.crudRead"),
+    create: t("virtualKeys.edit.crudCreate"),
+    update: t("virtualKeys.edit.crudUpdate"),
+    delete: t("virtualKeys.edit.crudDelete"),
+    unknown: t("virtualKeys.edit.crudOther"),
+  };
+  const descriptions = {
+    read: t("virtualKeys.edit.crudReadHint"),
+    create: t("virtualKeys.edit.crudCreateHint"),
+    update: t("virtualKeys.edit.crudUpdateHint"),
+    delete: t("virtualKeys.edit.crudDeleteHint"),
+    unknown: t("virtualKeys.edit.crudOtherHint"),
+  };
   const [collapsed, setCollapsed] = useState<Record<CrudOp, boolean>>({
     read: false,
     create: false,
@@ -179,29 +195,36 @@ const McpCrudPermissionPanel: React.FC<McpCrudPermissionPanelProps> = ({
                 ) : (
                   <ChevronDownIcon className="w-4 h-4 text-muted-foreground shrink-0" />
                 )}
-                <span className="font-semibold text-foreground text-sm">{meta.label}</span>
+                <span className="font-semibold text-foreground text-sm">{labels[op]}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${RISK_BADGE[meta.risk]}`}>
                   {meta.risk === "high"
-                    ? "High Risk"
+                    ? t("virtualKeys.edit.highRisk")
                     : meta.risk === "medium"
-                      ? "Medium Risk"
+                      ? t("virtualKeys.edit.mediumRisk")
                       : meta.risk === "low"
-                        ? "Safe"
-                        : "Unclassified"}
+                        ? t("virtualKeys.edit.safeRisk")
+                        : t("virtualKeys.edit.unclassified")}
                 </span>
                 <span className="text-xs text-muted-foreground ml-1">
-                  {group.filter((t) => effectiveAllowed.has(t.name)).length}/{group.length} allowed
+                  {t("virtualKeys.edit.allowedToolsCount", {
+                    allowed: group.filter((tool) => effectiveAllowed.has(tool.name)).length,
+                    total: group.length,
+                  })}
                 </span>
               </button>
 
               {!readOnly && (
                 <div className="flex items-center gap-2 ml-4">
                   <p className="text-xs text-muted-foreground">
-                    {fullyAllowed ? "All on" : partial ? "Partial" : "All off"}
+                    {fullyAllowed
+                      ? t("virtualKeys.edit.allOn")
+                      : partial
+                        ? t("virtualKeys.edit.partial")
+                        : t("virtualKeys.edit.allOff")}
                   </p>
                   {/* Checkbox supports `indeterminate`; Switch does not. */}
                   <Checkbox
-                    aria-label={`Allow all ${meta.label} tools`}
+                    aria-label={t("virtualKeys.edit.allowAllTools", { operation: labels[op] })}
                     checked={fullyAllowed}
                     indeterminate={partial}
                     onCheckedChange={(checked) => toggleGroup(op, checked)}
@@ -214,7 +237,7 @@ const McpCrudPermissionPanel: React.FC<McpCrudPermissionPanelProps> = ({
             {/* Description row */}
             {!isCollapsed && (
               <div className="px-4 pt-2 pb-1 text-xs text-muted-foreground bg-card border-b border-border">
-                {meta.description}
+                {descriptions[op]}
               </div>
             )}
 
@@ -256,7 +279,7 @@ const McpCrudPermissionPanel: React.FC<McpCrudPermissionPanelProps> = ({
                             allowed ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {allowed ? "on" : "off"}
+                          {allowed ? t("virtualKeys.edit.on") : t("virtualKeys.edit.off")}
                         </span>
                       </div>
                     );

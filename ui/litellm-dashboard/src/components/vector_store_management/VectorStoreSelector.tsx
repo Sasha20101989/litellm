@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useEffect, useState } from "react";
 import { VectorStore } from "./types";
 import { vectorStoreListCall } from "../networking";
@@ -16,9 +17,10 @@ const VectorStoreSelector: React.FC<VectorStoreSelectorProps> = ({
   value,
   className,
   accessToken,
-  placeholder = "Select vector stores",
+  placeholder,
   disabled = false,
 }) => {
+  const { t } = useTranslation("gateway");
   const [vectorStores, setVectorStores] = useState<VectorStore[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +47,7 @@ const VectorStoreSelector: React.FC<VectorStoreSelectorProps> = ({
   return (
     <div className="min-w-0">
       <MultiSelect
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("virtualKeys.edit.selectVectorStores")}
         onValueChange={onChange}
         value={value}
         loading={loading}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -16,14 +17,23 @@ const RoutingStrategySelector: React.FC<RoutingStrategySelectorProps> = ({
   routerFieldsMetadata,
   onStrategyChange,
 }) => {
+  const { t } = useTranslation("gateway");
+  const descriptions: Record<string, string> = {
+    "simple-shuffle": t("virtualKeys.edit.strategyShuffle"),
+    "least-busy": t("virtualKeys.edit.strategyLeastBusy"),
+    "latency-based-routing": t("virtualKeys.edit.strategyLatency"),
+    "cost-based-routing": t("virtualKeys.edit.strategyCost"),
+    "usage-based-routing": t("virtualKeys.edit.strategyUsage"),
+    "usage-based-routing-v2": t("virtualKeys.edit.strategyUsageV2"),
+  };
   return (
     <div className="space-y-2 max-w-3xl">
       <div>
         <label className="text-xs font-medium text-foreground uppercase tracking-wide">
-          {routerFieldsMetadata["routing_strategy"]?.ui_field_name || "Routing Strategy"}
+          {t("virtualKeys.createKey.optional.routingStrategy")}
         </label>
         <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-          {routerFieldsMetadata["routing_strategy"]?.field_description || ""}
+          {t("virtualKeys.createKey.optional.routingStrategyDescription")}
         </p>
       </div>
       <div className="routing-strategy-select max-w-3xl">
@@ -41,7 +51,7 @@ const RoutingStrategySelector: React.FC<RoutingStrategySelectorProps> = ({
                   <span className="font-mono text-sm font-medium">{strategy}</span>
                   {routingStrategyDescriptions[strategy] && (
                     <span className="text-xs font-normal text-muted-foreground">
-                      {routingStrategyDescriptions[strategy]}
+                      {descriptions[strategy] ?? routingStrategyDescriptions[strategy]}
                     </span>
                   )}
                 </div>

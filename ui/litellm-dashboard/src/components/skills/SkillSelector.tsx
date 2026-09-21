@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Combobox,
   ComboboxChip,
@@ -45,9 +46,11 @@ const SkillSelector: React.FC<SkillSelectorProps> = ({
   value,
   className,
   accessToken,
-  placeholder = "Select skills (optional)",
+  placeholder,
   disabled = false,
 }) => {
+  const { t } = useTranslation("gateway");
+  const resolvedPlaceholder = placeholder ?? t("virtualKeys.edit.selectSkills");
   const anchor = useComboboxAnchor();
   const [options, setOptions] = useState<SkillOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,18 +88,26 @@ const SkillSelector: React.FC<SkillSelectorProps> = ({
             ))
           }
         </ComboboxValue>
-        <ComboboxChipsInput placeholder={placeholder} aria-label={placeholder} disabled={disabled} />
-        {value && value.length > 0 && <ComboboxClear aria-label="Clear all skills" disabled={disabled} />}
+        <ComboboxChipsInput placeholder={resolvedPlaceholder} aria-label={resolvedPlaceholder} disabled={disabled} />
+        {value && value.length > 0 && (
+          <ComboboxClear aria-label={t("virtualKeys.edit.clearSkills")} disabled={disabled} />
+        )}
       </ComboboxChips>
       <ComboboxContent anchor={anchor}>
-        <ComboboxEmpty>{loading ? "Loading skills…" : "No skills found"}</ComboboxEmpty>
+        <ComboboxEmpty>{loading ? t("virtualKeys.edit.loadingSkills") : t("virtualKeys.edit.noSkills")}</ComboboxEmpty>
         <ComboboxList>
           {(skill: string) => {
             const isPrivate = options.some((option) => option.name === skill && !option.enabled);
             return (
-              <ComboboxItem key={skill} value={skill} aria-label={isPrivate ? `${skill} (private)` : skill}>
+              <ComboboxItem
+                key={skill}
+                value={skill}
+                aria-label={isPrivate ? `${skill} (${t("virtualKeys.edit.privateSkill")})` : skill}
+              >
                 {skill}
-                {isPrivate && <span className="ml-2 text-xs text-muted-foreground">private</span>}
+                {isPrivate && (
+                  <span className="ml-2 text-xs text-muted-foreground">{t("virtualKeys.edit.privateSkill")}</span>
+                )}
               </ComboboxItem>
             );
           }}
