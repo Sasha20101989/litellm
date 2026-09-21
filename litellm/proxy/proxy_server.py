@@ -2191,6 +2191,12 @@ try:
         else:
             _restructure_ui_html_files(ui_path)
             verbose_proxy_logger.info("Restructured UI directory: %s", ui_path)
+
+        focus_ui_path: Final = os.path.join(ui_path, "new-ui")
+        if os.path.isdir(focus_ui_path):
+            app.mount("/new-ui", StaticFiles(directory=focus_ui_path, html=True), name="focus_ui")
+        else:
+            verbose_proxy_logger.info("Focus UI directory is not present at %s; skipping /new-ui mount", focus_ui_path)
     except PermissionError as e:
         verbose_proxy_logger.exception("Permission error while restructuring UI directory %s: %s", ui_path, e)
     except Exception as e:
