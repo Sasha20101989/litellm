@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   usePersistedColumnVisibility,
   useUrlTableState,
@@ -38,6 +39,7 @@ import {
   Filter,
   KeyRound,
   Loader2,
+  Menu,
   Moon,
   RefreshCw,
   Search,
@@ -348,13 +350,6 @@ function FocusVirtualKeysPage() {
   };
   const clearAllFilters = () => onColumnFiltersChange([]);
   const removeFilter = (id: FilterColumn) => onColumnFiltersChange(columnFilters.filter((filter) => filter.id !== id));
-  const toggleTeam = (teamId: string) => {
-    const selected = filterValue(columnFilters, "team_id");
-    onColumnFiltersChange([
-      ...columnFilters.filter((filter) => filter.id !== "team_id"),
-      ...(selected === teamId ? [] : [{ id: "team_id", value: teamId }]),
-    ]);
-  };
   const refresh = async () => {
     await Promise.all([
       refetch(),
@@ -424,10 +419,6 @@ function FocusVirtualKeysPage() {
           --focus-violet: oklch(0.53 0.16 295);
           --focus-violet-soft: color-mix(in oklab, var(--focus-violet) 13%, transparent);
         }
-        .focus-rail {
-          background: var(--card);
-          border-color: var(--border);
-        }
         .focus-key-row {
           border-color: transparent;
           background: transparent;
@@ -462,60 +453,65 @@ function FocusVirtualKeysPage() {
           color: #b53e4d;
         }
       `}</style>
-      <div className="mx-auto grid min-h-screen max-w-[1600px] lg:grid-cols-[220px_minmax(360px,0.9fr)_minmax(420px,1.1fr)]">
-        <aside className="focus-rail hidden border-r p-4 lg:flex lg:flex-col">
-          <div className="flex items-center gap-2 px-2 py-3 text-lg font-bold tracking-tight">
-            <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground">N</span>
-            Nexoplane
-          </div>
-          <div className="mt-5 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("focusKeys.teams")}
-          </div>
-          <button
-            type="button"
-            onClick={() => removeFilter("team_id")}
-            className={`mt-2 flex rounded-lg px-3 py-2 text-left text-sm ${!filterValue(columnFilters, "team_id") ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted"}`}
-          >
-            {t("focusKeys.allKeys")}
-          </button>
-          <div className="mt-1 space-y-1 overflow-y-auto">
-            {teams.map((team) => (
-              <button
-                key={team.team_id}
-                type="button"
-                onClick={() => toggleTeam(team.team_id)}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${filterValue(columnFilters, "team_id") === team.team_id ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted"}`}
-              >
-                <span className="size-2 rounded-full bg-current opacity-60" />
-                <span className="truncate">{team.team_alias || team.team_id}</span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-auto border-t pt-4 text-xs leading-5 text-muted-foreground">
-            {t("focusKeys.railDescription")}
-          </p>
-        </aside>
-
+      <Sheet>
+        <SheetTrigger
+          render={
+            <Button
+              variant="outline"
+              size="icon"
+              className="fixed left-4 top-4 z-raised"
+              aria-label={t("focusKeys.title")}
+            />
+          }
+        >
+          <Menu className="size-4" />
+        </SheetTrigger>
+        <SheetContent side="left" className="w-72 p-4" showCloseButton>
+          <SheetTitle>{t("focusKeys.title")}</SheetTitle>
+          <nav className="mt-4" aria-label={t("focusKeys.title")}>
+            <div className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary" aria-current="page">
+              {t("focusKeys.title")}
+            </div>
+          </nav>
+        </SheetContent>
+      </Sheet>
+      <div
+        className={`mx-auto grid min-h-screen max-w-[1600px] ${
+          selectedKeyId ? "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" : "lg:grid-cols-1"
+        }`}
+      >
         <section className={`min-w-0 border-r border-border ${selectedKeyId ? "hidden lg:block" : "block"}`}>
-          <div className="border-b border-border p-5 sm:p-6">
+          <div className="border-b border-border px-5 py-5 pl-16 sm:px-6 sm:py-6 sm:pl-16">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">{t("focusKeys.title")}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">{t("focusKeys.subtitle")}</p>
               </div>
-              {!isViewOnly && (
-                <CreateKey
-                  team={null}
-                  teams={teams}
-                  data={createdKeys}
-                  addKey={addCreatedKey}
-                  autoOpenCreate={
-                    typeof window !== "undefined" &&
-                    new URLSearchParams(window.location.search).get("create") === "true"
-                  }
-                  prefillData={prefillData}
-                />
-              )}
+              <div className="flex items-center gap-2">
+                <div className="hidden lg:block">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+                    aria-label={theme === "dark" ? t("focusKeys.theme.light") : t("focusKeys.theme.dark")}
+                  >
+                    {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                  </Button>
+                </div>
+                {!isViewOnly && (
+                  <CreateKey
+                    team={null}
+                    teams={teams}
+                    data={createdKeys}
+                    addKey={addCreatedKey}
+                    autoOpenCreate={
+                      typeof window !== "undefined" &&
+                      new URLSearchParams(window.location.search).get("create") === "true"
+                    }
+                    prefillData={prefillData}
+                  />
+                )}
+              </div>
             </div>
             <div className="mt-5 flex gap-2">
               <div className="relative flex-1">
@@ -657,7 +653,8 @@ function FocusVirtualKeysPage() {
           </div>
         </section>
 
-        <section className={`min-w-0 ${selectedKeyId ? "block" : "hidden lg:block"}`}>
+        {selectedKeyId && (
+          <section className="min-w-0">
           {selectedKeyId && !selectedKey && !selectedKeyLoadFailed && (
             <FocusSelectedKeyState onBack={() => void setSelectedKeyId(null)}>
               <Loader2 className="mr-2 size-4 animate-spin" />
@@ -671,7 +668,12 @@ function FocusVirtualKeysPage() {
           )}
           {selectedKey && (
             <div className="min-h-screen overflow-auto p-3 sm:p-5">
-              <Button variant="ghost" size="sm" className="mb-3 lg:hidden" onClick={() => void setSelectedKeyId(null)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-3 ml-12 lg:ml-0"
+                  onClick={() => void setSelectedKeyId(null)}
+                >
                 <ArrowLeft className="size-4" />
                 {t("focusKeys.back")}
               </Button>
@@ -687,27 +689,8 @@ function FocusVirtualKeysPage() {
               />
             </div>
           )}
-          {!selectedKeyId && (
-            <div className="flex min-h-screen flex-col items-center justify-center p-8 text-center">
-              <KeyRound className="size-10 text-primary" />
-              <h2 className="mt-4 text-xl font-semibold">{t("focusKeys.selection.title")}</h2>
-              <p className="mt-2 max-w-sm text-sm text-muted-foreground">{t("focusKeys.selection.description")}</p>
-              <Button className="mt-5 lg:hidden" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-                {t("focusKeys.selection.browse")}
-              </Button>
-            </div>
-          )}
-          <div className="absolute right-4 top-4 hidden lg:block">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-              aria-label={theme === "dark" ? t("focusKeys.theme.light") : t("focusKeys.theme.dark")}
-            >
-              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </Button>
-          </div>
-        </section>
+          </section>
+        )}
       </div>
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
         <DialogContent>
