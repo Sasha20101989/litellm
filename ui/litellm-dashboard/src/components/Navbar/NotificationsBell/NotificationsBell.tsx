@@ -29,9 +29,9 @@ export const NotificationsBell: React.FC = () => {
 
   const content = (
     <div className="max-w-[280px]">
-      <PopoverTitle className="mt-0! mb-2!">{t("layout.notifications.title")}</PopoverTitle>
+      <PopoverTitle className="mt-0! mb-2!">{t("nav.notifications.title")}</PopoverTitle>
       <PopoverDescription className="mb-3! text-sm leading-snug">
-        {t("layout.notifications.description")}
+        {t("nav.notifications.description")}
       </PopoverDescription>
       <div className="flex flex-wrap items-center gap-2">
         <a
@@ -40,11 +40,11 @@ export const NotificationsBell: React.FC = () => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          {t("layout.notifications.readDocs")}
+          {t("nav.notifications.readDocs")}
         </a>
         {hasUnread ? (
           <Button variant="link" size="sm" className="px-1!" onClick={markDismissed}>
-            {t("layout.notifications.markAsRead")}
+            {t("nav.notifications.markAsRead")}
           </Button>
         ) : null}
       </div>
@@ -55,7 +55,7 @@ export const NotificationsBell: React.FC = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className="flex! h-9! w-9! items-center justify-center rounded-md! text-muted-foreground transition-colors hover:bg-accent! hover:text-foreground!"
-        aria-label={t("layout.notifications.aria")}
+        aria-label={t("nav.notifications.aria")}
       >
         <span className="relative inline-flex">
           <Bell className="size-4" aria-hidden />
