@@ -3181,6 +3181,7 @@ export const ruGateway = {
       more: "+ ещё {{count}}",
       of: "из",
       teamBudget: "Команда",
+      copyField: "Копировать: {{field}}",
     },
     details: {
       back: "Назад к ключам",

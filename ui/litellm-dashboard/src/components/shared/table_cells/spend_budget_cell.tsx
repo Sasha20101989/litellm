@@ -10,6 +10,8 @@ interface SpendBudgetCellProps {
   inheritedGates?: readonly InheritedBudgetGate[];
   spendDecimals?: number;
   budgetDecimals?: number;
+  unlimitedLabel?: string;
+  ofLabel?: string;
 }
 
 const meterTone = (pct: number): "default" | "warning" | "over" => {
@@ -24,6 +26,8 @@ export function SpendBudgetCell({
   inheritedGates = [],
   spendDecimals = 4,
   budgetDecimals = 0,
+  unlimitedLabel = "· Unlimited",
+  ofLabel = "of",
 }: SpendBudgetCellProps) {
   const spendValue = typeof spend === "number" && !Number.isNaN(spend) ? spend : 0;
   const budget = maxBudget ?? null;
@@ -31,7 +35,8 @@ export function SpendBudgetCell({
   const pct = hasBudget ? (spendValue / budget) * 100 : 0;
 
   const spendText = spendValue > 0 ? getSpendString(spendValue, spendDecimals) : "$0.00";
-  const budgetLabel = budget === null ? "· Unlimited" : `of $${formatNumberWithCommas(budget, budgetDecimals)}`;
+  const budgetText = budget === null ? null : `$${formatNumberWithCommas(budget, budgetDecimals)}`;
+  const budgetLabel = budget === null ? unlimitedLabel : `${ofLabel} ${budgetText}`;
 
   return (
     <div className="flex min-w-[130px] flex-col gap-1">
@@ -44,7 +49,7 @@ export function SpendBudgetCell({
         <Meter
           value={spendValue}
           max={budget}
-          aria-valuetext={`${spendText} of $${formatNumberWithCommas(budget, budgetDecimals)}`}
+          aria-valuetext={`${spendText} ${ofLabel} ${budgetText}`}
         >
           <MeterTrack>
             <MeterIndicator tone={meterTone(pct)} />

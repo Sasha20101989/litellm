@@ -48,7 +48,6 @@ export function DateCell({ value, precision = "datetime", fallback = "-", locale
   if (!date || Number.isNaN(date.getTime())) {
     return <span className="text-muted-foreground">{fallback}</span>;
   }
-
   return (
     <CellTooltip
       content={locale ? formatLocalizedFullTimestamp(date, locale) : formatFullTimestamp(date)}

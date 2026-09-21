@@ -67,7 +67,7 @@ const appliedFilter = (filters: ColumnFiltersState, column: FilterColumn): strin
 };
 
 export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
-  const { t } = useTranslation("gateway");
+  const { t, i18n } = useTranslation("gateway");
   const filterLabels: Record<FilterColumn, string> = {
     team_id: t("virtualKeys.filters.team"),
     org_id: t("virtualKeys.filters.organization"),
@@ -139,8 +139,15 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
   const rowCount = keys?.total_count ?? 0;
 
   const columns = useMemo(
-    () => getKeyTableColumns({ allTeams, organizations, onSelectKey: (key) => void setSelectedKeyId(key.token), t }),
-    [allTeams, organizations, setSelectedKeyId, t],
+    () =>
+      getKeyTableColumns({
+        allTeams,
+        organizations,
+        onSelectKey: (key) => void setSelectedKeyId(key.token),
+        t,
+        locale: i18n.resolvedLanguage ?? i18n.language ?? "en",
+      }),
+    [allTeams, i18n.language, i18n.resolvedLanguage, organizations, setSelectedKeyId, t],
   );
 
   const selectedKeyFromList = useMemo(

@@ -88,6 +88,7 @@ interface KeyTableColumnsDeps {
   organizations: Organization[];
   onSelectKey: (key: KeyResponse) => void;
   t: TFunction<"gateway">;
+  locale: string;
 }
 
 export const getKeyTableColumns = ({
@@ -95,7 +96,15 @@ export const getKeyTableColumns = ({
   organizations,
   onSelectKey,
   t,
+  locale,
 }: KeyTableColumnsDeps): ColumnDef<KeyResponse>[] => {
+  const userLabels = {
+    defaultProxyAdmin: t("virtualKeys.values.defaultProxyAdmin"),
+    userAlias: t("virtualKeys.columns.userAlias"),
+    userEmail: t("virtualKeys.columns.userEmail"),
+    userId: t("virtualKeys.columns.userId"),
+    copyField: (field: string) => t("virtualKeys.values.copyField", { field }),
+  };
   const spendBudgetSortFields: DataTableSortField[] = [
     { id: "spend", label: t("virtualKeys.columns.spend") },
     { id: "max_budget", label: t("virtualKeys.columns.budget") },
@@ -205,6 +214,7 @@ export const getKeyTableColumns = ({
           userEmail={key.user?.user_email ?? key.user_email ?? null}
           userId={key.user_id ?? null}
           width={160}
+          labels={userLabels}
         />
       );
     },
@@ -216,7 +226,7 @@ export const getKeyTableColumns = ({
     header: ({ column }) => <DataTableSortHeader column={column} title={t("virtualKeys.columns.createdAt")} variant="header-cycle" />,
     size: 120,
     enableSorting: true,
-    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" locale={locale} />,
   },
   {
     id: "created_by",
@@ -235,6 +245,7 @@ export const getKeyTableColumns = ({
           userEmail={createdByUser?.user_email ?? null}
           userId={userId}
           width={160}
+          labels={userLabels}
         />
       );
     },
@@ -246,7 +257,7 @@ export const getKeyTableColumns = ({
     header: ({ column }) => <DataTableSortHeader column={column} title={t("virtualKeys.columns.updatedAt")} variant="header-cycle" />,
     size: 120,
     enableSorting: true,
-    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.never")} />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.never")} locale={locale} />,
   },
   {
     id: "last_active",
@@ -260,7 +271,7 @@ export const getKeyTableColumns = ({
     ),
     size: 130,
     enableSorting: false,
-    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.unknown")} />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.unknown")} locale={locale} />,
   },
   {
     id: "expires",
@@ -269,7 +280,7 @@ export const getKeyTableColumns = ({
     header: t("virtualKeys.columns.expires"),
     size: 120,
     enableSorting: false,
-    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.never")} />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.never")} locale={locale} />,
   },
   {
     id: "spend",
@@ -287,6 +298,8 @@ export const getKeyTableColumns = ({
           spend={row.original.spend}
           maxBudget={row.original.max_budget}
           inheritedGates={row.original.max_budget == null ? inheritedBudgetGates(team, organization) : []}
+          unlimitedLabel={`· ${t("virtualKeys.values.unlimited")}`}
+          ofLabel={t("virtualKeys.values.of")}
         />
       );
     },
@@ -312,7 +325,7 @@ export const getKeyTableColumns = ({
     header: t("virtualKeys.columns.budgetReset"),
     size: 130,
     enableSorting: false,
-    cell: (info) => <DateCell value={info.getValue() as string | null} fallback={t("virtualKeys.values.never")} />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} fallback={t("virtualKeys.values.never")} locale={locale} />,
   },
   {
     id: "models",

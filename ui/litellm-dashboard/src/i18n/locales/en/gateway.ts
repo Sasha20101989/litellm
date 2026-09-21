@@ -3182,6 +3182,7 @@ export const enGateway = {
       more: "+{{count}} more",
       of: "of",
       teamBudget: "Team",
+      copyField: "Copy {{field}}",
     },
     details: {
       back: "Back to Keys",
