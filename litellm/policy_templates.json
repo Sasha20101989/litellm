@@ -1543,10 +1543,10 @@
     "parameters": [
       {
         "name": "brand_name",
-        "label": "Your Airline / Brand Name",
+        "label": "Название вашей авиакомпании или бренда",
         "type": "text",
         "required": true,
-        "placeholder": "e.g. Acme Airlines"
+        "placeholder": "например, Acme Airlines"
       }
     ],
     "llm_enrichment": {
@@ -1577,27 +1577,27 @@
             {
               "keyword": "crew roster",
               "action": "BLOCK",
-              "description": "Crew scheduling data"
+              "description": "Данные расписания экипажа"
             },
             {
               "keyword": "crew schedule",
               "action": "BLOCK",
-              "description": "Crew scheduling data"
+              "description": "Данные расписания экипажа"
             },
             {
               "keyword": "duty roster",
               "action": "BLOCK",
-              "description": "Staff duty data"
+              "description": "Данные о рабочих сменах персонала"
             },
             {
               "keyword": "pilot roster",
               "action": "BLOCK",
-              "description": "Pilot scheduling data"
+              "description": "Данные расписания пилотов"
             },
             {
               "keyword": "cabin crew list",
               "action": "BLOCK",
-              "description": "Crew manifest data"
+              "description": "Данные манифеста экипажа"
             }
           ],
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
@@ -1643,52 +1643,52 @@
             {
               "keyword": "{{brand_name}} plane crash",
               "action": "BLOCK",
-              "description": "Fake crash report"
+              "description": "Поддельный отчёт об аварии"
             },
             {
               "keyword": "{{brand_name}} flight crashed",
               "action": "BLOCK",
-              "description": "Fake crash report"
+              "description": "Поддельный отчёт об аварии"
             },
             {
               "keyword": "{{brand_name}} crash landing",
               "action": "BLOCK",
-              "description": "Fake incident"
+              "description": "Поддельное сообщение об инциденте"
             },
             {
               "keyword": "{{brand_name}} emergency",
               "action": "BLOCK",
-              "description": "Fake emergency"
+              "description": "Поддельное сообщение о чрезвычайной ситуации"
             },
             {
               "keyword": "{{brand_name}} passengers dead",
               "action": "BLOCK",
-              "description": "Fake fatality report"
+              "description": "Поддельный отчёт о погибших"
             },
             {
               "keyword": "{{brand_name}} confirms fatalities",
               "action": "BLOCK",
-              "description": "Fake fatality confirmation"
+              "description": "Поддельное подтверждение гибели"
             },
             {
               "keyword": "{{brand_name}} safety scandal",
               "action": "BLOCK",
-              "description": "Fake scandal"
+              "description": "Поддельное сообщение о скандале"
             },
             {
               "keyword": "{{brand_name}} cover up",
               "action": "BLOCK",
-              "description": "Fake coverup claim"
+              "description": "Поддельное заявление о сокрытии информации"
             },
             {
               "keyword": "{{brand_name}} fleet grounded",
               "action": "BLOCK",
-              "description": "Fake grounding claim"
+              "description": "Поддельное заявление о запрете полётов"
             },
             {
               "keyword": "{{brand_name}} discrimination lawsuit",
               "action": "BLOCK",
-              "description": "Fake lawsuit"
+              "description": "Поддельное заявление об иске"
             }
           ]
         },
@@ -1917,10 +1917,10 @@
     "parameters": [
       {
         "name": "brand_name",
-        "label": "Your Brand Name",
+        "label": "Название вашего бренда",
         "type": "text",
         "required": true,
-        "placeholder": "e.g. Acme Airlines"
+        "placeholder": "например, Acme Airlines"
       }
     ],
     "llm_enrichment": {
@@ -2736,7 +2736,7 @@
             {
               "pattern_type": "regex",
               "name": "ru_passport_number",
-              "pattern": "(?<![\\d+])(?<=паспорт )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<=паспорт: )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<=паспорт № )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<=серия )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<=серия: )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<=серия № )\\d{4}[ -]?\\d{6}(?!\\d)",
+              "pattern": "(?<![\\d+])(?<!\\wпаспорт )(?<=паспорт )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<!\\wпаспорт )(?<=паспорт: )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<!\\wпаспорт )(?<=паспорт № )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<!\\wсерия )(?<=серия )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<!\\wсерия )(?<=серия: )\\d{4}[ -]?\\d{6}(?!\\d)|(?<![\\d+])(?<!\\wсерия )(?<=серия № )\\d{4}[ -]?\\d{6}(?!\\d)",
               "action": "MASK"
             },
             {
@@ -2748,7 +2748,7 @@
             {
               "pattern_type": "regex",
               "name": "ru_inn",
-              "pattern": "(?<!\\d)(?<=ИНН )\\d{10}(?!\\d)|(?<!\\d)(?<=ИНН: )\\d{10}(?!\\d)|(?<!\\d)(?<=ИНН № )\\d{10}(?!\\d)|(?<!\\d)(?<=ИНН )\\d{12}(?!\\d)|(?<!\\d)(?<=ИНН: )\\d{12}(?!\\d)|(?<!\\d)(?<=ИНН № )\\d{12}(?!\\d)",
+              "pattern": "(?<!\\d)(?<!\\wИНН )(?<=ИНН )\\d{10}(?!\\d)|(?<!\\d)(?<!\\wИНН )(?<=ИНН: )\\d{10}(?!\\d)|(?<!\\d)(?<!\\wИНН )(?<=ИНН № )\\d{10}(?!\\d)|(?<!\\d)(?<!\\wИНН )(?<=ИНН )\\d{12}(?!\\d)|(?<!\\d)(?<!\\wИНН )(?<=ИНН: )\\d{12}(?!\\d)|(?<!\\d)(?<!\\wИНН )(?<=ИНН № )\\d{12}(?!\\d)",
               "action": "MASK"
             },
             {
@@ -2822,19 +2822,19 @@
             {
               "pattern_type": "regex",
               "name": "ru_bank_account",
-              "pattern": "(?<=р/с )\\d{20}(?!\\d)|(?<=р/с: )\\d{20}(?!\\d)|(?<=к/с )\\d{20}(?!\\d)|(?<=к/с: )\\d{20}(?!\\d)|(?<=расчетный счет )\\d{20}(?!\\d)|(?<=расчётный счёт )\\d{20}(?!\\d)|(?<=корреспондентский счет )\\d{20}(?!\\d)|(?<=корреспондентский счёт )\\d{20}(?!\\d)",
+              "pattern": "(?<!\\wр/с )(?<=р/с )\\d{20}(?!\\d)|(?<!\\wр/с )(?<=р/с: )\\d{20}(?!\\d)|(?<!\\wк/с )(?<=к/с )\\d{20}(?!\\d)|(?<!\\wк/с )(?<=к/с: )\\d{20}(?!\\d)|(?<!\\wрасчетный счет )(?<=расчетный счет )\\d{20}(?!\\d)|(?<!\\wрасчётный счёт )(?<=расчётный счёт )\\d{20}(?!\\d)|(?<!\\wкорреспондентский счет )(?<=корреспондентский счет )\\d{20}(?!\\d)|(?<!\\wкорреспондентский счёт )(?<=корреспондентский счёт )\\d{20}(?!\\d)",
               "action": "MASK"
             },
             {
               "pattern_type": "regex",
               "name": "ru_bik",
-              "pattern": "(?<=БИК )\\d{9}(?!\\d)|(?<=БИК: )\\d{9}(?!\\d)|(?<=БИК № )\\d{9}(?!\\d)",
+              "pattern": "(?<!\\wБИК )(?<=БИК )\\d{9}(?!\\d)|(?<!\\wБИК )(?<=БИК: )\\d{9}(?!\\d)|(?<!\\wБИК )(?<=БИК № )\\d{9}(?!\\d)",
               "action": "MASK"
             },
             {
               "pattern_type": "regex",
               "name": "ru_confirmation_code",
-              "pattern": "(?<=код )\\d{4,8}(?!\\d)|(?<=код: )\\d{4,8}(?!\\d)|(?<=SMS )\\d{4,8}(?!\\d)|(?<=SMS: )\\d{4,8}(?!\\d)|(?<=СМС )\\d{4,8}(?!\\d)|(?<=СМС: )\\d{4,8}(?!\\d)|(?<=OTP )\\d{4,8}(?!\\d)|(?<=OTP: )\\d{4,8}(?!\\d)",
+              "pattern": "(?<!\\wкод )(?<=код )\\d{4,8}(?!\\d)|(?<!\\wкод )(?<=код: )\\d{4,8}(?!\\d)|(?<!\\wSMS )(?<=SMS )\\d{4,8}(?!\\d)|(?<!\\wSMS )(?<=SMS: )\\d{4,8}(?!\\d)|(?<!\\wСМС )(?<=СМС )\\d{4,8}(?!\\d)|(?<!\\wСМС )(?<=СМС: )\\d{4,8}(?!\\d)|(?<!\\wOTP )(?<=OTP )\\d{4,8}(?!\\d)|(?<!\\wOTP )(?<=OTP: )\\d{4,8}(?!\\d)",
               "action": "MASK"
             }
           ],
@@ -2912,7 +2912,7 @@
             {
               "pattern_type": "regex",
               "name": "ru_labelled_secret",
-              "pattern": "(?<=пароль )[^\\s.,;:!?]+|(?<=пароль: )[^\\s.,;:!?]+|(?<=пароль № )[^\\s.,;:!?]+|(?<=секрет )[^\\s.,;:!?]+|(?<=секрет: )[^\\s.,;:!?]+",
+              "pattern": "(?<!\\wпароль )(?<=пароль )[^\\s.,;:!?]+|(?<!\\wпароль )(?<=пароль: )[^\\s.,;:!?]+|(?<!\\wпароль )(?<=пароль № )[^\\s.,;:!?]+|(?<!\\wсекрет )(?<=секрет )[^\\s.,;:!?]+|(?<!\\wсекрет )(?<=секрет: )[^\\s.,;:!?]+",
               "action": "MASK"
             }
           ],
