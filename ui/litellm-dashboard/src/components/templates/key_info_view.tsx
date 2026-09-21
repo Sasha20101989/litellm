@@ -86,7 +86,7 @@ export default function KeyInfoView({
   teams,
   onKeyDataUpdate,
   onDelete,
-  backButtonText = "Back to Keys",
+  backButtonText,
 }: KeyInfoViewProps) {
   const { t, i18n } = useTranslation("gateway");
   const { accessToken, userId: userID, userRole, premiumUser } = useAuthorized();
@@ -175,7 +175,7 @@ export default function KeyInfoView({
       <div className="p-4">
         <Button variant="ghost" onClick={onClose} className="mb-4">
           <ArrowLeft className="size-4" />
-          {backButtonText}
+          {backButtonText ?? t("virtualKeys.details.back")}
         </Button>
         <p className="text-sm">{t("virtualKeys.details.notFound")}</p>
       </div>
@@ -228,7 +228,7 @@ export default function KeyInfoView({
       const nextSoftBudget =
         formValues.soft_budget === "" || formValues.soft_budget == null ? null : Number(formValues.soft_budget);
       if (nextSoftBudget !== null && !Number.isFinite(nextSoftBudget)) {
-        toast.error("Soft Budget must be a finite number");
+        toast.error(t("virtualKeys.details.softBudgetInvalid"));
         return;
       }
       if (nextSoftBudget === previousSoftBudget) {
@@ -257,7 +257,7 @@ export default function KeyInfoView({
             (toolsetId) => !(allMcpToolsets ?? []).some((toolset) => toolset.toolset_id === toolsetId),
           );
         if (unresolvableSelection && Object.keys(mcpEntitlement.mcp_tool_permissions).length > 0) {
-          toast.error("MCP server or toolset list is unavailable, so MCP permissions cannot be saved yet. Retry.");
+          toast.error(t("virtualKeys.details.mcpPermissionsUnavailable"));
           return;
         }
         formValues.object_permission = {
@@ -316,7 +316,7 @@ export default function KeyInfoView({
           };
         } catch (error) {
           console.error("Error parsing metadata JSON:", error);
-          toast.error("Invalid metadata JSON");
+          toast.error(t("virtualKeys.details.invalidMetadata"));
           return;
         }
       } else {
@@ -550,7 +550,7 @@ export default function KeyInfoView({
         onToggleBlocked={canBlockKey ? () => setIsBlockModalOpen(true) : undefined}
         isBlocked={isBlocked}
         canModifyKey={canModifyKey}
-        backButtonText={backButtonText}
+        backButtonText={backButtonText ?? t("virtualKeys.details.back")}
         regenerateDisabled={!premiumUser}
         regenerateTooltip={!premiumUser ? t("virtualKeys.details.enterpriseFeature") : undefined}
       />
@@ -1118,7 +1118,7 @@ export default function KeyInfoView({
                       {t("virtualKeys.details.modelRpmLimits")}:{" "}
                       {currentKeyData.metadata?.model_rpm_limit
                         ? JSON.stringify(currentKeyData.metadata.model_rpm_limit)
-                        : "Unlimited"}
+                        : t("virtualKeys.values.unlimited")}
                     </p>
                     <p className="text-sm">
                       {t("virtualKeys.details.tagRpmLimits")}:{" "}

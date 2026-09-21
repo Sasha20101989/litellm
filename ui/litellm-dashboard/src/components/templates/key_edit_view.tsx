@@ -13,6 +13,7 @@ import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { FormField } from "@/components/shared/form/FormField";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { hasCapability } from "../../utils/capabilities";
 import { isProxyAdminRole, rolesWithWriteAccess } from "../../utils/roles";
 import AccessGroupSelector from "../common_components/AccessGroupSelector";
@@ -92,6 +93,7 @@ export function KeyEditView({
   userRole,
   premiumUser = false,
 }: KeyEditViewProps) {
+  const { t } = useTranslation("gateway");
   const canEditGuardrails = premiumUser || (userRole != null && rolesWithWriteAccess.includes(userRole));
   const canViewPolicies = hasCapability(userRole, "viewPolicies");
   const canViewPrompts = hasCapability(userRole, "viewPrompts");
@@ -204,11 +206,11 @@ export function KeyEditView({
         const response = await tagListCall(accessToken);
         setTagsList(response);
       } catch (error) {
-        toast.fromError("Error fetching tags: " + error);
+        toast.fromError(t("virtualKeys.edit.tagFetchFailed", { error: String(error) }));
       }
     };
     fetchTags();
-  }, [accessToken]);
+  }, [accessToken, t]);
 
   const handleSubmit = async (values: any) => {
     try {
@@ -356,15 +358,15 @@ export function KeyEditView({
         }}
       >
         <FieldGroup>
-          <FormField control={form.control} name="key_alias" label="Key Alias">
+          <FormField control={form.control} name="key_alias" label={t("virtualKeys.edit.keyAlias")}>
             {(field) => <Input {...field} value={(field.value as string | undefined) ?? ""} />}
           </FormField>
 
           <FormField
             control={form.control}
             name="models"
-            label="Models"
-            description={isModelsDisabled ? "Models field is disabled for this key type" : undefined}
+            label={t("virtualKeys.edit.models")}
+            description={isModelsDisabled ? t("virtualKeys.edit.modelsDisabled") : undefined}
           >
             {({ value, onChange, id }) => (
               <MultiSelect
@@ -381,13 +383,13 @@ export function KeyEditView({
                   }
                 }}
                 disabled={isModelsDisabled}
-                placeholder="Select models"
+                placeholder={t("virtualKeys.edit.selectModels")}
               />
             )}
           </FormField>
 
           <Field>
-            <FieldLabel htmlFor={keyTypeFieldId}>Key Type</FieldLabel>
+            <FieldLabel htmlFor={keyTypeFieldId}>{t("virtualKeys.edit.keyType")}</FieldLabel>
             <KeyTypeSelect
               id={keyTypeFieldId}
               value={keyTypeFromRoutes(allowedRoutes)}
@@ -411,16 +413,13 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="allowed_routes"
-            label={labelWithHint(
-              "Allowed Routes",
-              "List of allowed routes for the key (comma-separated). Can be specific routes (e.g., '/chat/completions') or route patterns (e.g., 'llm_api_routes', 'management_routes', '/keys/*'). Leave empty to allow all routes.",
-            )}
+            label={labelWithHint(t("virtualKeys.edit.allowedRoutes"), t("virtualKeys.edit.allowedRoutesTooltip"))}
           >
             {(field) => (
               <Input
                 {...field}
                 value={(field.value as string | undefined) ?? ""}
-                placeholder="Enter allowed routes (comma-separated). Special values: llm_api_routes, management_routes. Examples: llm_api_routes, /chat/completions, /keys/*. Leave empty to allow all routes"
+                placeholder={t("virtualKeys.edit.allowedRoutesPlaceholder")}
               />
             )}
           </FormField>
@@ -428,34 +427,31 @@ export function KeyEditView({
           <KeyBudgetNumberField
             control={form.control}
             name="max_budget"
-            label="Max Budget (USD)"
-            placeholder="Enter a numerical value"
+            label={t("virtualKeys.edit.maxBudget")}
+            placeholder={t("virtualKeys.edit.numericalValue")}
           />
 
           <KeyBudgetNumberField
             control={form.control}
             name="soft_budget"
-            label="Soft Budget (USD)"
-            placeholder="Get alerts when spend crosses this value, without blocking requests"
+            label={t("virtualKeys.edit.softBudget")}
+            placeholder={t("virtualKeys.edit.softBudgetHelp")}
           />
 
-          <FormField control={form.control} name="budget_duration" label="Reset Budget">
+          <FormField control={form.control} name="budget_duration" label={t("virtualKeys.edit.resetBudget")}>
             {({ value, onChange, id }) => (
               <BudgetDurationDropdown
                 id={id}
                 value={value as string | null}
                 onChange={(next) => onChange(next ?? null)}
-                placeholder="Never resets"
+                placeholder={t("virtualKeys.edit.neverResets")}
               />
             )}
           </FormField>
 
           <Field>
             <FieldLabel>
-              {labelWithHint(
-                "Budget Windows",
-                "Set multiple independent budget windows (e.g., hourly $10 AND monthly $200). Each window tracks spend separately and resets on its own schedule.",
-              )}
+              {labelWithHint(t("virtualKeys.edit.budgetWindows"), t("virtualKeys.edit.budgetWindowsHelp"))}
             </FieldLabel>
             <BudgetWindowsEditor value={budgetLimits} onChange={setBudgetLimits} />
           </Field>
@@ -467,15 +463,12 @@ export function KeyEditView({
             onChange={modelBudget.setValue}
             availableModels={availableModels}
             usage={keyData.model_max_budget_usage}
-            hint="Cap spend on individual models, each with its own reset window. Enforced across every request this key makes."
+            hint={t("virtualKeys.edit.modelBudgetHelp")}
           />
 
           <Field>
             <FieldLabel>
-              {labelWithHint(
-                "Budget Fallbacks",
-                "When a model exceeds its per-model budget, requests automatically reroute to fallback models instead of failing",
-              )}
+              {labelWithHint(t("virtualKeys.edit.budgetFallbacks"), t("virtualKeys.edit.budgetFallbacksHelp"))}
             </FieldLabel>
             <BudgetFallbacksEditor
               value={budgetFallbacks}
@@ -489,10 +482,7 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="throttle_on_budget_exceeded"
-            label={labelWithHint(
-              "Throttle on budget exceeded",
-              "When this key exceeds its max budget, throttle its TPM/RPM to the globally configured percentage instead of blocking access entirely. Requires budget_exceeded_throttle_percentage in litellm_settings and a TPM/RPM limit on the key.",
-            )}
+            label={labelWithHint(t("virtualKeys.edit.throttleOnBudgetExceeded"), t("virtualKeys.edit.throttleTooltip"))}
           >
             {({ value, onChange, ref: _ref, ...field }) => (
               <Switch {...field} checked={Boolean(value)} onCheckedChange={onChange} />
@@ -502,21 +492,22 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="enable_prompt_caching"
-            label={labelWithHint(
-              "Enable Prompt Caching",
-              "Automatically add prompt caching breakpoints (cache_control markers) to requests made with this key, cutting input cost on repeated prompts. Applies to Anthropic and Bedrock Claude models; requests that already set their own cache_control markers are left untouched.",
-            )}
+            label={labelWithHint(t("virtualKeys.edit.promptCaching"), t("virtualKeys.edit.promptCachingHelp"))}
           >
             {({ value, onChange, ref: _ref, ...field }) => (
               <Switch {...field} checked={Boolean(value)} onCheckedChange={onChange} />
             )}
           </FormField>
 
-          <FormField control={form.control} name="max_parallel_requests" label="Max Parallel Requests">
+          <FormField
+            control={form.control}
+            name="max_parallel_requests"
+            label={t("virtualKeys.edit.maxParallelRequests")}
+          >
             {({ ref: _ref, ...field }) => <NumericalInput {...field} value={field.value ?? ""} min={0} />}
           </FormField>
 
-          <FormField control={form.control} name="model_tpm_limit" label="Model TPM Limit">
+          <FormField control={form.control} name="model_tpm_limit" label={t("virtualKeys.edit.modelTpmLimit")}>
             {(field) => (
               <Textarea
                 {...field}
@@ -527,7 +518,7 @@ export function KeyEditView({
             )}
           </FormField>
 
-          <FormField control={form.control} name="model_rpm_limit" label="Model RPM Limit">
+          <FormField control={form.control} name="model_rpm_limit" label={t("virtualKeys.edit.modelRpmLimit")}>
             {(field) => (
               <Textarea
                 {...field}
@@ -541,7 +532,7 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="default_estimated_output_tokens"
-            label={labelWithHint("Estimated Output Tokens", estimateTooltip.estimate)}
+            label={labelWithHint(t("virtualKeys.edit.estimatedOutputTokens"), estimateTooltip.estimate)}
           >
             {({ ref: _ref, ...field }) => (
               <NumericalInput {...field} value={field.value ?? ""} min={1} step={1} disabled={!canEditEstimates} />
@@ -551,7 +542,7 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="default_estimated_output_tokens_per_model"
-            label={labelWithHint("Estimated Output Tokens Per Model", estimateTooltip.perModel)}
+            label={labelWithHint(t("virtualKeys.edit.estimatedOutputTokensPerModel"), estimateTooltip.perModel)}
           >
             {(field) => (
               <Textarea
@@ -566,15 +557,12 @@ export function KeyEditView({
 
           <Field>
             <FieldLabel>
-              {labelWithHint(
-                "Per-Tag Rate Limits",
-                "Scope rate limits to a request tag so each tag (e.g. a cell or group) gets its own RPM counter. Requests without a matching tag fall back to the key-level limit.",
-              )}
+              {labelWithHint(t("virtualKeys.edit.perTagRateLimits"), t("virtualKeys.edit.perTagRateLimitsHelp"))}
             </FieldLabel>
             <TagRateLimitEditor value={tagRateLimits} onChange={setTagRateLimits} />
           </Field>
 
-          <FormField control={form.control} name="guardrails" label="Guardrails">
+          <FormField control={form.control} name="guardrails" label={t("virtualKeys.edit.guardrails")}>
             {({ value, onChange }) =>
               accessToken ? (
                 <GuardrailSelector
@@ -593,8 +581,8 @@ export function KeyEditView({
             control={form.control}
             name="disable_global_guardrails"
             label={labelWithHint(
-              "Disable Global Guardrails",
-              "When enabled, this key will bypass any guardrails configured to run on every request (global guardrails)",
+              t("virtualKeys.edit.disableGlobalGuardrails"),
+              t("virtualKeys.edit.disableGlobalGuardrailsTooltip"),
             )}
           >
             {({ value, onChange, ref: _ref, ...field }) => (
@@ -606,7 +594,7 @@ export function KeyEditView({
             <FormField
               control={form.control}
               name="policies"
-              label={labelWithHint("Policies", "Apply policies to this key to control guardrails and other settings")}
+              label={labelWithHint(t("virtualKeys.edit.policies"), t("virtualKeys.edit.policiesHelp"))}
             >
               {({ value, onChange }) =>
                 accessToken ? (
@@ -623,14 +611,14 @@ export function KeyEditView({
             </FormField>
           )}
 
-          <FormField control={form.control} name="tags" label="Tags">
+          <FormField control={form.control} name="tags" label={t("virtualKeys.details.tags")}>
             {({ value, onChange, id }) => (
               <TagsInput
                 id={id}
                 value={(value as string[] | undefined) ?? []}
                 onValueChange={onChange}
                 options={Object.values(tagsList).map((tag) => ({ value: tag.name, label: tag.name }))}
-                placeholder="Select or enter tags"
+                placeholder={t("virtualKeys.edit.selectOrEnterTags")}
               />
             )}
           </FormField>
@@ -639,7 +627,11 @@ export function KeyEditView({
             <FormField
               control={form.control}
               name="prompts"
-              label={premiumUser ? "Prompts" : labelWithHint("Prompts", "Setting prompts by key is a premium feature")}
+              label={
+                premiumUser
+                  ? t("virtualKeys.edit.prompts")
+                  : labelWithHint(t("virtualKeys.edit.prompts"), t("virtualKeys.edit.promptsPremium"))
+              }
             >
               {({ value, onChange, id }) => (
                 <TagsInput
@@ -651,8 +643,8 @@ export function KeyEditView({
                   placeholder={currentValuePlaceholder(
                     premiumUser,
                     keyData.metadata?.prompts,
-                    "Premium feature - Upgrade to set prompts by key",
-                    "Select or enter prompts",
+                    t("virtualKeys.edit.promptsUpgrade"),
+                    t("virtualKeys.edit.selectOrEnterPrompts"),
                   )}
                 />
               )}
@@ -662,16 +654,13 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="access_group_ids"
-            label={labelWithHint(
-              "Access Groups",
-              "Assign access groups to this key. Access groups control which models, MCP servers, and agents this key can use",
-            )}
+            label={labelWithHint(t("virtualKeys.edit.accessGroups"), t("virtualKeys.edit.accessGroupsHelp"))}
           >
             {({ value, onChange }) => (
               <AccessGroupSelector
                 value={value as string[] | undefined}
                 onChange={onChange}
-                placeholder="Select access groups (optional)"
+                placeholder={t("virtualKeys.edit.selectAccessGroups")}
               />
             )}
           </FormField>
@@ -681,11 +670,8 @@ export function KeyEditView({
             name="allowed_passthrough_routes"
             label={
               premiumUser
-                ? "Allowed Pass Through Routes"
-                : labelWithHint(
-                    "Allowed Pass Through Routes",
-                    "Setting allowed pass through routes by key is a premium feature",
-                  )
+                ? t("virtualKeys.edit.passThroughRoutes")
+                : labelWithHint(t("virtualKeys.edit.passThroughRoutes"), t("virtualKeys.edit.passThroughPremium"))
             }
           >
             {({ value, onChange }) => (
@@ -696,32 +682,36 @@ export function KeyEditView({
                 placeholder={currentValuePlaceholder(
                   premiumUser,
                   keyData.metadata?.allowed_passthrough_routes,
-                  "Premium feature - Upgrade to set allowed pass through routes by key",
-                  "Select or enter allowed pass through routes",
+                  t("virtualKeys.edit.passThroughUpgrade"),
+                  t("virtualKeys.edit.selectPassThroughRoutes"),
                 )}
                 disabled={!premiumUser}
               />
             )}
           </FormField>
 
-          <FormField control={form.control} name="vector_stores" label="Vector Stores">
+          <FormField control={form.control} name="vector_stores" label={t("virtualKeys.edit.vectorStores")}>
             {({ value, onChange }) => (
               <VectorStoreSelector
                 onChange={onChange}
                 value={value as string[] | undefined}
                 accessToken={accessToken || ""}
-                placeholder="Select vector stores"
+                placeholder={t("virtualKeys.edit.selectVectorStores")}
               />
             )}
           </FormField>
 
-          <FormField control={form.control} name="mcp_servers_and_groups" label="MCP Servers / Access Groups">
+          <FormField
+            control={form.control}
+            name="mcp_servers_and_groups"
+            label={t("virtualKeys.edit.mcpServersAndGroups")}
+          >
             {({ value, onChange }) => (
               <MCPServerSelector
                 onChange={onChange}
                 value={value as McpServersAndGroups | undefined}
                 accessToken={accessToken || ""}
-                placeholder="Select MCP servers or access groups (optional)"
+                placeholder={t("virtualKeys.edit.selectMcpServersAndGroups")}
                 allowNoMcpServers
               />
             )}
@@ -743,11 +733,8 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="organization_id"
-            label={labelWithHint(
-              "Organization",
-              "The organization this key belongs to. Selecting an organization filters the available teams.",
-            )}
-            description={hasProject ? "Organization is locked because this key belongs to a project" : undefined}
+            label={labelWithHint(t("virtualKeys.edit.organization"), t("virtualKeys.edit.organizationHelp"))}
+            description={hasProject ? t("virtualKeys.edit.organizationLockedByProject") : undefined}
           >
             {({ value, onChange, id }) => (
               <OrganizationDropdown
@@ -764,8 +751,8 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="team_id"
-            label="Team ID"
-            description={hasProject ? "Team is locked because this key belongs to a project" : undefined}
+            label={t("virtualKeys.edit.teamId")}
+            description={hasProject ? t("virtualKeys.edit.teamLockedByProject") : undefined}
           >
             {({ value, onChange, id }) => (
               <Select
@@ -777,7 +764,7 @@ export function KeyEditView({
                 )}
               >
                 <SelectTrigger id={id} className="w-full">
-                  <SelectValue placeholder="Select team" />
+                  <SelectValue placeholder={t("virtualKeys.edit.selectTeam")} />
                 </SelectTrigger>
                 <SelectContent>
                   {visibleTeams?.map((t) => (
@@ -801,7 +788,7 @@ export function KeyEditView({
           )}
 
           <Field>
-            <FieldLabel>Router Settings</FieldLabel>
+            <FieldLabel>{t("virtualKeys.edit.routerSettings")}</FieldLabel>
             <RouterSettingsAccordion
               ref={routerSettingsRef}
               accessToken={accessToken || ""}
@@ -810,7 +797,7 @@ export function KeyEditView({
             />
           </Field>
 
-          <FormField control={form.control} name="logging_settings" label="Logging Settings">
+          <FormField control={form.control} name="logging_settings" label={t("virtualKeys.edit.loggingSettings")}>
             {({ value, onChange }) => (
               <EditLoggingSettings
                 value={(value as unknown[] | undefined) ?? []}
@@ -845,11 +832,11 @@ export function KeyEditView({
         <div className="sticky z-chrome bg-background p-4 border-t border-border -bottom-6 -inset-x-6">
           <div className="flex justify-end items-center gap-2">
             <Button type="button" variant="secondary" onClick={onCancel} disabled={isKeySaving}>
-              Cancel
+              {t("virtualKeys.edit.cancel")}
             </Button>
             <Button type="submit" disabled={isKeySaving} aria-busy={isKeySaving}>
               {isKeySaving && <UiLoadingSpinner className="size-4" />}
-              Save Changes
+              {t("virtualKeys.edit.saveChanges")}
             </Button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Check, CircleHelp, Copy, RefreshCw, TriangleAlert } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useWatch } from "react-hook-form";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { z } from "zod/v4";
@@ -19,9 +20,6 @@ import { calculateExpiryPreviewFromDuration, formatExpiresUtc, isKeyExpired } fr
 import { buildRegenerateKeyPayload, type RegenerateKeyFormValues } from "./regenerateKeyPayload";
 
 const DURATION_PATTERN = /^(\d+(s|m|h|d|w|mo))?$/;
-const DURATION_MESSAGE = "Must be a duration like 30s, 30m, 24h, 2d, 1w, or 1mo";
-const EXPIRED_DURATION_MESSAGE = "Expiration is required for expired keys";
-
 const EMPTY_VALUES: RegenerateKeyFormValues = {
   key_alias: undefined,
   max_budget: undefined,
@@ -31,16 +29,20 @@ const EMPTY_VALUES: RegenerateKeyFormValues = {
   grace_period: "",
 };
 
-const buildSchema = (keyIsExpired: boolean): z.ZodType<RegenerateKeyFormValues, RegenerateKeyFormValues> => {
+const buildSchema = (
+  keyIsExpired: boolean,
+  durationMessage: string,
+  expiredDurationMessage: string,
+): z.ZodType<RegenerateKeyFormValues, RegenerateKeyFormValues> => {
   const shape = {
     key_alias: z.string().nullish(),
     max_budget: z.number().nullish(),
     tpm_limit: z.number().nullish(),
     rpm_limit: z.number().nullish(),
     duration: keyIsExpired
-      ? z.string().min(1, EXPIRED_DURATION_MESSAGE).regex(DURATION_PATTERN, DURATION_MESSAGE)
-      : z.string().regex(DURATION_PATTERN, DURATION_MESSAGE),
-    grace_period: z.string().regex(DURATION_PATTERN, DURATION_MESSAGE),
+      ? z.string().min(1, expiredDurationMessage).regex(DURATION_PATTERN, durationMessage)
+      : z.string().regex(DURATION_PATTERN, durationMessage),
+    grace_period: z.string().regex(DURATION_PATTERN, durationMessage),
   };
 
   return z.object(shape);
@@ -64,13 +66,22 @@ interface RegenerateKeyModalProps {
 }
 
 export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdate }: RegenerateKeyModalProps) {
+  const { t } = useTranslation("gateway");
   const { accessToken } = useAuthorized();
   const [regeneratedKey, setRegeneratedKey] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const keyIsExpired = isKeyExpired(selectedToken?.expires);
-  const schema = useMemo(() => buildSchema(keyIsExpired), [keyIsExpired]);
+  const schema = useMemo(
+    () =>
+      buildSchema(
+        keyIsExpired,
+        t("virtualKeys.regenerate.durationInvalid"),
+        t("virtualKeys.regenerate.expirationRequired"),
+      ),
+    [keyIsExpired, t],
+  );
   const form = useZodForm(schema, { defaultValues: EMPTY_VALUES });
   const durationValue = useWatch({ control: form.control, name: "duration" });
 
@@ -97,7 +108,7 @@ export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdat
     try {
       const response = await regenerateKeyCall(accessToken, selectedToken.token || selectedToken.token_id, formValues);
       setRegeneratedKey(response.key);
-      toast.success("Virtual Key regenerated successfully");
+      toast.success(t("virtualKeys.regenerate.success"));
 
       // Build the update payload. Spread the API response first so any new
       // fields it returns (new token, timestamps, etc.) are captured, then
@@ -151,22 +162,24 @@ export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdat
     <Dialog open={visible} onOpenChange={(open) => !open && handleClose()} disablePointerDismissal>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>Regenerate Virtual Key</DialogTitle>
+          <DialogTitle>{t("virtualKeys.regenerate.title")}</DialogTitle>
         </DialogHeader>
         {regeneratedKey ? (
           <div className="flex flex-col gap-4">
             <Alert variant="warning">
               <TriangleAlert />
-              <AlertTitle>Save it now, you will not see it again</AlertTitle>
+              <AlertTitle>{t("virtualKeys.regenerate.saveWarning")}</AlertTitle>
             </Alert>
 
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground">Key Alias</span>
-              <span className="text-sm text-foreground">{selectedToken?.key_alias || "No alias set"}</span>
+              <span className="text-xs text-muted-foreground">{t("virtualKeys.edit.keyAlias")}</span>
+              <span className="text-sm text-foreground">
+                {selectedToken?.key_alias || t("virtualKeys.regenerate.noAlias")}
+              </span>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">Virtual Key</span>
+              <span className="text-xs text-muted-foreground">{t("virtualKeys.details.virtualKey")}</span>
               <div className="rounded-md border border-border bg-muted px-4 py-3.5 font-mono text-base break-all text-foreground">
                 {regeneratedKey}
               </div>
@@ -176,12 +189,12 @@ export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdat
           <TooltipProvider>
             <form onSubmit={(event) => event.preventDefault()} noValidate className="mt-1">
               <FieldGroup>
-                <FormField control={form.control} name="key_alias" label="Key Alias">
+                <FormField control={form.control} name="key_alias" label={t("virtualKeys.edit.keyAlias")}>
                   {({ ref, value, ...field }) => <Input {...field} ref={ref} value={value ?? ""} disabled />}
                 </FormField>
 
                 <div className="grid grid-cols-3 gap-3">
-                  <FormField control={form.control} name="max_budget" label="Max Budget (USD)">
+                  <FormField control={form.control} name="max_budget" label={t("virtualKeys.edit.maxBudget")}>
                     {({ ref, value, onChange, ...field }) => (
                       <Input
                         {...field}
@@ -194,7 +207,7 @@ export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdat
                     )}
                   </FormField>
 
-                  <FormField control={form.control} name="tpm_limit" label="TPM Limit">
+                  <FormField control={form.control} name="tpm_limit" label={t("virtualKeys.edit.tpmLimit")}>
                     {({ ref, value, onChange, ...field }) => (
                       <Input
                         {...field}
@@ -206,7 +219,7 @@ export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdat
                     )}
                   </FormField>
 
-                  <FormField control={form.control} name="rpm_limit" label="RPM Limit">
+                  <FormField control={form.control} name="rpm_limit" label={t("virtualKeys.edit.rpmLimit")}>
                     {({ ref, value, onChange, ...field }) => (
                       <Input
                         {...field}
@@ -223,30 +236,44 @@ export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdat
                   <FormField
                     control={form.control}
                     name="duration"
-                    label="Expire Key"
+                    label={t("virtualKeys.regenerate.expires")}
                     description={
                       <span className="flex flex-col gap-0.5 text-xs">
                         <span className={keyIsExpired ? "text-destructive" : "text-muted-foreground"}>
-                          Current expiry: {selectedToken?.expires ? formatExpiresUtc(selectedToken.expires) : "Never"}
-                          {keyIsExpired && " (expired)"}
+                          {t("virtualKeys.regenerate.currentExpiry", {
+                            date: selectedToken?.expires
+                              ? formatExpiresUtc(selectedToken.expires)
+                              : t("virtualKeys.values.never"),
+                          })}
+                          {keyIsExpired && ` ${t("virtualKeys.regenerate.expired")}`}
                         </span>
-                        {newExpiryTime && <span className="text-success">New expiry: {newExpiryTime}</span>}
+                        {newExpiryTime && (
+                          <span className="text-success">
+                            {t("virtualKeys.regenerate.newExpiry", { date: newExpiryTime })}
+                          </span>
+                        )}
                       </span>
                     }
                   >
-                    {({ ref, ...field }) => <Input {...field} ref={ref} placeholder="e.g. 30s, 30h, 30d" />}
+                    {({ ref, ...field }) => (
+                      <Input {...field} ref={ref} placeholder={t("virtualKeys.regenerate.durationPlaceholder")} />
+                    )}
                   </FormField>
 
                   <FormField
                     control={form.control}
                     name="grace_period"
                     label={labelWithHint(
-                      "Grace Period",
-                      "Keep the old key valid for this duration after rotation. Both keys work during this period for seamless cutover. Empty = immediate revoke.",
+                      t("virtualKeys.regenerate.gracePeriod"),
+                      t("virtualKeys.regenerate.gracePeriodHelp"),
                     )}
-                    description={<span className="text-xs">Recommended: 24h to 72h for production keys</span>}
+                    description={
+                      <span className="text-xs">{t("virtualKeys.regenerate.gracePeriodRecommendation")}</span>
+                    }
                   >
-                    {({ ref, ...field }) => <Input {...field} ref={ref} placeholder="e.g. 24h, 2d" />}
+                    {({ ref, ...field }) => (
+                      <Input {...field} ref={ref} placeholder={t("virtualKeys.regenerate.gracePeriodPlaceholder")} />
+                    )}
                   </FormField>
                 </div>
               </FieldGroup>
@@ -257,23 +284,23 @@ export function RegenerateKeyModal({ selectedToken, visible, onClose, onKeyUpdat
           {regeneratedKey ? (
             <>
               <Button variant="outline" onClick={handleClose}>
-                Close
+                {t("virtualKeys.regenerate.close")}
               </Button>
               <CopyToClipboard text={regeneratedKey} onCopy={handleCopyKey}>
                 <Button>
                   {copied ? <Check /> : <Copy />}
-                  {copied ? "Copied" : "Copy Key"}
+                  {copied ? t("virtualKeys.regenerate.copied") : t("virtualKeys.regenerate.copyKey")}
                 </Button>
               </CopyToClipboard>
             </>
           ) : (
             <>
               <Button variant="outline" onClick={handleClose}>
-                Cancel
+                {t("virtualKeys.edit.cancel")}
               </Button>
               <Button onClick={handleRegenerateKey} disabled={isRegenerating} aria-busy={isRegenerating}>
                 <RefreshCw />
-                Regenerate
+                {t("virtualKeys.details.regenerateKey")}
               </Button>
             </>
           )}

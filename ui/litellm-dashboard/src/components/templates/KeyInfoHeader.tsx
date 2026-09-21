@@ -108,7 +108,11 @@ function UserField({ userAlias, userEmail, userId }: { userAlias?: string | null
               <span className="min-w-0 flex-1 truncate font-mono text-xs" title={value}>
                 {value}
               </span>
-              <CopyButton value={value} label={`Copy ${label}`} iconClassName="size-3.5" />
+              <CopyButton
+                value={value}
+                label={t("virtualKeys.values.copyField", { field: label })}
+                iconClassName="size-3.5"
+              />
             </div>
           ) : (
             <span className="font-mono">-</span>
@@ -171,7 +175,7 @@ export function KeyInfoHeader({
   onToggleBlocked,
   isBlocked = false,
   canModifyKey = true,
-  backButtonText = "Back to Keys",
+  backButtonText,
   regenerateDisabled = false,
   regenerateTooltip,
 }: KeyInfoHeaderProps) {
@@ -199,7 +203,7 @@ export function KeyInfoHeader({
       <div style={{ marginBottom: 16 }}>
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft className="size-3.5" />
-          {backButtonText}
+          {backButtonText ?? t("virtualKeys.details.back")}
         </Button>
       </div>
 
