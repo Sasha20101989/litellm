@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { OnChangeFn } from "@tanstack/react-table";
-import { Columns3 } from "lucide-react";
+import { ArrowLeft, Columns3 } from "lucide-react";
+import type React from "react";
 import { useTranslation } from "react-i18next";
 import { FOCUS_FIELDS, type FocusField } from "./FocusVirtualKeysPage";
 
@@ -49,5 +50,28 @@ export function FocusVisibilityMenu({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function FocusSelectedKeyState({
+  children,
+  error = false,
+  onBack,
+}: {
+  children: React.ReactNode;
+  error?: boolean;
+  onBack: () => void;
+}) {
+  const { t } = useTranslation("gateway");
+  return (
+    <div
+      className={`flex min-h-screen flex-col items-center justify-center gap-4 text-sm ${error ? "text-destructive" : "text-muted-foreground"}`}
+    >
+      <div className="flex items-center">{children}</div>
+      <Button variant="outline" className="lg:hidden" onClick={onBack}>
+        <ArrowLeft className="size-4" />
+        {t("focusKeys.back")}
+      </Button>
+    </div>
   );
 }

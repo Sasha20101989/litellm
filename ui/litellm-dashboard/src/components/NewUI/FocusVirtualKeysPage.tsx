@@ -47,7 +47,7 @@ import {
 import { parseAsString, useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FocusVisibilityMenu } from "./FocusVisibilityMenu";
+import { FocusSelectedKeyState, FocusVisibilityMenu } from "./FocusVisibilityMenu";
 
 const FILTER_COLUMNS = ["team_id", "org_id", "user_id", "key_hash", "status"] as const;
 const KEY_STATUS_VALUES = ["active", "expired", "revoked", "deleted"] as const;
@@ -301,11 +301,14 @@ function FocusVirtualKeysPage() {
 
   useEffect(() => {
     const previousTheme = document.documentElement.getAttribute("data-focus-theme");
+    const hadDarkClass = document.documentElement.classList.contains("dark");
     document.documentElement.setAttribute("data-focus-theme", theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
     setLocalStorageItem(FOCUS_THEME_STORAGE_KEY, theme);
     return () => {
       if (previousTheme === null) document.documentElement.removeAttribute("data-focus-theme");
       else document.documentElement.setAttribute("data-focus-theme", previousTheme);
+      document.documentElement.classList.toggle("dark", hadDarkClass);
     };
   }, [theme]);
 
@@ -656,15 +659,15 @@ function FocusVirtualKeysPage() {
 
         <section className={`min-w-0 ${selectedKeyId ? "block" : "hidden lg:block"}`}>
           {selectedKeyId && !selectedKey && !selectedKeyLoadFailed && (
-            <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+            <FocusSelectedKeyState onBack={() => void setSelectedKeyId(null)}>
               <Loader2 className="mr-2 size-4 animate-spin" />
               {t("focusKeys.loadingKey")}
-            </div>
+            </FocusSelectedKeyState>
           )}
           {selectedKeyId && selectedKeyLoadFailed && (
-            <div className="flex min-h-screen items-center justify-center text-sm text-destructive">
+            <FocusSelectedKeyState error onBack={() => void setSelectedKeyId(null)}>
               {t("focusKeys.keyNotFound")}
-            </div>
+            </FocusSelectedKeyState>
           )}
           {selectedKey && (
             <div className="min-h-screen overflow-auto p-3 sm:p-5">
