@@ -18,6 +18,10 @@ export const enNavigation = {
   breadcrumbs: {
     home: "Home",
   },
+  theme: {
+    switchToLight: "Switch to light mode",
+    switchToDark: "Switch to dark mode (beta)",
+  },
   sidebar: {
     groups: {
       "AI GATEWAY": "AI GATEWAY",

@@ -405,17 +405,17 @@ const prettify = (key: string): string =>
 const labelText = (item: MenuItem): string => (typeof item.label === "string" ? item.label : prettify(item.key));
 
 // Breadcrumb ("Section" / "Page") for the top bar, derived from the same nav config.
-export const getBreadcrumb = (pathname: string): { section: string | null; title: string } => {
+export const getBreadcrumb = (pathname: string): { section: string | null; title: string; itemKey: string | null } => {
   const route = routeForPathname(pathname);
   for (const group of menuGroups) {
     for (const item of group.items) {
       const section = SECTION_DISPLAY[group.groupLabel] ?? group.groupLabel;
-      if (routeOf(item) === route) return { section, title: labelText(item) };
+      if (routeOf(item) === route) return { section, title: labelText(item), itemKey: item.key };
       const child = item.children?.find((c) => routeOf(c) === route);
-      if (child) return { section, title: labelText(child) };
+      if (child) return { section, title: labelText(child), itemKey: child.key };
     }
   }
-  return { section: null, title: prettify(route) };
+  return { section: null, title: prettify(route), itemKey: null };
 };
 
 const Sidebar_: React.FC<SidebarProps> = ({

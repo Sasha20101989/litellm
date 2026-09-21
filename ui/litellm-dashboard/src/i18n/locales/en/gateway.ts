@@ -3145,6 +3145,8 @@ export const enGateway = {
       updatedAt: "Updated At",
       lastActive: "Last Active",
       lifetimeSpend: "Lifetime Spend",
+      lifetimeSpendTooltip:
+        "Cumulative spend across every budget period. Budget resets do not touch this value. Keys created before this field existed only count spend from then on.",
       lastActiveTooltip: "This is a new field and is not backfilled. Only new key usage will update this value.",
       expires: "Expires",
       spend: "Spend",
@@ -3293,6 +3295,7 @@ export const enGateway = {
       userSearchHint: "Search by email to find users",
       selectAgent: "Select Agent",
       selectAgentPlaceholder: "Select an agent",
+      noAgents: "No agents found",
       agentHint: "This key will be used by the selected agent to make requests to Nexoplane",
       organization: "Organization",
       allOrganizations: "All Organizations",
@@ -3347,6 +3350,9 @@ export const enGateway = {
         budgetWindows: "Budget Windows",
         budgetWindowsTooltip:
           "Set multiple independent budget windows. Each window tracks spend separately and resets on its own schedule.",
+        perModelBudgets: "Per-Model Budgets",
+        perModelBudgetsTooltip:
+          "Cap spend on individual models, each with its own reset window. Enforced across every request this key makes; usage is reported on the key's info page.",
         budgetWindowHourly: "Hourly",
         budgetWindowHourlyHint: "Resets every hour",
         budgetWindowDaily: "Daily",
@@ -3380,6 +3386,10 @@ export const enGateway = {
         rpmTooltip: "Maximum number of API requests this key can make per minute. Helps prevent abuse and manage load",
         teamRpm: "RPM cannot exceed team RPM limit: {{value}}",
         rpmValidation: "RPM limit cannot exceed team RPM limit: {{value}}",
+        tpd: "Tokens per day Limit (TPD)",
+        tpdTooltip: "Daily token budget for batch submissions. Online requests keep using TPM/RPM limits.",
+        teamTpd: "TPD cannot exceed team TPD limit: {{value}}",
+        tpdValidation: "TPD limit cannot exceed team TPD limit: {{value}}",
         rateLimitType: "{{type}} Rate Limit Type",
         rateLimitTypeTooltip:
           "Select guaranteed throughput to prevent overallocating the {{type}} limit when the key belongs to a team with specific {{type}} limits.",
@@ -3402,6 +3412,9 @@ export const enGateway = {
         removeTagLimit: "Remove tag limit",
         throttle: "Throttle on budget exceeded",
         throttleTooltip: "Throttle TPM/RPM instead of blocking access entirely when this key exceeds its budget.",
+        promptCaching: "Enable Prompt Caching",
+        promptCachingTooltip:
+          "Automatically add prompt caching breakpoints to supported requests, reducing input cost on repeated prompts.",
         yes: "Yes",
         no: "No",
         guardrails: "Guardrails",
@@ -3455,6 +3468,12 @@ export const enGateway = {
         allowedAgentsTooltip: "Select which agents or access groups this key can access",
         allowedAgentsHelp: "Select agents or access groups this key can access",
         selectAgents: "Select agents or access groups (optional)",
+        skillSettings: "Skill Settings",
+        allowedSkills: "Allowed Skills",
+        allowedSkillsTooltip:
+          "Enabled skills are visible to every key. Grant disabled private Claude Code plugins to this key here.",
+        allowedSkillsHelp: "Select private skills this key can access in the Claude Code marketplace",
+        selectSkills: "Select skills (optional)",
         loggingSettings: "Logging Settings",
         loggingPremium: "Key-level logging settings are available in the enterprise version",
         routerSettings: "Router Settings",

@@ -95,7 +95,13 @@ export const getKeyTableColumns = ({
   organizations,
   onSelectKey,
   t,
-}: KeyTableColumnsDeps): ColumnDef<KeyResponse>[] => [
+}: KeyTableColumnsDeps): ColumnDef<KeyResponse>[] => {
+  const spendBudgetSortFields: DataTableSortField[] = [
+    { id: "spend", label: t("virtualKeys.columns.spend") },
+    { id: "max_budget", label: t("virtualKeys.columns.budget") },
+  ];
+
+  return [
   {
     id: "key_alias",
     accessorKey: "key_alias",
@@ -145,8 +151,8 @@ export const getKeyTableColumns = ({
   {
     id: "team_alias",
     accessorKey: "team_id",
-    meta: { title: "Team" },
-    header: "Team",
+    meta: { title: t("virtualKeys.columns.team") },
+    header: t("virtualKeys.columns.team"),
     size: 120,
     enableSorting: false,
     cell: (info) => {
@@ -165,8 +171,8 @@ export const getKeyTableColumns = ({
   {
     id: "organization_alias",
     accessorKey: "org_id",
-    meta: { title: "Organization" },
-    header: "Organization",
+    meta: { title: t("virtualKeys.columns.organization") },
+    header: t("virtualKeys.columns.organization"),
     size: 140,
     enableSorting: false,
     cell: (info) => {
@@ -185,7 +191,7 @@ export const getKeyTableColumns = ({
   {
     id: "user",
     accessorKey: "user",
-    meta: { title: "User" },
+    meta: { title: t("virtualKeys.columns.user") },
     header: () => (
       <InfoHeader label={t("virtualKeys.columns.user")} tooltip={t("virtualKeys.columns.userTooltip")} />
     ),
@@ -215,8 +221,8 @@ export const getKeyTableColumns = ({
   {
     id: "created_by",
     accessorKey: "created_by",
-    meta: { title: "Created By" },
-    header: "Created By",
+    meta: { title: t("virtualKeys.columns.createdBy") },
+    header: t("virtualKeys.columns.createdBy"),
     size: 160,
     enableSorting: false,
     cell: (info) => {
@@ -240,36 +246,36 @@ export const getKeyTableColumns = ({
     header: ({ column }) => <DataTableSortHeader column={column} title={t("virtualKeys.columns.updatedAt")} variant="header-cycle" />,
     size: 120,
     enableSorting: true,
-    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback="Never" />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.never")} />,
   },
   {
     id: "last_active",
     accessorKey: "last_active",
-    meta: { title: "Last Active" },
+    meta: { title: t("virtualKeys.columns.lastActive") },
     header: () => (
       <InfoHeader
         label={t("virtualKeys.columns.lastActive")}
-        tooltip="This is a new field and is not backfilled. Only new key usage will update this value."
+        tooltip={t("virtualKeys.columns.lastActiveTooltip")}
       />
     ),
     size: 130,
     enableSorting: false,
-    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback="Unknown" />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.unknown")} />,
   },
   {
     id: "expires",
     accessorKey: "expires",
-    meta: { title: "Expires" },
-    header: "Expires",
+    meta: { title: t("virtualKeys.columns.expires") },
+    header: t("virtualKeys.columns.expires"),
     size: 120,
     enableSorting: false,
-    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback="Never" />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} precision="date" fallback={t("virtualKeys.values.never")} />,
   },
   {
     id: "spend",
     accessorKey: "spend",
-    meta: { title: "Spend / Budget", skeleton: "meter" },
-    header: ({ table }) => <DataTableMultiSortHeader table={table} fields={SPEND_BUDGET_SORT_FIELDS} />,
+    meta: { title: t("virtualKeys.columns.spendBudget"), skeleton: "meter" },
+    header: ({ table }) => <DataTableMultiSortHeader table={table} fields={spendBudgetSortFields} />,
     size: 180,
     enableSorting: true,
     cell: ({ row }) => {
@@ -288,11 +294,11 @@ export const getKeyTableColumns = ({
   {
     id: "total_spend",
     accessorKey: "total_spend",
-    meta: { title: "Lifetime Spend" },
+    meta: { title: t("virtualKeys.columns.lifetimeSpend") },
     header: () => (
       <InfoHeader
         label={t("virtualKeys.columns.lifetimeSpend")}
-        tooltip="Cumulative spend across every budget period. Budget resets do not touch this value. Keys created before this field existed only count spend from then on."
+        tooltip={t("virtualKeys.columns.lifetimeSpendTooltip")}
       />
     ),
     size: 130,
@@ -302,17 +308,17 @@ export const getKeyTableColumns = ({
   {
     id: "budget_reset_at",
     accessorKey: "budget_reset_at",
-    meta: { title: "Budget Reset" },
-    header: "Budget Reset",
+    meta: { title: t("virtualKeys.columns.budgetReset") },
+    header: t("virtualKeys.columns.budgetReset"),
     size: 130,
     enableSorting: false,
-    cell: (info) => <DateCell value={info.getValue() as string | null} fallback="Never" />,
+    cell: (info) => <DateCell value={info.getValue() as string | null} fallback={t("virtualKeys.values.never")} />,
   },
   {
     id: "models",
     accessorKey: "models",
-    meta: { title: "Models", skeleton: "chips" },
-    header: "Models",
+    meta: { title: t("virtualKeys.columns.models"), skeleton: "chips" },
+    header: t("virtualKeys.columns.models"),
     size: 220,
     enableSorting: false,
     cell: (info) => (
@@ -325,21 +331,22 @@ export const getKeyTableColumns = ({
   },
   {
     id: "rate_limits",
-    meta: { title: "Rate Limits" },
-    header: "Rate Limits",
+    meta: { title: t("virtualKeys.columns.rateLimits") },
+    header: t("virtualKeys.columns.rateLimits"),
     size: 140,
     enableSorting: false,
     cell: ({ row }) => {
       const key = row.original;
       return (
         <div className="text-xs">
-          <div>TPM: {key.tpm_limit !== null ? key.tpm_limit : "Unlimited"}</div>
-          <div>RPM: {key.rpm_limit !== null ? key.rpm_limit : "Unlimited"}</div>
+          <div>TPM: {key.tpm_limit !== null ? key.tpm_limit : t("virtualKeys.values.unlimited")}</div>
+          <div>RPM: {key.rpm_limit !== null ? key.rpm_limit : t("virtualKeys.values.unlimited")}</div>
         </div>
       );
     },
   },
-];
+  ];
+};
 
 export const KEY_TABLE_HIDDEN_COLUMNS: Record<string, boolean> = {
   token: false,

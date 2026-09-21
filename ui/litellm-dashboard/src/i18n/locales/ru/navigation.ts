@@ -18,6 +18,10 @@ export const ruNavigation = {
   breadcrumbs: {
     home: "Главная",
   },
+  theme: {
+    switchToLight: "Переключить на светлую тему",
+    switchToDark: "Переключить на тёмную тему (бета)",
+  },
   sidebar: {
     groups: {
       "AI GATEWAY": "AI-ШЛЮЗ",

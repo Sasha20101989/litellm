@@ -34,10 +34,12 @@ export default function ViewSwitcher() {
   const normalizedPathname = (pathname ?? "").replace(/\/+$/, "");
   const isChatRoute = chatEnabled && (normalizedPathname === chatHref || normalizedPathname.startsWith(`${chatHref}/`));
 
-  const activeLabel = isChatRoute ? "Chat" : plugins.find((p) => p.name === mode)?.display_name ?? "AI Gateway";
+  const activeLabel = isChatRoute
+    ? t("header.chat")
+    : plugins.find((p) => p.name === mode)?.display_name ?? t("viewSwitcher.gateway");
 
   const modeEntries = [
-    { key: GATEWAY, label: "AI Gateway" },
+    { key: GATEWAY, label: t("viewSwitcher.gateway") },
     ...plugins.map((p) => ({ key: p.name, label: p.display_name })),
   ];
 
