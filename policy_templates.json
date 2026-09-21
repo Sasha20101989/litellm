@@ -1,8 +1,8 @@
 [
   {
     "id": "advanced-au-pii-protection",
-    "title": "Advanced PII Protection (Australia)",
-    "description": "Protects Australian-specific identifiers, international employee data, financial information, credentials, protected class information, and industry-specific sensitive data.",
+    "title": "Расширенная защита персональных данных — Австралия",
+    "description": "Описание политики: Расширенная защита персональных данных — Австралия.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-purple-500",
     "iconBg": "bg-purple-50",
@@ -43,7 +43,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Australian Tax File Numbers, Business Numbers, and Medicare Numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -61,7 +61,7 @@
           "pattern_redaction_format": "[PASSPORT_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Australian passport numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -154,7 +154,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks international PII identifiers including passports and national IDs"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -197,7 +197,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks contact information including emails, phone numbers, and addresses"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -240,7 +240,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks financial information including credit cards and bank account numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -278,7 +278,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Blocks requests containing API keys and credentials (AWS, GitHub, Slack)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -301,7 +301,7 @@
           "pattern_redaction_format": "[INTERNAL_IP_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks IP addresses in requests"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -354,13 +354,13 @@
           "pattern_redaction_format": "[PROTECTED_CLASS_INFO_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks protected class information for HR compliance and anti-discrimination"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "advanced-pii-protection-australia",
-      "description": "Comprehensive PII detection and masking policy for Australia. Protects Australian-specific identifiers, international employee data, financial information, credentials, protected class information, and industry-specific sensitive data.",
+      "description": "Описание политики: Расширенная защита персональных данных — Австралия.",
       "guardrails_add": [
         "au-pii-tax-identifiers",
         "au-pii-passports",
@@ -374,15 +374,15 @@
       "guardrails_remove": []
     },
     "tags": [
-      "PII Protection",
-      "Australia"
+      "Персональные данные",
+      "Австралия"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "baseline-pii-protection",
-    "title": "Baseline PII Protection",
-    "description": "Baseline PII protection for internal tools and testing. Focuses on credentials and high-risk identifiers only. Suitable for non-sensitive internal use.",
+    "title": "Базовая защита персональных данных",
+    "description": "Описание политики: Базовая защита персональных данных.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-blue-500",
     "iconBg": "bg-blue-50",
@@ -418,7 +418,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Australian Tax File Numbers, Business Numbers, and Medicare Numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -456,7 +456,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Blocks requests containing API keys and credentials (AWS, GitHub, Slack)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -499,13 +499,13 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks financial information including credit cards and bank account numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "baseline-pii-protection",
-      "description": "Baseline PII protection for internal tools and testing. Focuses on credentials and high-risk identifiers only.",
+      "description": "Описание политики: Базовая защита персональных данных.",
       "guardrails_add": [
         "au-pii-tax-identifiers",
         "credentials-api-keys",
@@ -514,14 +514,14 @@
       "guardrails_remove": []
     },
     "tags": [
-      "PII Protection"
+      "Персональные данные"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "nsfw-content-filter-australia",
-    "title": "NSFW Content Filter (Australia)",
-    "description": "Blocks profanity, sexual content, NSFW requests, self-harm content, and child safety violations using English and Australian-specific slang. Protects against inappropriate content including sexual solicitation, explicit content, Australian profanity, self-harm, and content involving minors.",
+    "title": "Фильтр нежелательного контента — Австралия",
+    "description": "Описание политики: Фильтр нежелательного контента — Австралия.",
     "icon": "ShieldExclamationIcon",
     "iconColor": "text-red-500",
     "iconBg": "bg-red-50",
@@ -549,7 +549,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks profanity, sexual content, slurs, and NSFW terms in English"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -567,7 +567,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks Australian-specific slang and profanity (root, perv, bogan, wanker, etc.)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -585,7 +585,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks content related to self-harm, suicide, and eating disorders"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -603,7 +603,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks inappropriate content involving minors using identifier + block word combinations"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -621,13 +621,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks racial and ethnic discrimination, hate speech, and supremacist content"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "nsfw-content-filter-australia",
-      "description": "NSFW content filter for Australia. Blocks profanity, sexual content, inappropriate requests, self-harm content, child safety violations, and racial bias in English and Australian slang.",
+      "description": "Описание политики: Фильтр нежелательного контента — Австралия.",
       "guardrails_add": [
         "nsfw-content-filter-english",
         "nsfw-content-filter-australian",
@@ -638,15 +638,15 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Content Safety",
-      "Australia"
+      "Безопасность контента",
+      "Австралия"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "nsfw-content-filter-basic",
-    "title": "NSFW Content Filter (Basic)",
-    "description": "Basic NSFW content filtering for English only. Blocks profanity, sexual content, slurs, solicitation, explicit requests, self-harm content, and child safety violations. Suitable for most applications requiring content moderation.",
+    "title": "Базовый фильтр нежелательного контента",
+    "description": "Описание политики: Базовый фильтр нежелательного контента.",
     "icon": "ShieldExclamationIcon",
     "iconColor": "text-orange-500",
     "iconBg": "bg-orange-50",
@@ -673,7 +673,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks profanity, sexual content, slurs, and NSFW terms. Includes 485+ keywords covering explicit content, solicitation, sexual behavior, and exploitation."
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -691,7 +691,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks content related to self-harm, suicide, and eating disorders"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -709,7 +709,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks inappropriate content involving minors using identifier + block word combinations"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -727,13 +727,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks racial and ethnic discrimination, hate speech, and supremacist content"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "nsfw-content-filter-basic",
-      "description": "Basic NSFW content filter. Blocks profanity, sexual content, inappropriate requests, self-harm content, child safety violations, and racial bias in English.",
+      "description": "Описание политики: Базовый фильтр нежелательного контента.",
       "guardrails_add": [
         "nsfw-content-filter-english-only",
         "nsfw-self-harm-filter-basic",
@@ -743,14 +743,14 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Content Safety"
+      "Безопасность контента"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "nsfw-content-filter-all-regions",
-    "title": "NSFW Content Filter (All Regions)",
-    "description": "Comprehensive multi-language NSFW content filtering. Blocks profanity, sexual content, inappropriate requests, self-harm content, and child safety violations in English, Spanish, French, German, and Australian. Best for global applications.",
+    "title": "Фильтр нежелательного контента — все регионы",
+    "description": "Описание политики: Фильтр нежелательного контента — все регионы.",
     "icon": "ShieldExclamationIcon",
     "iconColor": "text-purple-500",
     "iconBg": "bg-purple-50",
@@ -781,7 +781,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "English profanity, sexual content, slurs, and NSFW terms (485+ keywords)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -799,7 +799,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Spanish profanity and offensive terms (68 keywords)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -817,7 +817,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "French profanity and offensive terms (91 keywords)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -835,7 +835,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "German profanity and offensive terms (65 keywords)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -853,7 +853,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Australian slang and profanity (32 keywords: root, perv, bogan, wanker, etc.)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -871,7 +871,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks content related to self-harm, suicide, and eating disorders"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -889,7 +889,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks inappropriate content involving minors using identifier + block word combinations"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -907,13 +907,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks racial and ethnic discrimination, hate speech, and supremacist content"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "nsfw-content-filter-all-regions",
-      "description": "Comprehensive multi-language NSFW content filter. Blocks profanity, inappropriate content, self-harm, child safety violations, and racial bias in English, Spanish, French, German, and Australian. Total coverage: 741+ keywords across all languages plus self-harm, child safety, and racial bias protection.",
+      "description": "Описание политики: Фильтр нежелательного контента — все регионы.",
       "guardrails_add": [
         "nsfw-filter-english",
         "nsfw-filter-spanish",
@@ -927,14 +927,14 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Content Safety"
+      "Безопасность контента"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "gdpr-eu-pii-protection",
-    "title": "GDPR Art. 32 \u2014 EU PII Protection",
-    "description": "GDPR Article 32 compliance for EU personal data protection. Masks French national IDs (NIR/INSEE), EU IBANs, French phone numbers, EU VAT numbers, EU passport numbers, and email addresses. Suitable for applications processing EU citizen data requiring GDPR compliance.",
+    "title": "GDPR, статья 32 — защита персональных данных в ЕС",
+    "description": "Описание политики: GDPR, статья 32 — защита персональных данных в ЕС.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-indigo-500",
     "iconBg": "bg-indigo-50",
@@ -966,7 +966,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks EU national identification numbers including French NIR/INSEE and EU passport numbers for GDPR compliance"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -989,7 +989,7 @@
           "pattern_redaction_format": "[IBAN_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks EU bank account numbers (IBANs) to protect financial data under GDPR Article 32"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1017,7 +1017,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks contact information including emails, French phone numbers, and postal codes for EU data subjects"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1035,13 +1035,13 @@
           "pattern_redaction_format": "[VAT_NUMBER_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks EU VAT identification numbers to protect business entity information under GDPR"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "gdpr-eu-pii-protection",
-      "description": "GDPR Article 32 compliance policy for EU personal data protection. Masks French national IDs, EU IBANs, phone numbers, VAT numbers, passports, and contact information.",
+      "description": "Описание политики: GDPR, статья 32 — защита персональных данных в ЕС.",
       "guardrails_add": [
         "gdpr-eu-national-identifiers",
         "gdpr-eu-financial-data",
@@ -1051,16 +1051,16 @@
       "guardrails_remove": []
     },
     "tags": [
-      "PII Protection",
-      "Regulatory",
-      "EU"
+      "Персональные данные",
+      "Регуляторные требования",
+      "ЕС"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "eu-ai-act-article5",
-    "title": "EU AI Act Article 5 \u2014 Prohibited Practices",
-    "description": "Comprehensive EU AI Act Article 5 compliance covering all prohibited AI practices. Includes 5 dedicated sub-guardrails per language (English + French) for: subliminal manipulation (Art. 5.1a), vulnerability exploitation (Art. 5.1b), social scoring (Art. 5.1c), emotion recognition in workplace/education (Art. 5.1f), and biometric categorization & predictive profiling (Art. 5.1d/g/h). Uses conditional matching (identifier word + context word).",
+    "title": "Акт ЕС об ИИ, статья 5 — запрещённые практики",
+    "description": "Описание политики: Акт ЕС об ИИ, статья 5 — запрещённые практики.",
     "icon": "ShieldExclamationIcon",
     "iconColor": "text-red-500",
     "iconBg": "bg-red-50",
@@ -1094,7 +1094,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(a) \u2014 Blocks subliminal manipulation, deceptive AI techniques, dark patterns, and covert behavioral influence"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1113,7 +1113,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(b) \u2014 Blocks AI systems that exploit vulnerabilities of children, elderly, disabled persons, or economically disadvantaged groups"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1132,7 +1132,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(c) \u2014 Blocks social credit systems, citizen scoring, trustworthiness classification, and behavioral reputation scoring"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1151,7 +1151,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(f) \u2014 Blocks emotion recognition, mood tracking, and sentiment analysis in workplace and educational settings"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1170,7 +1170,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(d)(g)(h) \u2014 Blocks biometric categorization by race/ethnicity/religion/politics, facial recognition database scraping, and predictive policing"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1189,7 +1189,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(a) FR \u2014 Bloque la manipulation subliminale, les techniques d'IA trompeuses et les dark patterns (fran\u00e7ais)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1208,7 +1208,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(b) FR \u2014 Bloque l'exploitation des vuln\u00e9rabilit\u00e9s des enfants, personnes \u00e2g\u00e9es et handicap\u00e9es (fran\u00e7ais)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1227,7 +1227,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(c) FR \u2014 Bloque les syst\u00e8mes de cr\u00e9dit social, notation des citoyens et classification de fiabilit\u00e9 (fran\u00e7ais)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1246,7 +1246,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(f) FR \u2014 Bloque la reconnaissance des \u00e9motions et l'analyse des sentiments au travail et dans l'\u00e9ducation (fran\u00e7ais)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1265,13 +1265,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "Art. 5.1(d)(g)(h) FR \u2014 Bloque la cat\u00e9gorisation biom\u00e9trique, les bases de reconnaissance faciale et le profilage pr\u00e9dictif (fran\u00e7ais)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "eu-ai-act-article5",
-      "description": "Comprehensive EU AI Act Article 5 compliance policy. Covers all prohibited AI practices across 5 sub-guardrails per language: subliminal manipulation (Art. 5.1a), vulnerability exploitation (Art. 5.1b), social scoring (Art. 5.1c), emotion recognition (Art. 5.1f), and biometric categorization & predictive profiling (Art. 5.1d/g/h). Includes English and French detection.",
+      "description": "Описание политики: Акт ЕС об ИИ, статья 5 — запрещённые практики.",
       "guardrails_add": [
         "eu-ai-act-art5-manipulation",
         "eu-ai-act-art5-vulnerability",
@@ -1287,15 +1287,15 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Regulatory",
-      "EU"
+      "Регуляторные требования",
+      "ЕС"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "mcp-security-unregistered-server-block",
-    "title": "MCP Security: Block Unregistered Servers",
-    "description": "Blocks requests that reference MCP servers not registered on this LiteLLM gateway. Prevents unauthorized tool access via unregistered MCP endpoints.",
+    "title": "Безопасность MCP — блокировка незарегистрированных серверов",
+    "description": "Описание политики: Безопасность MCP — блокировка незарегистрированных серверов.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-red-500",
     "iconBg": "bg-red-50",
@@ -1313,27 +1313,27 @@
           "on_violation": "block"
         },
         "guardrail_info": {
-          "description": "Blocks requests referencing MCP servers not in the gateway registry"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "mcp-security-unregistered-server-block",
-      "description": "Blocks requests referencing MCP servers not registered on this gateway.",
+      "description": "Описание политики: Безопасность MCP — блокировка незарегистрированных серверов.",
       "guardrails_add": [
         "mcp-security-block"
       ],
       "guardrails_remove": []
     },
     "tags": [
-      "Security"
+      "Безопасность"
     ],
     "estimated_latency_ms": 200
   },
   {
     "id": "airline-passenger-data-protection-uae",
-    "title": "Airline Passenger Data Protection (UAE)",
-    "description": "Protects airline passenger PII including PNR/booking references, multi-national passport numbers, frequent flyer (Skywards) numbers, payment cards, IBANs, Emirates ID, UAE phone numbers, and email addresses. Designed for UAE-based airlines operating global routes.",
+    "title": "Защита данных авиапассажиров — ОАЭ",
+    "description": "Описание политики: Защита данных авиапассажиров — ОАЭ.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-emerald-500",
     "iconBg": "bg-emerald-50",
@@ -1365,7 +1365,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks airline PNR/booking references and Emirates Skywards frequent flyer numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1433,7 +1433,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks passport numbers from 10+ nationalities and UAE Emirates ID -- covers global route network"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1471,7 +1471,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks credit card numbers (Visa, Mastercard, Amex) and IBANs"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1499,13 +1499,13 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks email addresses and phone numbers (UAE and international formats)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "airline-passenger-data-protection-uae",
-      "description": "Airline passenger data protection for UAE-based carriers. Masks PNR/booking references, Skywards numbers, multi-national passports, Emirates ID, payment cards, IBANs, and contact information.",
+      "description": "Описание политики: Защита данных авиапассажиров — ОАЭ.",
       "guardrails_add": [
         "airline-pnr-skywards-pii",
         "airline-passport-multinational",
@@ -1515,16 +1515,16 @@
       "guardrails_remove": []
     },
     "tags": [
-      "PII Protection",
-      "Aviation",
-      "UAE"
+      "Персональные данные",
+      "Авиация",
+      "ОАЭ"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "aviation-operations-security",
-    "title": "Aviation Operations Security",
-    "description": "Prevents AI from leaking flight operations data (flight numbers, crew schedules, gate assignments, aircraft tail numbers), generating content about aviation security vulnerabilities or bypass procedures, and producing unauthorized airline statements or fake incident reports.",
+    "title": "Безопасность авиационных операций",
+    "description": "Описание политики: Безопасность авиационных операций.",
     "icon": "ShieldExclamationIcon",
     "iconColor": "text-red-500",
     "iconBg": "bg-red-50",
@@ -1603,7 +1603,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks flight numbers and aircraft registrations. Blocks crew scheduling and gate assignment data leakage."
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1622,7 +1622,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks content about aircraft vulnerabilities, security bypass procedures, cockpit access, and aviation system exploitation"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1693,7 +1693,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks AI-generated fake incident reports, unauthorized statements, and reputation-damaging content about your brand (runs on output)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1704,7 +1704,7 @@
           "blocked_words": "{{competitors_blocked_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks user inputs that mention competitor names (pre_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1715,7 +1715,7 @@
           "blocked_words": "{{competitors_blocked_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks AI outputs that mention competitor names (post_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1726,7 +1726,7 @@
           "blocked_words": "{{competitor_recommendation_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks user requests asking to recommend competitors (pre_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1737,7 +1737,7 @@
           "blocked_words": "{{competitor_recommendation_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks AI from recommending or suggesting competitor services (post_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1748,7 +1748,7 @@
           "blocked_words": "{{competitor_comparison_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks user inputs requesting unfavorable brand comparisons (pre_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1759,13 +1759,13 @@
           "blocked_words": "{{competitor_comparison_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks AI outputs with unfavorable brand comparisons (post_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "aviation-operations-security",
-      "description": "Aviation operations security policy. Protects flight ops data, blocks aviation security vulnerability content, and prevents fake airline incident reports and unauthorized statements.",
+      "description": "Описание политики: Безопасность авиационных операций.",
       "guardrails_add": [
         "aviation-ops-data-protection",
         "aviation-safety-topic-filter",
@@ -1780,15 +1780,15 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Aviation",
-      "Security"
+      "Авиация",
+      "Безопасность"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "uae-regulatory-compliance",
-    "title": "UAE Regulatory Compliance",
-    "description": "Compliance with UAE Federal Decree-Law No. 45/2021 (Data Protection) and Federal Decree-Law No. 2/2015 (Anti-Discrimination). Protects Emirates ID numbers, UAE phone numbers, and ensures cultural sensitivity including royal family references and religious content policies.",
+    "title": "Регуляторные требования ОАЭ",
+    "description": "Описание политики: Регуляторные требования ОАЭ.",
     "icon": "CheckCircleIcon",
     "iconColor": "text-blue-500",
     "iconBg": "bg-blue-50",
@@ -1840,7 +1840,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "UAE Federal Decree-Law No. 45/2021 compliance -- masks Emirates ID, UAE phone numbers, email, IBAN, payment cards, and PO Box addresses"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1859,7 +1859,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks content disrespecting UAE royal family, cultural norms, and religious sensitivities"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1878,13 +1878,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "UAE Federal Decree-Law No. 2/2015 compliance -- blocks discriminatory content based on race, religion, caste, ethnicity, or nationality"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "uae-regulatory-compliance",
-      "description": "UAE regulatory compliance policy. Covers Federal Decree-Law No. 45/2021 (Data Protection) and Federal Decree-Law No. 2/2015 (Anti-Discrimination). Protects Emirates ID, UAE contact info, and ensures cultural and religious sensitivity.",
+      "description": "Описание политики: Регуляторные требования ОАЭ.",
       "guardrails_add": [
         "uae-data-protection-pii",
         "uae-cultural-sensitivity-filter",
@@ -1893,15 +1893,15 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Regulatory",
-      "UAE"
+      "Регуляторные требования",
+      "ОАЭ"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "competitor-mention-detection",
-    "title": "Competitor Mention Detection",
-    "description": "Automatically detects and blocks AI from recommending or promoting competitor brands. Uses LLM-powered discovery to identify your top competitors, then monitors both inputs and outputs for competitor mentions, referrals, and comparisons that could divert business.",
+    "title": "Обнаружение упоминаний конкурентов",
+    "description": "Описание политики: Обнаружение упоминаний конкурентов.",
     "icon": "ShieldExclamationIcon",
     "iconColor": "text-orange-500",
     "iconBg": "bg-orange-50",
@@ -1937,7 +1937,7 @@
           "blocked_words": "{{competitors_blocked_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks user inputs that mention competitor brands (pre_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1948,7 +1948,7 @@
           "blocked_words": "{{competitors_blocked_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks AI outputs that mention competitor brands (post_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1959,7 +1959,7 @@
           "blocked_words": "{{competitor_recommendation_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks user requests asking to recommend competitors (pre_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1970,7 +1970,7 @@
           "blocked_words": "{{competitor_recommendation_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks AI from recommending or suggesting competitor services (post_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1981,7 +1981,7 @@
           "blocked_words": "{{competitor_comparison_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks user inputs requesting unfavorable brand comparisons (pre_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -1992,13 +1992,13 @@
           "blocked_words": "{{competitor_comparison_words}}"
         },
         "guardrail_info": {
-          "description": "Blocks AI outputs with unfavorable brand comparisons (post_call)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "competitor-mention-detection",
-      "description": "Detects and blocks competitor mentions in both inputs and outputs. Uses LLM-powered competitor discovery based on your brand name.",
+      "description": "Описание политики: Обнаружение упоминаний конкурентов.",
       "guardrails_add": [
         "competitor-input-blocker",
         "competitor-output-blocker",
@@ -2010,14 +2010,14 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Brand Protection"
+      "Защита бренда"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "pdpa-singapore",
-    "title": "Singapore PDPA \u2014 Personal Data Protection",
-    "description": "Singapore Personal Data Protection Act (PDPA) compliance. Covers 5 obligation areas: personal identifier collection (s.13 Consent), sensitive data profiling (Advisory Guidelines), Do Not Call Registry violations (Part IX), overseas data transfers (s.26), and automated profiling without human oversight (Model AI Governance Framework). Also includes regex-based PII detection for NRIC/FIN, Singapore phone numbers, postal codes, passports, UEN, and bank account numbers. Zero-cost keyword-based detection.",
+    "title": "PDPA Сингапура — защита персональных данных",
+    "description": "Описание политики: PDPA Сингапура — защита персональных данных.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-red-500",
     "iconBg": "bg-red-50",
@@ -2054,7 +2054,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Singapore NRIC/FIN and passport numbers for PDPA compliance"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2082,7 +2082,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Singapore phone numbers, postal codes, and email addresses"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2105,7 +2105,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Singapore bank account numbers and credit card numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2123,7 +2123,7 @@
           "pattern_redaction_format": "[UEN_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Singapore Unique Entity Numbers (business registration)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2142,7 +2142,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "PDPA s.13 \u2014 Blocks unauthorized collection, harvesting, or extraction of Singapore personal identifiers (NRIC/FIN, SingPass, passports)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2161,7 +2161,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "PDPA Advisory Guidelines \u2014 Blocks profiling or inference of sensitive personal data categories (race, religion, health, politics) for Singapore residents"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2180,7 +2180,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "PDPA Part IX \u2014 Blocks generation of unsolicited marketing lists and DNC Registry bypass attempts for Singapore phone numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2199,7 +2199,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "PDPA s.26 \u2014 Blocks unprotected overseas transfer of Singapore personal data without adequate safeguards"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2218,13 +2218,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "PDPA + Model AI Governance Framework \u2014 Blocks automated profiling and decision-making about Singapore residents without human oversight"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "pdpa-singapore",
-      "description": "Singapore PDPA compliance policy. Covers personal identifier protection (s.13), sensitive data profiling (Advisory Guidelines), Do Not Call Registry (Part IX), overseas data transfers (s.26), and automated profiling (Model AI Governance Framework). Includes regex-based PII detection for NRIC/FIN, phone numbers, postal codes, passports, UEN, and bank accounts.",
+      "description": "Описание политики: PDPA Сингапура — защита персональных данных.",
       "guardrails_add": [
         "sg-pdpa-pii-identifiers",
         "sg-pdpa-contact-information",
@@ -2239,16 +2239,16 @@
       "guardrails_remove": []
     },
     "tags": [
-      "PII Protection",
-      "Regulatory",
-      "Singapore"
+      "Персональные данные",
+      "Регуляторные требования",
+      "Сингапур"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "mas-ai-risk-management",
-    "title": "Singapore MAS \u2014 AI Risk Management for Financial Institutions",
-    "description": "Monetary Authority of Singapore (MAS) AI Risk Management for Financial Institutions alignment. Covers 5 enforceable obligation areas: fairness & bias in financial decisions, transparency & explainability of AI models, human oversight for consequential actions, data governance for financial customer data, and model security against adversarial attacks. Based on Guidelines on Artificial Intelligence Risk Management (MAS), and aligned with the 2018 FEAT Principles and Project MindForge. Zero-cost keyword-based detection.",
+    "title": "MAS Сингапура — управление рисками ИИ для финансовых организаций",
+    "description": "Описание политики: MAS Сингапура — управление рисками ИИ для финансовых организаций.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-blue-600",
     "iconBg": "bg-blue-50",
@@ -2277,7 +2277,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Guidelines on Artificial Intelligence Risk Management (MAS) — Blocks discriminatory AI practices in financial services that score, deny, or price based on protected attributes (race, religion, age, gender, nationality)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2296,7 +2296,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Guidelines on Artificial Intelligence Risk Management (MAS) — Blocks deployment of opaque or unexplainable AI systems for consequential financial decisions"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2315,7 +2315,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Guidelines on Artificial Intelligence Risk Management (MAS) — Blocks fully automated financial AI decisions without human-in-the-loop for consequential actions (loans, claims, trading)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2334,7 +2334,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Guidelines on Artificial Intelligence Risk Management (MAS) — Blocks unauthorized sharing, exposure, or mishandling of financial customer data without proper governance and data lineage"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2353,13 +2353,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "Guidelines on Artificial Intelligence Risk Management (MAS) — Blocks adversarial attacks, model poisoning, inversion, and exfiltration attempts targeting financial AI systems"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "mas-ai-risk-management",
-      "description": "Guidelines on Artificial Intelligence Risk Management (MAS) for Financial Institutions alignment. Covers fairness & bias, transparency & explainability, human oversight, data governance, and model security. Aligned with the 2018 FEAT Principles, Project MindForge, and NIST AI RMF.",
+      "description": "Описание политики: MAS Сингапура — управление рисками ИИ для финансовых организаций.",
       "guardrails_add": [
         "sg-mas-fairness-bias",
         "sg-mas-transparency-explainability",
@@ -2370,16 +2370,16 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Financial Services",
-      "Regulatory",
-      "Singapore"
+      "Финансовые услуги",
+      "Регуляторные требования",
+      "Сингапур"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "claims-agent-safety",
-    "title": "Claims Agent Chatbot Safety",
-    "description": "Comprehensive safety guardrails for healthcare claims agent chatbots. Blocks fraud coaching (exaggeration, document forgery), PHI disclosure without authorization, prior-auth gaming (code manipulation, medical necessity misrepresentation), system override injection (prompt injection, role impersonation), and medical advice in claims context (diagnosis, treatment recommendations). Evaluated on 243 test cases with 100% precision and 100% recall across all 5 categories.",
+    "title": "Безопасность чат-бота по страховым обращениям",
+    "description": "Описание политики: Безопасность чат-бота по страховым обращениям.",
     "icon": "ShieldExclamationIcon",
     "iconColor": "text-red-500",
     "iconBg": "bg-red-50",
@@ -2408,7 +2408,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks fraud coaching including exaggeration of injuries, fabrication of claims, document forgery, and insurance fraud tactics"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2427,7 +2427,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks unauthorized PHI disclosure, bulk data extraction, and HIPAA violations in claims context"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2446,7 +2446,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks prior-authorization gaming including code manipulation, upcoding, medical necessity misrepresentation, and approval guarantee schemes"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2465,7 +2465,7 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks system override injection, prompt manipulation, adjudication rule bypass, and unauthorized role impersonation (employer, TPA, broker)"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2484,13 +2484,13 @@
           ]
         },
         "guardrail_info": {
-          "description": "Blocks medical advice in claims context including diagnosis, treatment recommendations, medication guidance, and dosage questions"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "claims-agent-safety",
-      "description": "Comprehensive safety policy for healthcare claims agent chatbots. Covers fraud coaching, PHI disclosure, prior-auth gaming, system override injection, and medical advice. Evaluated on 243 test cases with 100% precision and 100% recall.",
+      "description": "Описание политики: Безопасность чат-бота по страховым обращениям.",
       "guardrails_add": [
         "claims-fraud-coaching-filter",
         "claims-phi-disclosure-filter",
@@ -2501,16 +2501,16 @@
       "guardrails_remove": []
     },
     "tags": [
-      "Healthcare",
-      "Claims",
-      "Content Safety"
+      "Здравоохранение",
+      "Страховые обращения",
+      "Безопасность контента"
     ],
     "estimated_latency_ms": 1
   },
   {
     "id": "canadian-pii-protection",
-    "title": "Canadian PII Protection (PIPEDA)",
-    "description": "Protects Canadian personal identifiers under PIPEDA, Ontario FIPPA, and provincial privacy legislation. Masks Social Insurance Numbers (SIN), Ontario Health Insurance Plan (OHIP) numbers, Ontario driver's licence numbers, Canadian passport numbers, IRCC immigration documents, Canadian bank account routing information, postal codes, email addresses, phone numbers, and University of Toronto institutional identifiers (student/employee numbers, UTORid, TCard).",
+    "title": "Защита персональных данных в Канаде — PIPEDA",
+    "description": "Описание политики: Защита персональных данных в Канаде — PIPEDA.",
     "icon": "ShieldCheckIcon",
     "iconColor": "text-red-500",
     "iconBg": "bg-red-50",
@@ -2544,7 +2544,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Canadian Social Insurance Numbers (SIN) and Canadian passport numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2567,7 +2567,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Ontario Health Insurance Plan (OHIP) numbers and Ontario driver's licence numbers"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2585,7 +2585,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks IRCC immigration document numbers including UCI, work/study permits, and IMM references"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2628,7 +2628,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks Canadian bank account routing information (transit-institution-account) and payment cards"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2656,7 +2656,7 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks email addresses, phone numbers (North American format), and Canadian postal codes"
+          "description": "Защитное ограничение для данного шаблона."
         }
       },
       {
@@ -2684,13 +2684,13 @@
           "pattern_redaction_format": "[{pattern_name}_REDACTED]"
         },
         "guardrail_info": {
-          "description": "Masks University of Toronto institutional identifiers (student/employee numbers, UTORid login, TCard campus ID) under Ontario FIPPA"
+          "description": "Защитное ограничение для данного шаблона."
         }
       }
     ],
     "templateData": {
       "policy_name": "canadian-pii-protection",
-      "description": "Canadian PII protection policy under PIPEDA, Ontario FIPPA, and provincial privacy legislation. Masks SIN, OHIP, Ontario driver's licence, passport, IRCC immigration documents, bank account routing info, postal codes, email, phone numbers, and University of Toronto institutional identifiers.",
+      "description": "Описание политики: Защита персональных данных в Канаде — PIPEDA.",
       "guardrails_add": [
         "ca-pii-government-identifiers",
         "ca-pii-health-drivers",
@@ -2702,10 +2702,239 @@
       "guardrails_remove": []
     },
     "tags": [
-      "PII Protection",
-      "Canada",
+      "Персональные данные",
+      "Канада",
       "PIPEDA",
       "FIPPA"
+    ],
+    "estimated_latency_ms": 1
+  },
+  {
+    "id": "ru-personal-data-protection",
+    "title": "Защита персональных данных — Россия",
+    "description": "Помогает снизить риск случайного раскрытия российских персональных данных. Не является гарантией соответствия Федеральному закону № 152-ФЗ.",
+    "example_sentences": [
+      "Паспорт 1234 567890, проверьте данные.",
+      "СНИЛС 112-233-445 95.",
+      "ИНН 7707083893.",
+      "Телефон +7 (912) 345-67-89, почта ivan@example.ru."
+    ],
+    "icon": "ShieldCheckIcon",
+    "iconColor": "text-purple-500",
+    "iconBg": "bg-purple-50",
+    "guardrails": [
+      "ru-personal-data-identifiers"
+    ],
+    "complexity": "High",
+    "guardrailDefinitions": [
+      {
+        "guardrail_name": "ru-personal-data-identifiers",
+        "litellm_params": {
+          "guardrail": "litellm_content_filter",
+          "mode": "pre_call",
+          "patterns": [
+            {
+              "pattern_type": "regex",
+              "name": "ru_passport_number",
+              "pattern": "(?<=\\bпаспорт\\s)\\d{4}[ -]?\\d{6}\\b|(?<=\\bсерия\\s)\\d{4}[ -]?\\d{6}\\b",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_snils",
+              "pattern": "\\b\\d{3}-\\d{3}-\\d{3}\\s\\d{2}\\b",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_inn",
+              "pattern": "(?<=\\bИНН\\s)\\d{10}(?!\\d)|(?<=\\bИНН\\s)\\d{12}(?!\\d)",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_phone",
+              "pattern": "(?:\\+7|8)[ -]?(?:\\(\\d{3}\\)|\\d{3})[ -]?\\d{3}[ -]?\\d{2}[ -]?\\d{2}\\b",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "prebuilt",
+              "pattern_name": "email",
+              "action": "MASK"
+            }
+          ],
+          "pattern_redaction_format": "[{pattern_name}_REDACTED]"
+        },
+        "guardrail_info": {
+          "description": "Маскирует паспортные номера, СНИЛС, ИНН, российские номера телефонов и адреса электронной почты."
+        }
+      }
+    ],
+    "templateData": {
+      "policy_name": "ru-personal-data-protection",
+      "description": "Помогает снизить риск случайного раскрытия российских персональных данных. Не является гарантией соответствия Федеральному закону № 152-ФЗ.",
+      "guardrails_add": [
+        "ru-personal-data-identifiers"
+      ],
+      "guardrails_remove": []
+    },
+    "tags": [
+      "Персональные данные",
+      "Регуляторные требования",
+      "Россия"
+    ],
+    "estimated_latency_ms": 1
+  },
+  {
+    "id": "ru-banking-payment-data-protection",
+    "title": "Банковские и платёжные данные — Россия",
+    "description": "Помогает снизить риск раскрытия банковских и платёжных данных России, маскируя номера карт, счетов, БИК и коды подтверждения.",
+    "example_sentences": [
+      "Карта 2200 1234 5678 9012.",
+      "р/с 40702810900000000001, БИК 044525225.",
+      "SMS код 123456."
+    ],
+    "icon": "CreditCardIcon",
+    "iconColor": "text-green-500",
+    "iconBg": "bg-green-50",
+    "guardrails": [
+      "ru-banking-payment-identifiers"
+    ],
+    "complexity": "High",
+    "guardrailDefinitions": [
+      {
+        "guardrail_name": "ru-banking-payment-identifiers",
+        "litellm_params": {
+          "guardrail": "litellm_content_filter",
+          "mode": "pre_call",
+          "patterns": [
+            {
+              "pattern_type": "prebuilt",
+              "pattern_name": "credit_card",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_mir_card",
+              "pattern": "\\b220[0-4](?:[ -]?\\d{4}){3}\\b",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_bank_account",
+              "pattern": "(?<=\\bр/с\\s)\\d{20}\\b|(?<=\\bк/с\\s)\\d{20}\\b|(?<=\\bрасчетный счет\\s)\\d{20}\\b|(?<=\\bкорреспондентский счет\\s)\\d{20}\\b",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_bik",
+              "pattern": "(?<=\\bБИК\\s)\\d{9}\\b",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_confirmation_code",
+              "pattern": "(?<=\\bкод\\s)\\d{4,8}\\b|(?<=\\bSMS\\s)\\d{4,8}\\b|(?<=\\bСМС\\s)\\d{4,8}\\b|(?<=\\bOTP\\s)\\d{4,8}\\b",
+              "action": "MASK"
+            }
+          ],
+          "pattern_redaction_format": "[{pattern_name}_REDACTED]"
+        },
+        "guardrail_info": {
+          "description": "Маскирует номера платёжных карт, российские расчётные и корреспондентские счета, БИК и коды подтверждения."
+        }
+      }
+    ],
+    "templateData": {
+      "policy_name": "ru-banking-payment-data-protection",
+      "description": "Помогает снизить риск раскрытия банковских и платёжных данных России, маскируя номера карт, счетов, БИК и коды подтверждения.",
+      "guardrails_add": [
+        "ru-banking-payment-identifiers"
+      ],
+      "guardrails_remove": []
+    },
+    "tags": [
+      "Персональные данные",
+      "Финансовые услуги",
+      "Россия"
+    ],
+    "estimated_latency_ms": 1
+  },
+  {
+    "id": "ru-commercial-secrets-protection",
+    "title": "Коммерческая тайна и внутренние данные",
+    "description": "Помогает защитить от случайного раскрытия коммерческой тайны и внутренних данных: учётных данных, API-ключей, IP-адресов и явно помеченных паролей или секретов. Не является регуляторной сертификацией.",
+    "example_sentences": [
+      "AWS key AKIAIOSFODNN7EXAMPLE.",
+      "GitHub token ghp_abcdefghijklmnopqrstuvwxyz1234567890ABCD.",
+      "Пароль S3cret-Value.",
+      "Секрет internal_api_token."
+    ],
+    "icon": "LockClosedIcon",
+    "iconColor": "text-amber-500",
+    "iconBg": "bg-amber-50",
+    "guardrails": [
+      "ru-commercial-secrets"
+    ],
+    "complexity": "Medium",
+    "guardrailDefinitions": [
+      {
+        "guardrail_name": "ru-commercial-secrets",
+        "litellm_params": {
+          "guardrail": "litellm_content_filter",
+          "mode": "pre_call",
+          "patterns": [
+            {
+              "pattern_type": "prebuilt",
+              "pattern_name": "aws_access_key",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "prebuilt",
+              "pattern_name": "github_token",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "prebuilt",
+              "pattern_name": "slack_token",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "prebuilt",
+              "pattern_name": "generic_api_key",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "prebuilt",
+              "pattern_name": "ipv4",
+              "action": "MASK"
+            },
+            {
+              "pattern_type": "regex",
+              "name": "ru_labelled_secret",
+              "pattern": "(?<=\\bпароль\\s)\\S+|(?<=\\bсекрет\\s)\\S+",
+              "action": "MASK"
+            }
+          ],
+          "pattern_redaction_format": "[{pattern_name}_REDACTED]"
+        },
+        "guardrail_info": {
+          "description": "Маскирует AWS access keys, токены GitHub и Slack, API-ключи, IPv4-адреса и значения паролей или секретов с русскими метками."
+        }
+      }
+    ],
+    "templateData": {
+      "policy_name": "ru-commercial-secrets-protection",
+      "description": "Помогает защитить от случайного раскрытия коммерческой тайны и внутренних данных: учётных данных, API-ключей, IP-адресов и явно помеченных паролей или секретов. Не является регуляторной сертификацией.",
+      "guardrails_add": [
+        "ru-commercial-secrets"
+      ],
+      "guardrails_remove": []
+    },
+    "tags": [
+      "Безопасность",
+      "Коммерческая тайна",
+      "Россия"
     ],
     "estimated_latency_ms": 1
   }

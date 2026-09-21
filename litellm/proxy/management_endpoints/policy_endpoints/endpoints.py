@@ -6,7 +6,7 @@ All /policy management endpoints
 /policy/validate - Validate a policy configuration
 /policy/list - List all loaded policies
 /policy/info - Get information about a specific policy
-/policy/templates - Get policy templates (GitHub with local fallback)
+/policy/templates - Get policy templates from the local Nexoplane catalog
 """
 
 import copy
@@ -604,23 +604,26 @@ async def test_policy_matching(
     )
 
 
-POLICY_TEMPLATES_GITHUB_URL: Final = "https://raw.githubusercontent.com/BerriAI/litellm/main/policy_templates.json"
-
-
-def _load_policy_templates_from_local_backup() -> list:
-    """Load policy templates from local backup file (litellm/policy_templates_backup.json)."""
-    backup_path: Final = os.path.join(
+def _load_policy_templates_from_local_catalog() -> list:
+    """Load policy templates from the shipped Nexoplane catalog."""
+    catalog_path: Final = os.path.join(
         os.path.dirname(__file__),
         "..",
         "..",
         "..",
-        "policy_templates_backup.json",
+        "policy_templates.json",
     )
-    path: Final = os.path.abspath(backup_path)
+    path: Final = os.path.abspath(catalog_path)
     if not os.path.exists(path):
-        return []
-    with open(path, "r") as f:
-        return json.load(f)
+        raise RuntimeError(f"Policy template catalog is missing: {path}")
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            templates: list = json.load(file)
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"Policy template catalog is invalid JSON: {path}") from error
+    if not isinstance(templates, list):
+        raise RuntimeError(f"Policy template catalog must contain a JSON list: {path}")
+    return templates
 
 
 @router.get(
@@ -636,32 +639,9 @@ async def get_policy_templates(
     """
     Get policy templates for the UI (pre-configured guardrail combinations).
 
-    Fetches from GitHub with automatic fallback to local backup on failure.
-    Set LITELLM_LOCAL_POLICY_TEMPLATES=true to skip GitHub and use local backup only.
+    Returns the shipped Nexoplane policy catalog.
     """
-    use_local: Final = os.getenv("LITELLM_LOCAL_POLICY_TEMPLATES", "").strip().lower() in (
-        "true",
-        "1",
-        "yes",
-    )
-    if use_local:
-        return _load_policy_templates_from_local_backup()
-
-    try:
-        from litellm.llms.custom_httpx.http_handler import get_async_httpx_client
-        from litellm.types.llms.custom_http import httpxSpecialProvider
-
-        async_client: Final = get_async_httpx_client(
-            llm_provider=httpxSpecialProvider.UI,
-            params={"timeout": 10.0},
-        )
-        response: Final = await async_client.get(POLICY_TEMPLATES_GITHUB_URL)
-        if response.status_code == 200:
-            return response.json()
-    except Exception as e:
-        verbose_proxy_logger.debug("Failed to fetch policy templates from GitHub, using local backup: %s", e)
-
-    return _load_policy_templates_from_local_backup()
+    return _load_policy_templates_from_local_catalog()
 
 
 class EnrichTemplateRequest(BaseModel):
@@ -685,7 +665,7 @@ def _validate_enrichment_request(data: EnrichTemplateRequest) -> tuple[dict, dic
 
     Raises HTTPException on validation failure.
     """
-    templates: Final = _load_policy_templates_from_local_backup()
+    templates: Final = _load_policy_templates_from_local_catalog()
     template: Final = next((t for t in templates if t.get("id") == data.template_id), None)
     if template is None:
         raise HTTPException(status_code=404, detail=f"Template '{data.template_id}' not found")
@@ -1110,7 +1090,7 @@ async def suggest_policy_templates(
         AiPolicySuggester,
     )
 
-    templates: Final = _load_policy_templates_from_local_backup()
+    templates: Final = _load_policy_templates_from_local_catalog()
     suggester: Final = AiPolicySuggester()
     return await suggester.suggest(
         templates=templates,
