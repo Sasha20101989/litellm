@@ -51,7 +51,7 @@ const APIReferenceView: React.FC<ApiRefProps> = ({ proxySettings }) => {
               code={`import openai
 client = openai.OpenAI(
     api_key="your_api_key",
-    base_url="${base_url}" # Nexoplane Proxy is OpenAI compatible, Read More: https://docs.litellm.ai/docs/proxy/user_keys
+    base_url="${base_url}" # Nexoplane Proxy is OpenAI compatible
 )
 
 response = client.chat.completions.create(
@@ -124,7 +124,7 @@ messages = [
         content="You are a helpful assistant that im using to make a test request to."
     ),
     HumanMessage(
-        content="test from litellm. tell me why it's amazing in 1 sentence"
+        content="test from Nexoplane. tell me why it's amazing in 1 sentence"
     ),
 ]
 response = chat(messages)

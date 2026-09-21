@@ -2427,10 +2427,10 @@ export const buildModelGroupTestRequest = (
   requestParams: Record<string, unknown> = {},
 ): { path: string; body: Record<string, unknown> } =>
   mode === "embedding"
-    ? { path: "/v1/embeddings", body: { model: modelGroup, input: "test from litellm" } }
+    ? { path: "/v1/embeddings", body: { model: modelGroup, input: "test from Nexoplane" } }
     : {
         path: "/v1/chat/completions",
-        body: { ...requestParams, model: modelGroup, messages: [{ role: "user", content: "test from litellm" }] },
+        body: { ...requestParams, model: modelGroup, messages: [{ role: "user", content: "test from Nexoplane" }] },
       };
 
 export const testModelGroupConnection = async (
