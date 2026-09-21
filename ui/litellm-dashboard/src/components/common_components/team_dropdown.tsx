@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useEffect, useMemo, useState } from "react";
 import { PaginatedSearchSelect } from "@/components/shared/PaginatedSearchSelect";
 import { useInfiniteTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
@@ -26,6 +27,7 @@ const TeamDropdown: React.FC<TeamDropdownProps> = ({
   id,
   filterTeam,
 }) => {
+  const { t } = useTranslation("gateway");
   const [search, setSearch] = useState("");
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, isLoading } = useInfiniteTeams(
@@ -95,9 +97,9 @@ const TeamDropdown: React.FC<TeamDropdownProps> = ({
         hasNextPage={hasNextPage}
         isLoading={isLoading}
         isFetchingNextPage={isFetchingNextPage}
-        placeholder="Search or select a team"
-        emptyText="No teams found"
-        loadingText="Loading teams…"
+        placeholder={t("virtualKeys.sharedDetails.searchTeam")}
+        emptyText={t("virtualKeys.sharedDetails.noTeams")}
+        loadingText={t("virtualKeys.sharedDetails.loadingTeams")}
         disabled={disabled}
         inputId={id}
       />

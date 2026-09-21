@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import VectorStorePermissions from "./permissions/VectorStorePermissions";
 import MCPServerPermissions from "./permissions/MCPServerPermissions";
 import AgentPermissions from "./permissions/AgentPermissions";
@@ -22,6 +23,7 @@ export function ObjectPermissionsView({
   className = "",
   accessToken,
 }: ObjectPermissionsViewProps) {
+  const { t } = useTranslation("gateway");
   const vectorStores = objectPermission?.vector_stores || [];
   const mcpServers = objectPermission?.mcp_servers || [];
   const mcpAccessGroups = objectPermission?.mcp_access_groups || [];
@@ -50,21 +52,17 @@ export function ObjectPermissionsView({
         accessToken={accessToken}
       />
       <div className="min-w-0 rounded-md border border-border p-4">
-        <p className="text-sm font-medium text-foreground">Search tools</p>
+        <p className="text-sm font-medium text-foreground">{t("virtualKeys.sharedDetails.searchTools")}</p>
         {searchTools.length === 0 ? (
-          <p className="mt-1 block text-xs text-muted-foreground">
-            No restriction — all configured search tools are allowed for this team.
-          </p>
+          <p className="mt-1 block text-xs text-muted-foreground">{t("virtualKeys.sharedDetails.allSearchTools")}</p>
         ) : (
           <p className="mt-1 block text-xs break-words text-foreground">{searchTools.join(", ")}</p>
         )}
       </div>
       <div className="min-w-0 rounded-md border border-border p-4">
-        <p className="text-sm font-medium text-foreground">Skills</p>
+        <p className="text-sm font-medium text-foreground">{t("virtualKeys.sharedDetails.skills")}</p>
         {skills.length === 0 ? (
-          <p className="mt-1 block text-xs text-muted-foreground">
-            No private skills granted. Only enabled (public) Claude Code plugins are visible.
-          </p>
+          <p className="mt-1 block text-xs text-muted-foreground">{t("virtualKeys.sharedDetails.noPrivateSkills")}</p>
         ) : (
           <p className="mt-1 block text-xs break-words text-foreground">{skills.join(", ")}</p>
         )}
@@ -77,8 +75,10 @@ export function ObjectPermissionsView({
       <div className={`@container bg-card border border-border rounded-lg p-6 ${className}`}>
         <div className="flex items-center gap-2 mb-6">
           <div>
-            <p className="font-semibold text-foreground">Object Permissions</p>
-            <p className="text-xs text-muted-foreground">Access control for Vector Stores and MCP Servers</p>
+            <p className="font-semibold text-foreground">{t("virtualKeys.sharedDetails.objectPermissions")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("virtualKeys.sharedDetails.objectPermissionsDescription")}
+            </p>
           </div>
         </div>
         {content}
@@ -88,7 +88,7 @@ export function ObjectPermissionsView({
 
   return (
     <div className={`${className}`}>
-      <p className="font-medium text-foreground mb-3">Object Permissions</p>
+      <p className="font-medium text-foreground mb-3">{t("virtualKeys.sharedDetails.objectPermissions")}</p>
       {content}
     </div>
   );

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrganizations } from "@/app/(dashboard)/hooks/organizations/useOrganizations";
 import { MultiSelect } from "@/components/shared/MultiSelect";
@@ -134,18 +135,21 @@ const labelWithHint = (label: string, hint: string): React.ReactNode => (
   </>
 );
 
-const EmailInvitationsNotice: React.FC = () => (
-  <Alert variant="info" className="mb-4">
-    <Info />
-    <AlertTitle>Email invitations</AlertTitle>
-    <AlertDescription>
-      New users receive an email invite only when an email integration (SMTP, Resend, or SendGrid) is configured.{" "}
-      <a href="https://docs.litellm.ai/docs/proxy/email" target="_blank" rel="noreferrer">
-        Learn how to set up email notifications
-      </a>
-    </AlertDescription>
-  </Alert>
-);
+const EmailInvitationsNotice: React.FC = () => {
+  const { t } = useTranslation("gateway");
+  return (
+    <Alert variant="info" className="mb-4">
+      <Info />
+      <AlertTitle>{t("virtualKeys.sharedDetails.emailInvitations")}</AlertTitle>
+      <AlertDescription>
+        {t("virtualKeys.sharedDetails.emailInvitationsHelp")}{" "}
+        <a href="https://docs.litellm.ai/docs/proxy/email" target="_blank" rel="noreferrer">
+          {t("virtualKeys.sharedDetails.emailSetup")}
+        </a>
+      </AlertDescription>
+    </Alert>
+  );
+};
 
 export const CreateUserButton: React.FC<CreateuserProps> = ({
   userID,
@@ -154,6 +158,7 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
   onUserCreated,
   isEmbedded = false,
 }) => {
+  const { t } = useTranslation("gateway");
   const queryClient = useQueryClient();
   const [uiSettings, setUISettings] = useState<UISettings | null>(null);
   const defaultValues = isEmbedded ? EMBEDDED_DEFAULTS : STANDALONE_DEFAULTS;
@@ -201,7 +206,7 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
 
   const handleCreate = async (formValues: CreateUserFormValues) => {
     try {
-      toast.info("Making API Call");
+      toast.info(t("virtualKeys.sharedDetails.creatingUser"));
       if (!isEmbedded) {
         setIsModalVisible(true);
       }
@@ -228,24 +233,48 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
         setIsInvitationLinkModalVisible(true);
       }
 
-      toast.success("API user Created");
+      toast.success(t("virtualKeys.sharedDetails.userCreated"));
       form.reset(defaultValues);
       localStorage.removeItem("userData" + userID);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error?.message || "Error creating the user";
+      const errorMessage =
+        error.response?.data?.detail || error?.message || t("virtualKeys.sharedDetails.userCreateError");
       toast.fromError(errorMessage);
       console.error("Error creating the user:", error);
     }
   };
 
+  const knownRoles: Record<string, { label: string; description: string }> = {
+    proxy_admin: {
+      label: t("virtualKeys.sharedDetails.adminRole"),
+      description: t("virtualKeys.sharedDetails.adminRoleHelp"),
+    },
+    proxy_admin_viewer: {
+      label: t("virtualKeys.sharedDetails.adminViewerRole"),
+      description: t("virtualKeys.sharedDetails.adminViewerRoleHelp"),
+    },
+    internal_user: {
+      label: t("virtualKeys.sharedDetails.internalRole"),
+      description: t("virtualKeys.sharedDetails.internalRoleHelp"),
+    },
+    internal_user_viewer: {
+      label: t("virtualKeys.sharedDetails.internalViewerRole"),
+      description: t("virtualKeys.sharedDetails.internalViewerRoleHelp"),
+    },
+    team: { label: t("virtualKeys.sharedDetails.team"), description: t("virtualKeys.sharedDetails.teamRoleHelp") },
+    customer: {
+      label: t("virtualKeys.sharedDetails.customerRole"),
+      description: t("virtualKeys.sharedDetails.customerRole"),
+    },
+  };
   const roleOptions = Object.entries(possibleUIRoles ?? {}).map(([role, { ui_label, description }]) => ({
     value: role,
-    label: ui_label,
-    description,
+    label: knownRoles[role]?.label ?? ui_label,
+    description: knownRoles[role]?.description ?? description,
   }));
 
   const userEmailField = (
-    <FormField control={form.control} name="user_email" label="User Email">
+    <FormField control={form.control} name="user_email" label={t("virtualKeys.sharedDetails.userEmail")}>
       {({ ref, value, ...control }) => <Input {...control} ref={ref} value={value ?? ""} />}
     </FormField>
   );
@@ -254,23 +283,34 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
     <FormField
       control={form.control}
       name="team_id"
-      label="Team"
-      description="If selected, user will be added as a 'user' role to the team."
+      label={t("virtualKeys.sharedDetails.team")}
+      description={t("virtualKeys.sharedDetails.userTeamHelp")}
     >
       {({ id, value, onChange }) => <TeamDropdown id={id} value={value} onChange={onChange} />}
     </FormField>
   );
 
   const metadataField = (
-    <FormField control={form.control} name="metadata" label="Metadata">
+    <FormField control={form.control} name="metadata" label={t("virtualKeys.sharedDetails.metadata")}>
       {({ ref, value, ...control }) => (
-        <Textarea {...control} ref={ref} value={value ?? ""} rows={4} placeholder="Enter metadata as JSON" />
+        <Textarea
+          {...control}
+          ref={ref}
+          value={value ?? ""}
+          rows={4}
+          placeholder={t("virtualKeys.sharedDetails.metadataJson")}
+        />
       )}
     </FormField>
   );
 
   const sendInviteEmailField = (
-    <FormField control={form.control} name="send_invite_email" label="Send invitation email" orientation="horizontal">
+    <FormField
+      control={form.control}
+      name="send_invite_email"
+      label={t("virtualKeys.sharedDetails.sendInviteEmail")}
+      orientation="horizontal"
+    >
       {({ id, value, onChange, onBlur }) => (
         <Checkbox id={id} checked={value} onCheckedChange={onChange} onBlur={onBlur} />
       )}
@@ -309,13 +349,13 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
           <EmailInvitationsNotice />
           <FieldGroup>
             {userEmailField}
-            {roleField("User Role")}
+            {roleField(t("virtualKeys.sharedDetails.userRole"))}
             {teamField}
             {metadataField}
             {sendInviteEmailField}
           </FieldGroup>
           <div className="mt-4 text-right">
-            <Button type="submit">Create User</Button>
+            <Button type="submit">{t("virtualKeys.sharedDetails.createUser")}</Button>
           </div>
         </form>
       </TooltipProvider>

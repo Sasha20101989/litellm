@@ -676,6 +676,7 @@ function FocusVirtualKeysPage() {
                 {t("focusKeys.back")}
               </Button>
               <KeyInfoView
+                key={selectedKeyId ?? selectedKey.token}
                 keyId={selectedKeyId ?? selectedKey.token}
                 keyData={selectedKey}
                 teams={teams}

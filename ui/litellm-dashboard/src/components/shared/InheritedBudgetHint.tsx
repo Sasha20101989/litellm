@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { SimpleTooltip } from "@/components/ui/tooltip";
 import type { Team } from "@/components/key_team_helpers/key_list";
 import type { Organization } from "@/components/networking";
@@ -43,22 +44,30 @@ export const inheritedBudgetGates = (
   organization: OrganizationBudgetSource | null | undefined,
 ): readonly InheritedBudgetGate[] => [teamGate(team), organizationGate(organization)].filter((gate) => gate !== null);
 
-const formatGate = (gate: InheritedBudgetGate): string =>
-  `${gate.scope} ${gate.alias}: $${formatNumberWithCommas(gate.maxBudget, 2)}${gate.budgetDuration ? ` / ${gate.budgetDuration}` : ""}`;
+const formatGate = (gate: InheritedBudgetGate, scopeLabel: string): string =>
+  `${scopeLabel} ${gate.alias}: $${formatNumberWithCommas(gate.maxBudget, 2)}${gate.budgetDuration ? ` / ${gate.budgetDuration}` : ""}`;
 
 interface InheritedBudgetHintProps {
   gates: readonly InheritedBudgetGate[];
 }
 
 export function InheritedBudgetHint({ gates }: InheritedBudgetHintProps) {
+  const { t } = useTranslation("gateway");
   if (gates.length === 0) return null;
   return (
     <SimpleTooltip
       content={
         <div data-testid="inherited-budget-hint" className="flex flex-col gap-1">
-          <span>This key has no budget of its own, but its spend still counts toward:</span>
+          <span>{t("virtualKeys.sharedDetails.inheritedBudget")}</span>
           {gates.map((gate) => (
-            <span key={gate.scope}>{formatGate(gate)}</span>
+            <span key={gate.scope}>
+              {formatGate(
+                gate,
+                gate.scope === "Team"
+                  ? t("virtualKeys.sharedDetails.team")
+                  : t("virtualKeys.sharedDetails.organization"),
+              )}
+            </span>
           ))}
         </div>
       }

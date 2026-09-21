@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { describeGroups, TeamAccessGroupModelGrant } from "../team/teamModelAccess";
 
 export interface InheritedGrant {
@@ -20,7 +21,12 @@ export function computeInheritedGrants(
   }));
 }
 
-export const inheritedGrantTooltip = (grant: InheritedGrant): string => {
+export const inheritedGrantTooltip = (grant: InheritedGrant, t?: TFunction<"gateway">): string => {
+  if (t) {
+    return grant.accessGroupNames.length > 0
+      ? t("virtualKeys.sharedDetails.inheritedGrant", { groups: grant.accessGroupNames.join(", "), id: grant.id })
+      : t("virtualKeys.sharedDetails.inheritedGrantUnknown", { id: grant.id });
+  }
   const source = grant.accessGroupNames.length > 0 ? describeGroups(grant.accessGroupNames) : "an access group";
   return `Granted via ${source}. Full ID: ${grant.id}`;
 };
