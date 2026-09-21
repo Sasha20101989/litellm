@@ -671,7 +671,7 @@ function FocusVirtualKeysPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mb-3 ml-12 lg:ml-0"
+                  className="mb-3 ml-12 lg:hidden"
                   onClick={() => void setSelectedKeyId(null)}
                 >
                 <ArrowLeft className="size-4" />
