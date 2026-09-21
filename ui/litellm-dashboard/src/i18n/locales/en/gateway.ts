@@ -3123,6 +3123,8 @@ export const enGateway = {
       organization: "Organization",
       userId: "User ID",
       keyId: "Key ID",
+      status: "Status",
+      allStatuses: "All statuses",
       selectTeam: "Select a team…",
       noTeams: "No teams found",
       selectOrganization: "Select an organization…",
@@ -3161,6 +3163,7 @@ export const enGateway = {
       deletedTooltip:
         "Deleted {{date}}{{user}}. Kept for audit and spend history; requests using this key are rejected.",
       blocked: "Blocked",
+      revoked: "Revoked (blocked)",
       blockedTooltip: "Blocked. Requests using this key will be rejected with 401.",
       scimBlockedTooltip: "Blocked by SCIM (external identity provider deactivated or deleted the owning user).",
       expired: "Expired",

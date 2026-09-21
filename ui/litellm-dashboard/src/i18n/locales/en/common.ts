@@ -1,4 +1,7 @@
 export const enCommon = {
+  a11y: {
+    pageControls: "Page controls",
+  },
   language: {
     selectorLabel: "Language",
     selectorTitle: "Choose language",
@@ -112,8 +115,9 @@ export const enCommon = {
       githubAria: "Nexoplane on GitHub",
     },
     notifications: {
-      title: "Nexoplane Agent Platform",
-      description: "Open-source agent infra — sandboxes, durable sessions, and workers on AWS Fargate.",
+      title: "Nexoplane Auto Router",
+      description: "Route every request to the cheapest model that can handle it, with no prompt changes.",
+      readDocs: "Read the docs",
       markAsRead: "Mark as read",
       aria: "Notifications",
     },

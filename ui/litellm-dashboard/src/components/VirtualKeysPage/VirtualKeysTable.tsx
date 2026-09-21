@@ -36,29 +36,9 @@ interface VirtualKeysTableProps {
 const FILTER_COLUMNS = ["team_id", "org_id", "user_id", "key_hash", "status"] as const;
 type FilterColumn = (typeof FILTER_COLUMNS)[number];
 
-const FILTER_LABELS: Record<FilterColumn, string> = {
-  team_id: "Team",
-  org_id: "Organization",
-  user_id: "User ID",
-  key_hash: "Key ID",
-  status: "Status",
-};
-
 const KEY_STATUS_VALUES = ["active", "expired", "revoked", "deleted"] as const;
 type KeyStatusFilter = (typeof KEY_STATUS_VALUES)[number];
 const ALL_STATUSES = "all";
-
-const KEY_STATUS_LABELS: Record<KeyStatusFilter, string> = {
-  active: "Active",
-  expired: "Expired",
-  revoked: "Revoked (blocked)",
-  deleted: "Deleted",
-};
-
-const STATUS_FILTER_ITEMS = [
-  { value: ALL_STATUSES, label: "All statuses" },
-  ...KEY_STATUS_VALUES.map((value) => ({ value, label: KEY_STATUS_LABELS[value] })),
-];
 
 const isKeyStatusFilter = (value: unknown): value is KeyStatusFilter =>
   (KEY_STATUS_VALUES as readonly unknown[]).includes(value);
@@ -88,6 +68,23 @@ const appliedFilter = (filters: ColumnFiltersState, column: FilterColumn): strin
 
 export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
   const { t } = useTranslation("gateway");
+  const filterLabels: Record<FilterColumn, string> = {
+    team_id: t("virtualKeys.filters.team"),
+    org_id: t("virtualKeys.filters.organization"),
+    user_id: t("virtualKeys.filters.userId"),
+    key_hash: t("virtualKeys.filters.keyId"),
+    status: t("virtualKeys.filters.status"),
+  };
+  const keyStatusLabels: Record<KeyStatusFilter, string> = {
+    active: t("virtualKeys.status.active"),
+    expired: t("virtualKeys.status.expired"),
+    revoked: t("virtualKeys.status.revoked"),
+    deleted: t("virtualKeys.status.deleted"),
+  };
+  const statusFilterItems = [
+    { value: ALL_STATUSES, label: t("virtualKeys.filters.allStatuses") },
+    ...KEY_STATUS_VALUES.map((value) => ({ value, label: keyStatusLabels[value] })),
+  ];
   const { data: fetchedOrganizations } = useOrganizations();
   const organizations = useMemo(() => fetchedOrganizations ?? [], [fetchedOrganizations]);
   const { data: fetchedTeams } = useAllTeams();
@@ -196,11 +193,11 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
         return organizations.find((org) => org.organization_id === raw)?.organization_alias || raw;
       }
       if (columnId === "status" && isKeyStatusFilter(raw)) {
-        return KEY_STATUS_LABELS[raw];
+        return keyStatusLabels[raw];
       }
       return raw;
     },
-    [allTeams, organizations],
+    [allTeams, keyStatusLabels, organizations],
   );
 
   if (selectedKeyId) {
@@ -249,8 +246,8 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
         columnResizeMode="onChange"
         isLoading={isPending || isPlaceholderData}
         isError={isError}
-        loadingMessage="Loading keys..."
-        noDataMessage="No keys found"
+        loadingMessage={t("virtualKeys.loading")}
+        noDataMessage={t("virtualKeys.empty")}
         fillHeight
         size="compact"
         toolbar={(table) => (
@@ -263,7 +260,7 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
               onRefresh={() => refetch?.()}
               isRefreshing={isFetching}
               onOpenFilters={() => setFiltersOpen(true)}
-              filterLabels={FILTER_LABELS}
+              filterLabels={filterLabels}
               formatFilterValue={formatFilterValue}
             />
             <DataTableFilterDrawer
@@ -275,41 +272,41 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
             >
               {({ get, set }) => (
                 <>
-                  <DataTableFilterField label="Team">
+                  <DataTableFilterField label={t("virtualKeys.filters.team")}>
                     <SearchSelect
                       options={teamOptions}
                       value={(get("team_id") as string) || undefined}
                       onValueChange={(value) => set("team_id", value ?? undefined)}
                       placeholder={t("virtualKeys.filters.selectTeam")}
-                      emptyText="No teams found"
+                      emptyText={t("virtualKeys.filters.noTeams")}
                     />
                   </DataTableFilterField>
-                  <DataTableFilterField label="Organization">
+                  <DataTableFilterField label={t("virtualKeys.filters.organization")}>
                     <SearchSelect
                       options={orgOptions}
                       value={(get("org_id") as string) || undefined}
                       onValueChange={(value) => set("org_id", value ?? undefined)}
                       placeholder={t("virtualKeys.filters.selectOrganization")}
-                      emptyText="No organizations found"
+                      emptyText={t("virtualKeys.filters.noOrganizations")}
                     />
                   </DataTableFilterField>
-                  <DataTableFilterField label="User ID">
+                  <DataTableFilterField label={t("virtualKeys.filters.userId")}>
                     <Input
                       value={(get("user_id") as string) ?? ""}
                       onChange={(event) => set("user_id", event.target.value)}
                       placeholder={t("virtualKeys.filters.enterUserId")}
                     />
                   </DataTableFilterField>
-                  <DataTableFilterField label="Key ID">
+                  <DataTableFilterField label={t("virtualKeys.filters.keyId")}>
                     <Input
                       value={(get("key_hash") as string) ?? ""}
                       onChange={(event) => set("key_hash", event.target.value)}
                       placeholder={t("virtualKeys.filters.enterKeyId")}
                     />
                   </DataTableFilterField>
-                  <DataTableFilterField label="Status">
+                  <DataTableFilterField label={t("virtualKeys.filters.status")}>
                     <Select
-                      items={STATUS_FILTER_ITEMS}
+                      items={statusFilterItems}
                       value={(get("status") as string) || ALL_STATUSES}
                       onValueChange={(value) => set("status", value === ALL_STATUSES ? undefined : value)}
                     >
@@ -317,7 +314,7 @@ export function VirtualKeysTable({ headerActions }: VirtualKeysTableProps) {
                         <SelectValue placeholder={t("workflows.filters.allStatuses")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {STATUS_FILTER_ITEMS.map((item) => (
+                        {statusFilterItems.map((item) => (
                           <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>

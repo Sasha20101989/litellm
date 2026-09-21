@@ -3120,6 +3120,8 @@ export const ruGateway = {
       organization: "Организация",
       userId: "ID пользователя",
       keyId: "ID ключа",
+      status: "Статус",
+      allStatuses: "Все статусы",
       selectTeam: "Выберите команду…",
       noTeams: "Команды не найдены",
       selectOrganization: "Выберите организацию…",
@@ -3159,6 +3161,7 @@ export const ruGateway = {
       deletedTooltip:
         "Удалён {{date}}{{user}}. Сохранён для аудита и истории расходов; запросы с этим ключом будут отклонены.",
       blocked: "Заблокирован",
+      revoked: "Отозван (заблокирован)",
       blockedTooltip: "Ключ заблокирован. Запросы с ним будут отклонены с кодом 401.",
       scimBlockedTooltip:
         "Ключ заблокирован через SCIM: внешний поставщик удостоверений отключил или удалил владельца.",

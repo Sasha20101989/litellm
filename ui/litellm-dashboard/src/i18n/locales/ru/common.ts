@@ -1,4 +1,7 @@
 export const ruCommon = {
+  a11y: {
+    pageControls: "Элементы управления страницей",
+  },
   language: {
     selectorLabel: "Язык",
     selectorTitle: "Выбрать язык",
@@ -112,8 +115,9 @@ export const ruCommon = {
       githubAria: "Nexoplane на GitHub",
     },
     notifications: {
-      title: "Платформа агентов Nexoplane",
-      description: "Открытая инфраструктура для агентов: песочницы, долгоживущие сессии и воркеры в AWS Fargate.",
+      title: "Автоматический роутер Nexoplane",
+      description: "Направляет каждый запрос в самую дешёвую подходящую модель без изменения промпта.",
+      readDocs: "Открыть документацию",
       markAsRead: "Отметить прочитанным",
       aria: "Уведомления",
     },
