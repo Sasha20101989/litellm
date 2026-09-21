@@ -110,7 +110,7 @@ function MCPEventsPanels({ toolsEvent, mcpCallEvents, defaultOpenKeys }: MCPEven
             <MCPEventPanel
               key={key}
               panelKey={key}
-              title={callEvent.item?.name || "Tool call"}
+              title={callEvent.item?.name || t("messages.toolCall")}
               open={openKeys.has(key)}
               onOpenChange={(open) => toggleKey(key, open)}
             >

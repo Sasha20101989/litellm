@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash2, Link } from "lucide-react";
@@ -28,39 +29,39 @@ interface Props {
   accessToken: string;
 }
 
-function relativeTime(isoString: string | null | undefined): string {
+function relativeTime(isoString: string | null | undefined, t: TFunction<"chat">): string {
   if (!isoString) return "";
   try {
     const date = new Date(isoString);
     const diffMs = Date.now() - date.getTime();
     const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 60) return "just now";
+    if (diffSec < 60) return t("keys.justNow");
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 60) return t("keys.minutesAgo", { count: diffMin });
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-    return `${Math.floor(diffHr / 24)}d ago`;
+    if (diffHr < 24) return t("keys.hoursAgo", { count: diffHr });
+    return t("keys.daysAgo", { count: Math.floor(diffHr / 24) });
   } catch {
     return "";
   }
 }
 
-function expiryLabel(isoString: string | null | undefined): {
+function expiryLabel(isoString: string | null | undefined, t: TFunction<"chat">): {
   text: string;
   variant: "secondary" | "destructive" | "outline";
 } {
-  if (!isoString) return { text: "Does not expire", variant: "secondary" };
+  if (!isoString) return { text: t("integrations.credentials.doesNotExpire"), variant: "secondary" };
   try {
     const exp = new Date(isoString);
     const diffMs = exp.getTime() - Date.now();
-    if (diffMs <= 0) return { text: "Expired", variant: "destructive" };
+    if (diffMs <= 0) return { text: t("integrations.credentials.expired"), variant: "destructive" };
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
     const diffHr = Math.floor(diffMin / 60);
     const diffDay = Math.floor(diffHr / 24);
-    if (diffDay > 0) return { text: `Expires in ${diffDay}d`, variant: "outline" };
-    if (diffHr > 0) return { text: `Expires in ${diffHr}h`, variant: "outline" };
-    return { text: `Expires in ${diffMin}m`, variant: "outline" };
+    if (diffDay > 0) return { text: t("integrations.credentials.expiresDays", { count: diffDay }), variant: "outline" };
+    if (diffHr > 0) return { text: t("integrations.credentials.expiresHours", { count: diffHr }), variant: "outline" };
+    return { text: t("integrations.credentials.expiresMinutes", { count: diffMin }), variant: "outline" };
   } catch {
     return { text: "", variant: "outline" };
   }
@@ -85,7 +86,7 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
         (prev ?? []).filter((c) => c.server_id !== serverId),
       );
     } catch {
-      toast.error("Failed to revoke connection. Please try again.");
+      toast.error(t("integrations.credentials.revokeError"));
     } finally {
       setRevoking((prev) => {
         const n = new Set(prev);
@@ -174,12 +175,12 @@ const MCPCredentialsTab: React.FC<Props> = ({ accessToken }) => {
             <TableBody>
               {credentials.map((cred) => {
                 const isRevoking = revoking.has(cred.server_id);
-                const exp = expiryLabel(cred.expires_at);
+                const exp = expiryLabel(cred.expires_at, t);
                 return (
                   <TableRow key={cred.server_id}>
                     <TableCell className="text-sm font-medium">{displayName(cred)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {relativeTime(cred.connected_at) || "\u2014"}
+                      {relativeTime(cred.connected_at, t) || "\u2014"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={exp.variant}>{exp.text}</Badge>

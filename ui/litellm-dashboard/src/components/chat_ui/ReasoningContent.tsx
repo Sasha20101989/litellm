@@ -7,6 +7,7 @@ import { useSyntaxTheme } from "@/hooks/useSyntaxTheme";
 import { ChevronDown, ChevronRight, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useTranslation } from "react-i18next";
 
 interface ReasoningContentProps {
   reasoningContent: string;
@@ -14,6 +15,7 @@ interface ReasoningContentProps {
 
 const ReasoningContent: React.FC<ReasoningContentProps> = ({ reasoningContent }) => {
   const syntaxTheme = useSyntaxTheme(coy);
+  const { t } = useTranslation("chat");
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (!reasoningContent) return null;
@@ -32,7 +34,7 @@ const ReasoningContent: React.FC<ReasoningContentProps> = ({ reasoningContent })
           }
         >
           <Lightbulb className="size-3.5" />
-          {isExpanded ? "Hide reasoning" : "Show reasoning"}
+          {isExpanded ? t("details.hideReasoning") : t("details.showReasoning")}
           {isExpanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
         </CollapsibleTrigger>
 

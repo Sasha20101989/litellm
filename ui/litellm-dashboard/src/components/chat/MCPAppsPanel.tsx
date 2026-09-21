@@ -41,6 +41,7 @@ export const OAuth2ConnectButton: React.FC<OAuth2ConnectButtonProps> = ({
   variant = "badge",
   autoStartKey = null,
 }) => {
+  const { t } = useTranslation("chat");
   const name = server.server_name ?? server.alias ?? server.server_id;
   const { startOAuthFlow, status } = useUserMcpOAuthFlow({
     accessToken,
@@ -61,7 +62,7 @@ export const OAuth2ConnectButton: React.FC<OAuth2ConnectButtonProps> = ({
     return (
       <Button onClick={startOAuthFlow} disabled={loading} className="font-semibold h-[38px] min-w-[110px]">
         {loading && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
-        {loading ? "Connecting\u2026" : "Connect"}
+        {loading ? t("integrations.connecting") : t("integrations.connect")}
       </Button>
     );
   }
@@ -78,7 +79,7 @@ export const OAuth2ConnectButton: React.FC<OAuth2ConnectButtonProps> = ({
           : "text-primary-foreground bg-primary cursor-pointer hover:bg-primary/90"
       }`}
     >
-      {loading ? "Connecting\u2026" : "Connect"}
+      {loading ? t("integrations.connecting") : t("integrations.connect")}
     </span>
   );
 };
@@ -147,10 +148,10 @@ const MCPAppsPanel: React.FC<Props> = ({ accessToken, selectedServers, onChange,
   const connectUnavailabilityLabel = useCallback(
     (s: MCPServer): string | null => {
       if (!connectMode) return null;
-      if (isUnsupportedOnGatewayConnect(s.auth_type)) return "Not supported on this connection";
+      if (isUnsupportedOnGatewayConnect(s.auth_type)) return t("integrations.unsupported");
       return null;
     },
-    [connectMode],
+    [connectMode, t],
   );
 
   const connectableNow = useCallback(
@@ -341,10 +342,10 @@ const MCPAppsPanel: React.FC<Props> = ({ accessToken, selectedServers, onChange,
   const emptyStateText = () => {
     if (servers.length === 0) {
       return connectMode
-        ? "No MCP servers are available to this connection yet. Ask an admin to grant your user or team access."
-        : "No MCP servers configured. Add servers in Tools -> MCP Servers.";
+        ? t("integrations.emptyConnectMode")
+        : t("integrations.emptyConfigured");
     }
-    return activeTab === "connected" ? "No servers connected yet." : "No servers match your search.";
+    return activeTab === "connected" ? t("integrations.emptyConnected") : t("integrations.emptySearch");
   };
   const totalTools = Object.values(toolCounts).reduce((sum, n) => sum + n, 0);
 
@@ -371,7 +372,7 @@ const MCPAppsPanel: React.FC<Props> = ({ accessToken, selectedServers, onChange,
             className="font-semibold h-[38px] min-w-[110px]"
           >
             {isTogglingOn && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
-            {isConnected ? "Disconnect" : "Connect"}
+            {isConnected ? t("integrations.disconnect") : t("integrations.connect")}
           </Button>
         );
       }
@@ -439,7 +440,9 @@ const MCPAppsPanel: React.FC<Props> = ({ accessToken, selectedServers, onChange,
           )}
           <div className="flex-1">
             <h2 className="m-0 mb-1 text-[22px] font-bold text-foreground">{name}</h2>
-            <p className="m-0 text-sm text-muted-foreground">{detailServer.description ?? "MCP server"}</p>
+            <p className="m-0 text-sm text-muted-foreground">
+              {detailServer.description ?? t("integrations.serverFallback")}
+            </p>
           </div>
           {renderDetailAction()}
         </div>
@@ -447,9 +450,9 @@ const MCPAppsPanel: React.FC<Props> = ({ accessToken, selectedServers, onChange,
         <h3 className="m-0 mb-3 text-[15px] font-semibold text-foreground">{t("integrations.information")}</h3>
         <div className="border rounded-lg overflow-hidden mb-7">
           {[
-            ["Server ID", detailServer.server_id],
-            ["Transport", handleTransport(detailServer.transport, detailServer.spec_path)],
-            ["Status", isConnected ? "Connected" : "Not connected"],
+            [t("integrations.serverId"), detailServer.server_id],
+            [t("integrations.transport"), handleTransport(detailServer.transport, detailServer.spec_path)],
+            [t("integrations.status"), isConnected ? t("integrations.connected") : t("integrations.notConnected")],
           ]
             .filter(([, v]) => v)
             .map(([label, value], i, arr) => (
@@ -602,7 +605,7 @@ const MCPAppsPanel: React.FC<Props> = ({ accessToken, selectedServers, onChange,
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                    <span className="truncate">{server.description ?? "MCP server"}</span>
+                    <span className="truncate">{server.description ?? t("integrations.serverFallback")}</span>
                     {count !== undefined ? (
                       count > 0 ? (
                         <span className="shrink-0 flex items-center gap-1 text-muted-foreground">

@@ -5,6 +5,7 @@ import React from "react";
 import { CheckCircle } from "lucide-react";
 import { getProxyBaseUrl, ConnectFlowStatus } from "@/components/networking";
 import { OAuth2ConnectButton } from "@/components/chat/MCPAppsPanel";
+import type { TFunction } from "i18next";
 
 interface Props {
   flowHandle: string;
@@ -25,30 +26,34 @@ export function isLoopbackOrigin(origin: string | null): boolean {
   }
 }
 
-const copyFor = (flow: ConnectFlowStatus | undefined, failed: boolean): readonly [string, string] => {
-  const clientLabel = flow?.client_origin ?? "the application";
-  const serverLabel = flow?.server_name ?? "the requested MCP server";
+const copyFor = (
+  flow: ConnectFlowStatus | undefined,
+  failed: boolean,
+  t: TFunction<"chat">,
+): readonly [string, string] => {
+  const clientLabel = flow?.client_origin ?? t("integrations.flow.application");
+  const serverLabel = flow?.server_name ?? t("integrations.flow.requestedServer");
   if (failed || flow === undefined || flow.state === "stale") {
     return [
-      "The connection cannot continue",
-      `The gateway could not validate this connection. Cancel to return to ${clientLabel}.`,
+      t("integrations.flow.cannotContinue"),
+      t("integrations.flow.validationFailed", { client: clientLabel }),
     ];
   }
   if (flow.state === "unscoped") {
     return [
-      `Connect your MCP servers to ${clientLabel}`,
-      `Authorize the servers you want to use below, then click Finish connecting to return to ${clientLabel}.`,
+      t("integrations.flow.title", { client: clientLabel }),
+      t("integrations.flow.description", { client: clientLabel }),
     ];
   }
   if (flow.state === "interactive" && !flow.connected) {
     return [
-      `Allow ${clientLabel} to use ${serverLabel}`,
-      `Authorize ${serverLabel} below to continue, or cancel to send ${clientLabel} away.`,
+      t("integrations.flow.allowServer", { client: clientLabel, server: serverLabel }),
+      t("integrations.flow.authorizeServer", { client: clientLabel, server: serverLabel }),
     ];
   }
   return [
-    `Allow ${clientLabel} to use ${serverLabel}`,
-    `Click Finish connecting to give ${clientLabel} access to ${serverLabel} as you.`,
+    t("integrations.flow.allowServer", { client: clientLabel, server: serverLabel }),
+    t("integrations.flow.finishAccess", { client: clientLabel, server: serverLabel }),
   ];
 };
 
@@ -63,7 +68,7 @@ const ConnectFlowBanner: React.FC<Props> = ({ flowHandle, flow, accessToken, onC
     state === "interactive" && flow?.connected === false && flow.server_id !== null
       ? { server_id: flow.server_id, server_name: flow.server_name }
       : null;
-  const copy = copyFor(flow, failed);
+  const copy = copyFor(flow, failed, t);
 
   return (
     <div className="mb-6 rounded-lg border border-primary/30 bg-primary/5 px-5 py-4">

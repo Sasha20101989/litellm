@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PROMPT_CACHE_CREATION_TOOLTIP, PROMPT_CACHE_READ_TOOLTIP } from "@/utils/promptCacheUsage";
+import { useTranslation } from "react-i18next";
 
 const RESPONSE_CACHE_TOOLTIP =
   "This response was replayed from LiteLLM's response cache. The request never reached the provider, so it did not read from or write to the provider's own prompt cache.";
@@ -57,17 +58,19 @@ function MetricItem({ label, tooltip, icon, value }: MetricItemProps) {
 }
 
 function ResponseCacheIndicator() {
+  const { t } = useTranslation("chat");
   return (
     <MetricItem
-      label="Response Cache"
-      tooltip={RESPONSE_CACHE_TOOLTIP}
+      label={t("details.responseCache")}
+      tooltip={t("details.responseCacheTooltip", { defaultValue: RESPONSE_CACHE_TOOLTIP })}
       icon={<History className="size-3" aria-hidden="true" />}
-      value="Hit"
+      value={t("details.cacheHit")}
     />
   );
 }
 
 function PromptCacheChips({ usage }: { usage?: TokenUsage }) {
+  const { t } = useTranslation("chat");
   if (usage?.servedFromResponseCache) {
     return <ResponseCacheIndicator />;
   }
@@ -79,8 +82,8 @@ function PromptCacheChips({ usage }: { usage?: TokenUsage }) {
     <>
       {readTokens > 0 && (
         <MetricItem
-          label="Cache Read"
-          tooltip={PROMPT_CACHE_READ_TOOLTIP}
+          label={t("details.cacheRead")}
+          tooltip={t("details.cacheReadTooltip", { defaultValue: PROMPT_CACHE_READ_TOOLTIP })}
           icon={<Database className="size-3" aria-hidden="true" />}
           value={String(readTokens)}
         />
@@ -88,8 +91,8 @@ function PromptCacheChips({ usage }: { usage?: TokenUsage }) {
 
       {creationTokens > 0 && (
         <MetricItem
-          label="Cache Write"
-          tooltip={PROMPT_CACHE_CREATION_TOOLTIP}
+          label={t("details.cacheWrite")}
+          tooltip={t("details.cacheWriteTooltip", { defaultValue: PROMPT_CACHE_CREATION_TOOLTIP })}
           icon={<DatabaseBackup className="size-3" aria-hidden="true" />}
           value={String(creationTokens)}
         />
@@ -99,14 +102,15 @@ function PromptCacheChips({ usage }: { usage?: TokenUsage }) {
 }
 
 const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, totalLatency, usage, toolName }) => {
+  const { t } = useTranslation("chat");
   if (!timeToFirstToken && !totalLatency && !usage) return null;
 
   return (
     <div className="response-metrics mt-2 flex flex-wrap gap-3 border-t border-border pt-2 text-xs text-muted-foreground">
       {timeToFirstToken !== undefined && (
         <MetricItem
-          label="TTFT"
-          tooltip="Time to first token"
+          label={t("details.timeToFirstToken")}
+          tooltip={t("details.timeToFirstToken")}
           icon={<Clock className="size-3" aria-hidden="true" />}
           value={`${(timeToFirstToken / 1000).toFixed(2)}s`}
         />
@@ -114,8 +118,8 @@ const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, tot
 
       {totalLatency !== undefined && (
         <MetricItem
-          label="Total Latency"
-          tooltip="Total latency"
+          label={t("details.totalLatency")}
+          tooltip={t("details.totalLatency")}
           icon={<Clock className="size-3" aria-hidden="true" />}
           value={`${(totalLatency / 1000).toFixed(2)}s`}
         />
@@ -123,8 +127,8 @@ const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, tot
 
       {usage?.promptTokens !== undefined && (
         <MetricItem
-          label="In"
-          tooltip="Prompt tokens"
+          label={t("details.input")}
+          tooltip={t("details.promptTokens")}
           icon={<ArrowDownToLine className="size-3" aria-hidden="true" />}
           value={String(usage.promptTokens)}
         />
@@ -134,8 +138,8 @@ const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, tot
 
       {usage?.completionTokens !== undefined && (
         <MetricItem
-          label="Out"
-          tooltip="Completion tokens"
+          label={t("details.output")}
+          tooltip={t("details.completionTokens")}
           icon={<ArrowUpFromLine className="size-3" aria-hidden="true" />}
           value={String(usage.completionTokens)}
         />
@@ -143,8 +147,8 @@ const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, tot
 
       {usage?.reasoningTokens !== undefined && (
         <MetricItem
-          label="Reasoning"
-          tooltip="Reasoning tokens"
+          label={t("details.reasoning")}
+          tooltip={t("details.reasoningTokens")}
           icon={<Lightbulb className="size-3" aria-hidden="true" />}
           value={String(usage.reasoningTokens)}
         />
@@ -152,8 +156,8 @@ const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, tot
 
       {usage?.totalTokens !== undefined && (
         <MetricItem
-          label="Total"
-          tooltip="Total tokens"
+          label={t("details.total")}
+          tooltip={t("details.totalTokens")}
           icon={<Hash className="size-3" aria-hidden="true" />}
           value={String(usage.totalTokens)}
         />
@@ -161,8 +165,8 @@ const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, tot
 
       {typeof usage?.cost === "number" && Number.isFinite(usage.cost) && (
         <MetricItem
-          label="Cost"
-          tooltip="Cost"
+          label={t("details.cost")}
+          tooltip={t("details.cost")}
           icon={<DollarSign className="size-3" aria-hidden="true" />}
           value={`$${usage.cost.toFixed(6)}`}
         />
@@ -170,8 +174,8 @@ const ResponseMetrics: React.FC<ResponseMetricsProps> = ({ timeToFirstToken, tot
 
       {toolName && (
         <MetricItem
-          label="Tool"
-          tooltip="Tool used"
+          label={t("details.tool")}
+          tooltip={t("details.toolUsed")}
           icon={<Wrench className="size-3" aria-hidden="true" />}
           value={toolName}
         />

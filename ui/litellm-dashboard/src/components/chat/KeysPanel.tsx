@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import React, { useState } from "react";
 import { Loader2, RefreshCw, KeyRound, Copy, Check } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,18 +34,18 @@ function maskKey(keyName: string | undefined): string {
   return keyName.slice(0, 7) + "..." + keyName.slice(-4);
 }
 
-function relativeTime(isoString: string | null | undefined): string {
+function relativeTime(isoString: string | null | undefined, t: TFunction<"chat">): string {
   if (!isoString) return "";
   try {
     const date = new Date(isoString);
     const diffMs = Date.now() - date.getTime();
     const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 60) return "just now";
+    if (diffSec < 60) return t("keys.justNow");
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 60) return t("keys.minutesAgo", { count: diffMin });
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-    return `${Math.floor(diffHr / 24)}d ago`;
+    if (diffHr < 24) return t("keys.hoursAgo", { count: diffHr });
+    return t("keys.daysAgo", { count: Math.floor(diffHr / 24) });
   } catch {
     return "";
   }
@@ -107,13 +108,13 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
     const keyExpired = rotateTarget ? isKeyExpired(rotateTarget.expires) : false;
 
     if (formState.duration && !DURATION_RE.test(formState.duration)) {
-      errors.duration = "Must be a duration like 30s, 30m, 24h, 2d, 1w, or 1mo";
+      errors.duration = t("keys.validationDuration");
     }
     if (keyExpired && !formState.duration) {
-      errors.duration = "Expiration is required for expired keys";
+      errors.duration = t("keys.validationExpired");
     }
     if (formState.grace_period && !DURATION_RE.test(formState.grace_period)) {
-      errors.grace_period = "Must be a duration like 24h, 2d";
+      errors.grace_period = t("keys.validationGrace");
     }
 
     setFormErrors(errors);
@@ -134,10 +135,10 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
 
       const response = await regenerateKeyCall(accessToken, rotateTarget.token || rotateTarget.token_id, payload);
       setRegeneratedKey(response.key);
-      toast.success("Key rotated successfully");
+      toast.success(t("keys.rotateSuccess"));
       queryClient.invalidateQueries({ queryKey: [KEYS_QUERY_KEY] });
     } catch {
-      toast.error("Failed to rotate key");
+      toast.error(t("keys.rotateError"));
     } finally {
       setIsRegenerating(false);
     }
@@ -250,12 +251,12 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
                         <span className="text-muted-foreground text-[13px]">{t("keys.never")}</span>
                       ) : (
                         <Badge variant={expired ? "destructive" : "outline"}>
-                          {expired ? "Expired" : formatExpiresUtc(record.expires)}
+                          {expired ? t("keys.expired") : formatExpiresUtc(record.expires)}
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-[13px]">
-                      {relativeTime(record.created_at)}
+                      {relativeTime(record.created_at, t)}
                     </TableCell>
                     {premiumUser && (
                       <TableCell className="text-right">
@@ -332,8 +333,8 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
                   />
                   {formErrors.duration && <p className="text-xs text-destructive">{formErrors.duration}</p>}
                   <p className={`text-xs ${keyIsExpired ? "text-destructive" : "text-muted-foreground"}`}>
-                    {t("common:merge.current")} {rotateTarget?.expires ? formatExpiresUtc(rotateTarget.expires) : "Never"}
-                    {keyIsExpired && " (expired)"}
+                    {t("common:merge.current")} {rotateTarget?.expires ? formatExpiresUtc(rotateTarget.expires) : t("keys.never")}
+                    {keyIsExpired && ` (${t("keys.expired")})`}
                   </p>
                   {newExpiryTime && <p className="text-xs text-success">{t("common:merge.next")} {newExpiryTime}</p>}
                 </div>
@@ -359,7 +360,7 @@ const KeysPanel: React.FC<Props> = ({ accessToken, userId, premiumUser }) => {
                 <CopyToClipboard text={regeneratedKey} onCopy={() => setCopied(true)}>
                   <Button>
                     {copied ? <Check className="h-4 w-4 mr-1.5" /> : <Copy className="h-4 w-4 mr-1.5" />}
-                    {copied ? "Copied" : "Copy Key"}
+                    {copied ? t("keys.copied") : t("keys.copyKey")}
                   </Button>
                 </CopyToClipboard>
               </>

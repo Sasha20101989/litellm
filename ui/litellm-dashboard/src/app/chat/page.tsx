@@ -20,14 +20,14 @@ import type { TokenUsage } from "@/components/chat_ui/ResponseMetrics";
 import type { MCPEvent } from "@/components/chat/types";
 import { getProviderLogoAndName } from "@/components/provider_info_helpers";
 
-const SUGGESTIONS = ["Write", "Learn", "Code", "Brainstorm"];
+const SUGGESTION_KEYS = ["write", "learn", "code", "brainstorm"] as const;
 const LOCALSTORAGE_MODEL_KEY = "litellm_chat_selected_model";
 
-function getGreeting(): string {
+function getGreetingKey(): "morning" | "afternoon" | "evening" {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return "Good morning";
-  if (h >= 12 && h < 17) return "Good afternoon";
-  return "Good evening";
+  if (h >= 5 && h < 12) return "morning";
+  if (h >= 12 && h < 17) return "afternoon";
+  return "evening";
 }
 
 // Extract provider from model name for logo lookup.
@@ -75,8 +75,6 @@ export default function ChatConversationPage() {
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [modelSearchText, setModelSearchText] = useState("");
 
-  const [responsesSessionId, setResponsesSessionId] = useState<string | null>(null);
-  const [prevConversationIdForSessionReset, setPrevConversationIdForSessionReset] = useState(activeConversationId);
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputText, setInputText] = useState("");
   const [mcpPopoverOpen, setMcpPopoverOpen] = useState(false);
@@ -113,16 +111,9 @@ export default function ChatConversationPage() {
           localStorage.setItem(LOCALSTORAGE_MODEL_KEY, names[0]);
         }
       })
-      .catch(() => toast.error("Could not load models"))
+      .catch(() => toast.error(t("conversation.loadModelsError")))
       .finally(() => setIsLoadingModels(false));
-  }, [accessToken]);
-
-  // Reset the responses session when switching between conversations so that
-  // previous_response_id from conversation A is never sent for conversation B.
-  if (activeConversationId !== prevConversationIdForSessionReset) {
-    setPrevConversationIdForSessionReset(activeConversationId);
-    setResponsesSessionId(null);
-  }
+  }, [accessToken, t]);
 
   const selectModel = useCallback((model: string) => {
     setSelectedModel(model);
@@ -141,7 +132,6 @@ export default function ChatConversationPage() {
       let convId = activeConversationId;
       if (!convId) {
         convId = createConversation(model);
-        setResponsesSessionId(null); // new conversation starts a fresh session
         window.history.pushState(null, "", `${window.location.pathname}?id=${convId}`);
       }
 
@@ -151,36 +141,16 @@ export default function ChatConversationPage() {
       setIsStreaming(true);
       abortControllerRef.current = new AbortController();
 
-      // When historyOverride is set (edit / retry), the existing server-side
-      // session chain covers messages that were just truncated and is no longer
-      // valid for the rewritten history.  Eagerly clear the session so that a
-      // failed/aborted edit does not leave a stale session ID that contaminates
-      // the next regular send.
-      if (historyOverride) {
-        setResponsesSessionId(null);
-      }
-
-      // On a normal continuation turn with an active session, the Responses API
-      // already holds the prior context server-side, so we only pass the new
-      // user message (sending the full history would double-count it).
-      //
-      // On the very first turn (no session yet), we send the full history.
-      const previousResponseId = historyOverride ? null : responsesSessionId;
-
       const history: Array<{ role: "user" | "assistant"; content: string }> = historyOverride
         ? [...historyOverride, { role: "user" as const, content: trimmed }]
-        : previousResponseId
-          ? [{ role: "user" as const, content: trimmed }]
-          : [
-              // Explicitly filter to only user/assistant roles — tool messages
-              // lack a required tool_call_id and would cause API errors.
-              ...(activeConversation?.messages ?? [])
-                .filter(
-                  (m): m is typeof m & { role: "user" | "assistant" } => m.role === "user" || m.role === "assistant",
-                )
-                .map((m) => ({ role: m.role, content: m.content })),
-              { role: "user" as const, content: trimmed },
-            ];
+        : [
+            ...(activeConversation?.messages ?? [])
+              .filter(
+                (m): m is typeof m & { role: "user" | "assistant" } => m.role === "user" || m.role === "assistant",
+              )
+              .map((m) => ({ role: m.role, content: m.content })),
+            { role: "user" as const, content: trimmed },
+          ];
 
       let accumulatedContent = "";
       let accumulatedReasoning = "";
@@ -212,8 +182,8 @@ export default function ChatConversationPage() {
           undefined,
           undefined,
           selectedMCPServers.length > 0 ? selectedMCPServers : undefined,
-          previousResponseId,
-          (id: string) => setResponsesSessionId(id),
+          null,
+          undefined,
           (event: MCPEvent) => {
             // Accumulate locally only — persisted once in finally to avoid
             // one full localStorage write per MCP event during streaming.
@@ -236,7 +206,7 @@ export default function ChatConversationPage() {
           });
         } else {
           updateLastAssistantMessage(convId!, {
-            content: "[Something went wrong. The partial response has been saved.]",
+            content: `[${t("conversation.responseError")}]`,
           });
         }
       } finally {
@@ -259,7 +229,7 @@ export default function ChatConversationPage() {
       appendMessage,
       updateLastAssistantMessage,
       isStreaming,
-      responsesSessionId,
+      t,
     ],
   );
 
@@ -345,7 +315,8 @@ export default function ChatConversationPage() {
 
   const showBlankState = !activeConversation || activeConversation.messages.length === 0;
   const displayName = userEmail?.split("@")[0] ?? userId ?? "";
-  const greeting = displayName ? `${getGreeting()}, ${displayName}` : getGreeting();
+  const greetingText = t(`conversation.greetings.${getGreetingKey()}`);
+  const greeting = displayName ? `${greetingText}, ${displayName}` : greetingText;
 
   // Filtered models: selected one floats to the top, then alphabetical
   const filteredModels = (
@@ -453,7 +424,7 @@ export default function ChatConversationPage() {
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={inConversation ? "Send a message..." : "How can I help you today?"}
+        placeholder={inConversation ? t("conversation.replyPlaceholder") : t("conversation.newPlaceholder")}
         className="w-full border-none outline-none resize-none text-[15px] text-foreground bg-transparent font-[inherit] box-border"
         style={{
           minHeight: inConversation ? 52 : 80,
@@ -548,17 +519,20 @@ export default function ChatConversationPage() {
             <div className="w-full max-w-[680px]">{inputBar(false)}</div>
 
             <div className="flex gap-2 mt-3.5 flex-wrap justify-center">
-              {SUGGESTIONS.map((s) => (
+              {SUGGESTION_KEYS.map((suggestionKey) => {
+                const suggestion = t(`conversation.suggestions.${suggestionKey}`);
+                return (
                 <Button
-                  key={s}
+                  key={suggestionKey}
                   variant="outline"
                   size="sm"
-                  onClick={() => setInputText(s + ": ")}
+                  onClick={() => setInputText(suggestion + ": ")}
                   className="rounded-full px-4 text-muted-foreground"
                 >
-                  {s}
+                  {suggestion}
                 </Button>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : (

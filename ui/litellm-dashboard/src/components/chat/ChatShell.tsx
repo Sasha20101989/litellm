@@ -90,37 +90,37 @@ const ChatShell: React.FC<ChatShellProps> = ({ children }) => {
           <div className="px-2 py-1 shrink-0">
             <NavItem
               icon={<MessageSquare className="h-4 w-4" />}
-              label="Chats"
+              label={t("navigation.chats")}
               onClick={() => router.push(routes.chats)}
               active={isChatsRoute}
             />
             <NavItem
               icon={<LayoutGrid className="h-4 w-4" />}
-              label="Integrations"
+              label={t("navigation.integrations")}
               onClick={() => router.push(routes.integrations)}
               active={pathname === routes.integrations}
             />
             <NavItem
               icon={<KeyRound className="h-4 w-4" />}
-              label="Credentials"
+              label={t("navigation.credentials")}
               onClick={() => router.push(routes.credentials)}
               active={pathname === routes.credentials}
             />
             <NavItem
               icon={<Lock className="h-4 w-4" />}
-              label="API Keys"
+              label={t("navigation.apiKeys")}
               onClick={() => router.push(routes.apiKeys)}
               active={pathname === routes.apiKeys}
             />
             <NavItem
               icon={<ScrollText className="h-4 w-4" />}
-              label="Logs"
+              label={t("navigation.logs")}
               onClick={() => router.push(routes.logs)}
               active={pathname === routes.logs}
             />
             <NavItem
               icon={<BarChart3 className="h-4 w-4" />}
-              label="Usage"
+              label={t("navigation.usage")}
               onClick={() => router.push(routes.usage)}
               active={pathname === routes.usage}
             />
