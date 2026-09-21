@@ -351,7 +351,7 @@ export function KeyEditView({
     <TooltipProvider>
       <form
         onSubmit={(event) => {
-          moveMetadataTagsToTagsField(form);
+          moveMetadataTagsToTagsField(form, t);
           return form.handleSubmit((values) =>
             handleSubmit(toSubmittedValues(values, { canViewPolicies, canViewPrompts })),
           )(event);

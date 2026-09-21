@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Control, UseFormReturn } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,12 +24,6 @@ export const labelWithHint = (label: React.ReactNode, hint: string): React.React
   </>
 );
 
-const KEY_TYPE_OPTIONS = [
-  { value: "default", label: "Full Access", hint: "Can call all routes (AI APIs, Management, and read-only)" },
-  { value: "llm_api", label: "AI APIs", hint: "Can call only AI API routes (chat/completions, embeddings, etc.)" },
-  { value: "management", label: "Management", hint: "Can call only management routes (user/team/key management)" },
-];
-
 export const KeyTypeSelect = ({
   id,
   value,
@@ -37,75 +32,84 @@ export const KeyTypeSelect = ({
   id: string;
   value: string;
   onChange: (value: string) => void;
-}) => (
-  <Select
-    items={Object.fromEntries(KEY_TYPE_OPTIONS.map((option) => [option.value, option.label]))}
-    value={value}
-    onValueChange={(next: string | null) => next != null && onChange(next)}
-  >
-    <SelectTrigger id={id} className="w-full">
-      <SelectValue placeholder="Select key type" />
-    </SelectTrigger>
-    <SelectContent>
-      {KEY_TYPE_OPTIONS.map((option) => (
-        <SelectItem key={option.value} value={option.value}>
-          <div className="py-1">
-            <div className="font-medium">{option.label}</div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground">{option.hint}</div>
-          </div>
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-);
+}) => {
+  const { t } = useTranslation("gateway");
+  const options = [
+    { value: "default", label: t("virtualKeys.edit.fullAccess"), hint: t("virtualKeys.edit.fullAccessHint") },
+    { value: "llm_api", label: t("virtualKeys.edit.aiApis"), hint: t("virtualKeys.edit.aiApisHint") },
+    { value: "management", label: t("virtualKeys.edit.management"), hint: t("virtualKeys.edit.managementHint") },
+  ];
+  return (
+    <Select
+      items={Object.fromEntries(options.map((option) => [option.value, option.label]))}
+      value={value}
+      onValueChange={(next: string | null) => next != null && onChange(next)}
+    >
+      <SelectTrigger id={id} className="w-full">
+        <SelectValue placeholder={t("virtualKeys.edit.selectKeyType")} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            <div className="py-1">
+              <div className="font-medium">{option.label}</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">{option.hint}</div>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+};
 
-const SKILLS_HINT =
-  "Enabled skills are visible to every key. Grant disabled (private) Claude Code plugins to this key here.";
+export const KeyRateLimitFields = ({ control }: { control: Control<KeyEditFormValues> }) => {
+  const { t } = useTranslation("gateway");
+  return (
+    <>
+      <FormField control={control} name="tpm_limit" label={t("virtualKeys.edit.tpmLimit")}>
+        {({ ref: _ref, ...field }) => <NumericalInput {...field} value={field.value ?? ""} min={0} />}
+      </FormField>
 
-const TPD_HINT =
-  "Daily token budget for batch submissions (/v1/batches). When set, batch input files are charged against this 24h window instead of the key's TPM/RPM limits. Online requests keep using TPM/RPM.";
+      <FormField control={control} name="tpm_limit_type">
+        {({ value, onChange, id }) => (
+          <RateLimitTypeFormItem
+            id={id}
+            type="tpm"
+            name="tpm_limit_type"
+            showDetailedDescriptions={false}
+            value={value as string | null}
+            onChange={onChange}
+          />
+        )}
+      </FormField>
 
-export const KeyRateLimitFields = ({ control }: { control: Control<KeyEditFormValues> }) => (
-  <>
-    <FormField control={control} name="tpm_limit" label="TPM Limit">
-      {({ ref: _ref, ...field }) => <NumericalInput {...field} value={field.value ?? ""} min={0} />}
-    </FormField>
+      <FormField control={control} name="rpm_limit" label={t("virtualKeys.edit.rpmLimit")}>
+        {({ ref: _ref, ...field }) => <NumericalInput {...field} value={field.value ?? ""} min={0} />}
+      </FormField>
 
-    <FormField control={control} name="tpm_limit_type">
-      {({ value, onChange, id }) => (
-        <RateLimitTypeFormItem
-          id={id}
-          type="tpm"
-          name="tpm_limit_type"
-          showDetailedDescriptions={false}
-          value={value as string | null}
-          onChange={onChange}
-        />
-      )}
-    </FormField>
+      <FormField control={control} name="rpm_limit_type">
+        {({ value, onChange, id }) => (
+          <RateLimitTypeFormItem
+            id={id}
+            type="rpm"
+            name="rpm_limit_type"
+            showDetailedDescriptions={false}
+            value={value as string | null}
+            onChange={onChange}
+          />
+        )}
+      </FormField>
 
-    <FormField control={control} name="rpm_limit" label="RPM Limit">
-      {({ ref: _ref, ...field }) => <NumericalInput {...field} value={field.value ?? ""} min={0} />}
-    </FormField>
-
-    <FormField control={control} name="rpm_limit_type">
-      {({ value, onChange, id }) => (
-        <RateLimitTypeFormItem
-          id={id}
-          type="rpm"
-          name="rpm_limit_type"
-          showDetailedDescriptions={false}
-          value={value as string | null}
-          onChange={onChange}
-        />
-      )}
-    </FormField>
-
-    <FormField control={control} name="tpd_limit" label={labelWithHint("TPD Limit (batch)", TPD_HINT)}>
-      {({ ref: _ref, ...field }) => <NumericalInput {...field} value={field.value ?? ""} min={0} />}
-    </FormField>
-  </>
-);
+      <FormField
+        control={control}
+        name="tpd_limit"
+        label={labelWithHint(t("virtualKeys.edit.batchTpdLimit"), t("virtualKeys.edit.batchTpdHint"))}
+      >
+        {({ ref: _ref, ...field }) => <NumericalInput {...field} value={field.value ?? ""} min={0} />}
+      </FormField>
+    </>
+  );
+};
 
 export const KeyAgentAndSkillFields = ({
   control,
@@ -113,62 +117,76 @@ export const KeyAgentAndSkillFields = ({
 }: {
   control: Control<KeyEditFormValues>;
   accessToken: string;
-}) => (
-  <>
-    <FormField control={control} name="agents_and_groups" label="Agents / Access Groups">
-      {({ value, onChange }) => (
-        <AgentSelector
-          onChange={onChange}
-          value={value as AgentsAndGroups | undefined}
-          accessToken={accessToken}
-          placeholder="Select agents or access groups (optional)"
-        />
-      )}
-    </FormField>
+}) => {
+  const { t } = useTranslation("gateway");
+  return (
+    <>
+      <FormField control={control} name="agents_and_groups" label={t("virtualKeys.edit.agentsAndGroups")}>
+        {({ value, onChange }) => (
+          <AgentSelector
+            onChange={onChange}
+            value={value as AgentsAndGroups | undefined}
+            accessToken={accessToken}
+            placeholder={t("virtualKeys.edit.selectAgentsAndGroups")}
+          />
+        )}
+      </FormField>
 
-    <FormField control={control} name="skills" label={labelWithHint("Skills", SKILLS_HINT)}>
-      {({ value, onChange }) => (
-        <SkillSelector onChange={onChange} value={value as string[] | undefined} accessToken={accessToken} />
-      )}
-    </FormField>
-  </>
-);
+      <FormField
+        control={control}
+        name="skills"
+        label={labelWithHint(t("virtualKeys.edit.skills"), t("virtualKeys.edit.skillsHint"))}
+      >
+        {({ value, onChange }) => (
+          <SkillSelector onChange={onChange} value={value as string[] | undefined} accessToken={accessToken} />
+        )}
+      </FormField>
+    </>
+  );
+};
 
 type KeyEditForm = Pick<
   UseFormReturn<KeyEditFormValues, unknown, KeyEditFormValues>,
   "control" | "getValues" | "setValue"
 >;
 
-export const moveMetadataTagsToTagsField = (form: KeyEditForm): void => {
+export const moveMetadataTagsToTagsField = (
+  form: KeyEditForm,
+  translate: (key: string, options: { tags: string }) => string,
+): void => {
   const moved = moveTagsOutOfMetadataJson(form.getValues("metadata"), form.getValues("tags"));
   if (moved === null) return;
   form.setValue("metadata", moved.metadata, { shouldDirty: true });
   form.setValue("tags", moved.tags, { shouldDirty: true });
   if (moved.movedTags.length > 0) {
-    toast.info(`Moved ${moved.movedTags.join(", ")} from metadata to the Tags field`);
+    const tags = moved.movedTags.join(", ");
+    toast.info(translate("virtualKeys.edit.metadataTagsMoved", { tags }));
   }
 };
 
-export const KeyMetadataField = ({ form }: { form: KeyEditForm }) => (
-  <FormField
-    control={form.control}
-    name="metadata"
-    label="Metadata"
-    description="Tags are managed by the Tags field above. A tags array typed here is moved to that field."
-  >
-    {(field) => (
-      <Textarea
-        {...field}
-        value={(field.value as string | undefined) ?? ""}
-        rows={10}
-        onBlur={() => {
-          field.onBlur();
-          moveMetadataTagsToTagsField(form);
-        }}
-      />
-    )}
-  </FormField>
-);
+export const KeyMetadataField = ({ form }: { form: KeyEditForm }) => {
+  const { t } = useTranslation("gateway");
+  return (
+    <FormField
+      control={form.control}
+      name="metadata"
+      label={t("virtualKeys.edit.metadata")}
+      description={t("virtualKeys.edit.metadataHelp")}
+    >
+      {(field) => (
+        <Textarea
+          {...field}
+          value={(field.value as string | undefined) ?? ""}
+          rows={10}
+          onBlur={() => {
+            field.onBlur();
+            moveMetadataTagsToTagsField(form, t);
+          }}
+        />
+      )}
+    </FormField>
+  );
+};
 
 export const KeyBudgetNumberField = ({
   control,
