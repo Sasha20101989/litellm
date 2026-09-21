@@ -391,7 +391,7 @@ const EntityUsage: React.FC<EntityUsageProps> = ({
   const breakdownTiles = showFlatCost && showCostBreakdown ? buildCostBreakdownTiles(spendData.metadata) : [];
   const summaryTiles = [...buildSummaryTiles(spendData.metadata, showFlatCost), ...breakdownTiles];
 
-  const modelViewTitle = modelViewType === "groups" ? "Top Public Model Names" : "Top Litellm Models";
+  const modelViewTitle = modelViewType === "groups" ? "Top Public Model Names" : "Top Nexoplane Models";
 
   const costPanel = (
     <div className="grid grid-cols-2 gap-2 w-full">

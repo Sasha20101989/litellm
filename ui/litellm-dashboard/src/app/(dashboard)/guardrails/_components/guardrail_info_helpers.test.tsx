@@ -115,13 +115,14 @@ describe("guardrail_info_helpers", () => {
   });
 
   describe("shouldRenderContentFilterConfigSettings", () => {
-    it("should return true when dynamic providers include LiteLLM Content Filter", () => {
+    it("should return true when API-provided LiteLLM Content Filter is displayed as Nexoplane", () => {
       populateGuardrailProviders({
         litellm_content_filter: {
           ui_friendly_name: "LiteLLM Content Filter",
         },
       });
 
+      expect(getGuardrailProviders().LitellmContentFilter).toBe("Nexoplane Content Filter");
       expect(shouldRenderContentFilterConfigSettings("LitellmContentFilter")).toBe(true);
     });
 

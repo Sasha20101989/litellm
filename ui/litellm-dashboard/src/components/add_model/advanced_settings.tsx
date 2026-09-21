@@ -468,7 +468,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
               name="litellm_extra_params"
               label={labelWithHint(
                 "Nexoplane Params",
-                "Optional litellm params used for making a litellm.completion() call.",
+                "Optional Nexoplane parameters used for making a litellm.completion() call.",
               )}
               className="mb-4 mt-4"
               rules={{ validate: validatorRules({ validator: formItemValidateJSON }) }}
@@ -490,7 +490,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             </MountedFormField>
             <div className="grid grid-cols-24 mb-4">
               <p className="col-start-11 col-span-10 text-muted-foreground text-sm">
-                Pass JSON of litellm supported params{" "}
+                Pass JSON of Nexoplane-supported parameters{" "}
                 <a
                   href="https://docs.litellm.ai/docs/completion/input"
                   target="_blank"

@@ -16,7 +16,7 @@ import { PROMPT_CACHE_CREATION_TOOLTIP, PROMPT_CACHE_READ_TOOLTIP } from "@/util
 import { useTranslation } from "react-i18next";
 
 const RESPONSE_CACHE_TOOLTIP =
-  "This response was replayed from LiteLLM's response cache. The request never reached the provider, so it did not read from or write to the provider's own prompt cache.";
+  "This response was replayed from Nexoplane's response cache. The request never reached the provider, so it did not read from or write to the provider's own prompt cache.";
 
 export interface TokenUsage {
   completionTokens?: number;

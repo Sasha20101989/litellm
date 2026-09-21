@@ -24,13 +24,13 @@ describe("TruePassthroughWarning", () => {
     localization.language = "ru";
     render(<TruePassthroughWarning authType={AUTH_TYPE.TRUE_PASSTHROUGH} />);
 
-    expect(screen.getByText("Прямой прокси отключает аутентификацию LiteLLM для этого сервера")).toBeInTheDocument();
+    expect(screen.getByText("Прямой прокси отключает аутентификацию Nexoplane для этого сервера")).toBeInTheDocument();
   });
 
   it("warns when auth type is true_passthrough", () => {
     render(<TruePassthroughWarning authType={AUTH_TYPE.TRUE_PASSTHROUGH} />);
 
-    expect(screen.getByText("True Passthrough disables LiteLLM authentication for this server")).toBeInTheDocument();
+    expect(screen.getByText("True Passthrough disables Nexoplane authentication for this server")).toBeInTheDocument();
     expect(screen.getByText(/Anyone who can reach the gateway can call this server/)).toBeInTheDocument();
   });
 

@@ -1,7 +1,7 @@
 (globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,191905,e=>{"use strict";var o=e.i(913924),r=e.i(466828),n=e.i(677572),l=e.i(556718),t=e.i(196631);e.i(65321);var a=e.i(259319);let i=({href:e,className:r})=>{let{t:n}=(0,a.useTranslation)("management");return(0,o.jsxs)("a",{href:e,target:"_blank",rel:"noopener noreferrer",title:n("apiReference.openDocs"),className:(0,t.cn)("inline-flex items-center gap-2 rounded-xl border border-border bg-card/80 px-3.5 py-2 text-sm font-medium text-foreground shadow-xs","hover:bg-card focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring active:translate-y-[0.5px]",r),children:[(0,o.jsx)("span",{children:n("apiReference.docs")}),(0,o.jsx)(l.ExternalLink,{"aria-hidden":!0,className:"h-4 w-4 opacity-80"}),(0,o.jsxs)("span",{className:"sr-only",children:["(",n("apiReference.opensNewTab"),")"]})]})},s=({proxySettings:e})=>{let{t:l}=(0,a.useTranslation)("management"),t="<your_proxy_base_url>",s=e?.LITELLM_UI_API_DOC_BASE_URL;return s&&s.trim()?t=s:e?.PROXY_BASE_URL&&(t=e.PROXY_BASE_URL),(0,o.jsx)("div",{className:"grid grid-cols-1 gap-2 p-8 h-[80vh] w-full mt-2",children:(0,o.jsxs)("div",{className:"mb-5",children:[(0,o.jsxs)("div",{className:"flex items-center justify-between",children:[(0,o.jsx)("h1",{className:"text-2xl font-semibold text-foreground",children:l("apiReference.title")}),(0,o.jsx)(i,{className:"ml-3 shrink-0",href:"https://docs.litellm.ai/docs/proxy/user_keys"})]}),(0,o.jsx)("p",{className:"mt-2 mb-2 text-sm text-muted-foreground",children:l("apiReference.description")}),(0,o.jsxs)(n.Tabs,{defaultValue:"openai",children:[(0,o.jsxs)(n.TabsList,{variant:"line",className:"border-b rounded-none w-full justify-start h-auto p-0",children:[(0,o.jsx)(n.TabsTrigger,{value:"openai",className:"rounded-none px-4 py-2 flex-none",children:"OpenAI Python SDK"}),(0,o.jsx)(n.TabsTrigger,{value:"llamaindex",className:"rounded-none px-4 py-2 flex-none",children:"LlamaIndex"}),(0,o.jsx)(n.TabsTrigger,{value:"langchain",className:"rounded-none px-4 py-2 flex-none",children:"Langchain Py"})]}),(0,o.jsx)(n.TabsContent,{value:"openai",keepMounted:!0,children:(0,o.jsx)(r.default,{language:"python",code:`import openai
 client = openai.OpenAI(
     api_key="your_api_key",
-    base_url="${t}" # LiteLLM Proxy is OpenAI compatible, Read More: https://docs.litellm.ai/docs/proxy/user_keys
+    base_url="${t}" # Nexoplane Proxy is OpenAI compatible, Read More: https://docs.litellm.ai/docs/proxy/user_keys
 )
 
 response = client.chat.completions.create(
@@ -21,10 +21,10 @@ from llama_index.embeddings import AzureOpenAIEmbedding
 from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
 
 llm = AzureOpenAI(
-    engine="azure-gpt-3.5",               # model_name on litellm proxy
+    engine="azure-gpt-3.5",               # model_name on Nexoplane proxy
     temperature=0.0,
-    azure_endpoint="${t}", # litellm proxy endpoint
-    api_key="sk-1234",                    # litellm proxy API Key
+    azure_endpoint="${t}", # Nexoplane proxy endpoint
+    api_key="sk-1234",                    # Nexoplane proxy API Key
     api_version="2023-07-01-preview",
 )
 

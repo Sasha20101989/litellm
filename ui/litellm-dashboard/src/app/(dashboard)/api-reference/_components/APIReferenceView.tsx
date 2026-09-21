@@ -51,7 +51,7 @@ const APIReferenceView: React.FC<ApiRefProps> = ({ proxySettings }) => {
               code={`import openai
 client = openai.OpenAI(
     api_key="your_api_key",
-    base_url="${base_url}" # LiteLLM Proxy is OpenAI compatible, Read More: https://docs.litellm.ai/docs/proxy/user_keys
+    base_url="${base_url}" # Nexoplane Proxy is OpenAI compatible, Read More: https://docs.litellm.ai/docs/proxy/user_keys
 )
 
 response = client.chat.completions.create(
@@ -78,10 +78,10 @@ from llama_index.embeddings import AzureOpenAIEmbedding
 from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
 
 llm = AzureOpenAI(
-    engine="azure-gpt-3.5",               # model_name on litellm proxy
+    engine="azure-gpt-3.5",               # model_name on Nexoplane proxy
     temperature=0.0,
-    azure_endpoint="${base_url}", # litellm proxy endpoint
-    api_key="sk-1234",                    # litellm proxy API Key
+    azure_endpoint="${base_url}", # Nexoplane proxy endpoint
+    api_key="sk-1234",                    # Nexoplane proxy API Key
     api_version="2023-07-01-preview",
 )
 

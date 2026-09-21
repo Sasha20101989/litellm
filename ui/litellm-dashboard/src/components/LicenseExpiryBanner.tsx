@@ -65,8 +65,8 @@ export const LicenseExpiryBannerView: React.FC<LicenseExpiryBannerViewProps> = (
 
   const message =
     tier === "expired"
-      ? `Your LiteLLM Enterprise license expired on ${formattedDate}`
-      : `Your LiteLLM Enterprise license ${describeCountdown(days)} (${formattedDate})`;
+      ? `Your Nexoplane Enterprise license expired on ${formattedDate}`
+      : `Your Nexoplane Enterprise license ${describeCountdown(days)} (${formattedDate})`;
 
   const description = expiryDescription(tier);
 

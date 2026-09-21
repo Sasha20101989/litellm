@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
 import { EvaluationSettingsModal } from "./EvaluationSettingsModal";
+import { toNexoplaneDisplayName } from "@/app/(dashboard)/guardrails/_components/guardrail_info_helpers";
 import { MetricCard } from "@/components/GuardrailsMonitor/MetricCard";
 import { ScoreChart } from "./ScoreChart";
 
@@ -200,7 +201,7 @@ export function GuardrailsOverview({
             providerColors[row.original.provider] ?? providerColors.Custom
           }`}
         >
-          {row.original.provider}
+          {toNexoplaneDisplayName(row.original.provider)}
         </span>
       ),
     },

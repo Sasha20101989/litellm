@@ -460,8 +460,8 @@ const ModelInfoEditForm: React.FC<ModelInfoEditFormProps> = ({
             {textField("model_name", "Model Name", "Enter model name", localModelData.model_name)}
             {textField(
               "litellm_model_name",
-              "LiteLLM Model Name",
-              "Enter LiteLLM model name",
+              "Nexoplane Model Name",
+              "Enter Nexoplane model name",
               localModelData.litellm_model_name,
             )}
 
@@ -774,9 +774,9 @@ const ModelInfoEditForm: React.FC<ModelInfoEditFormProps> = ({
 
             <div>
               <FieldLabel>
-                LiteLLM Params
+                Nexoplane Params
                 <DocsHint
-                  text="Optional litellm params used for making a litellm.completion() call. Some params are automatically added by LiteLLM."
+                  text="Optional Nexoplane parameters used for making a litellm.completion() call. Some parameters are automatically added by Nexoplane."
                   href="https://docs.litellm.ai/docs/completion/input"
                 />
               </FieldLabel>

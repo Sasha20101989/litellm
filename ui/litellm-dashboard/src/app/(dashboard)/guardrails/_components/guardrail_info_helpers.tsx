@@ -38,6 +38,13 @@ export enum GuardrailProviders {
 // Dynamic guardrail providers object - populated from API response
 export let DynamicGuardrailProviders: Record<string, string> = {};
 
+export const toNexoplaneDisplayName = (name: string): string => {
+  if (name === "LiteLLM") return "Nexoplane";
+  if (name === "LiteLLM Content Filter") return "Nexoplane Content Filter";
+  if (name === "LiteLLM LLM as a Judge") return "Nexoplane LLM as a Judge";
+  return name;
+};
+
 // Function to populate dynamic providers from API response
 export const populateGuardrailProviders = (providerParamsResponse: Record<string, any>) => {
   const providers: Record<string, string> = {};
@@ -46,7 +53,7 @@ export const populateGuardrailProviders = (providerParamsResponse: Record<string
   providers.PresidioPII = "Presidio PII";
   providers.Bedrock = "Bedrock Guardrail";
   providers.Lakera = "Lakera";
-  providers.LlmAsAJudge = "LiteLLM LLM as a Judge";
+  providers.LlmAsAJudge = "Nexoplane LLM as a Judge";
 
   // Add dynamic providers from API response
   Object.entries(providerParamsResponse).forEach(([key, value]) => {
@@ -59,7 +66,7 @@ export const populateGuardrailProviders = (providerParamsResponse: Record<string
         )
         .join("");
 
-      providers[providerKey] = value.ui_friendly_name;
+      providers[providerKey] = toNexoplaneDisplayName(value.ui_friendly_name);
     }
   });
 
@@ -167,9 +174,7 @@ export const shouldRenderContentFilterConfigSettings = (provider: string | null)
     return false;
   }
   // Check both dynamic and legacy providers
-  const currentProviders = getGuardrailProviders();
-  const providerEnum = currentProviders[provider as keyof typeof currentProviders];
-  return providerEnum === "LiteLLM Content Filter";
+  return guardrail_provider_map[provider] === "litellm_content_filter";
 };
 
 export const shouldRenderLLMJudgeFields = (provider: string | null) => {
@@ -203,6 +208,8 @@ export const guardrailLogoMap = {
   XecGuard: xecguardLogo.src,
   "LiteLLM Content Filter": nexoplaneLogo.src,
   "LiteLLM LLM as a Judge": nexoplaneLogo.src,
+  "Nexoplane Content Filter": nexoplaneLogo.src,
+  "Nexoplane LLM as a Judge": nexoplaneLogo.src,
   "Hide Secrets": nexoplaneLogo.src,
   Akto: aktoLogo.src,
   "DeepKeep AI Firewall": deepkeepLogo.src,

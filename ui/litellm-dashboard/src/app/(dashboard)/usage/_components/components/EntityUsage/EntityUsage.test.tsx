@@ -708,7 +708,7 @@ describe("EntityUsage", () => {
     expect(showingCount("metrics-source:model_groups")).toBeGreaterThan(0);
 
     act(() => {
-      fireEvent.click(showingText("Litellm Model Name"));
+      fireEvent.click(showingText("Nexoplane Model Name"));
     });
 
     expect(showingCount("metrics-source:models")).toBeGreaterThan(0);

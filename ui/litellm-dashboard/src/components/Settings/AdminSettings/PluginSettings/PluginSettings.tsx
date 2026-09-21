@@ -203,7 +203,7 @@ export default function PluginSettings() {
                 control={form.control}
                 name="plugin_key"
                 label="Plugin Key"
-                description="Optional. The plugin's own credential, injected as Authorization: Bearer <key> only when litellm reverse-proxies API calls to the plugin's backend (/plugin-proxy/<name>/*). Leave blank for plugins that use the forwarded litellm user token (e.g. iframe plugins) — that path uses the user's token, not this key."
+                description="Optional. The plugin's own credential, injected as Authorization: Bearer <key> only when Nexoplane reverse-proxies API calls to the plugin's backend (/plugin-proxy/<name>/*). Leave blank for plugins that use the forwarded Nexoplane user token (e.g. iframe plugins) — that path uses the user's token, not this key."
               >
                 {({ ref, ...field }) => (
                   <InputGroup>

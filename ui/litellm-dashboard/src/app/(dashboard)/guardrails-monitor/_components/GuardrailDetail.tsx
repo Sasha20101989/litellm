@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
 import { EvaluationSettingsModal } from "./EvaluationSettingsModal";
+import { toNexoplaneDisplayName } from "@/app/(dashboard)/guardrails/_components/guardrail_info_helpers";
 import { GuardrailUsageBreakdown } from "./GuardrailUsageBreakdown";
 import { LogViewer } from "@/components/GuardrailsMonitor/LogViewer";
 import { MetricCard } from "@/components/GuardrailsMonitor/MetricCard";
@@ -143,7 +144,7 @@ export function GuardrailDetail({ guardrailId, onBack, accessToken = null, start
             <p className="ml-8 text-sm text-muted-foreground">{data.description}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">{data.provider}</Badge>
+            <Badge variant="outline">{toNexoplaneDisplayName(data.provider)}</Badge>
             <Button
               variant="outline"
               size="icon"
