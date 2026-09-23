@@ -2,7 +2,7 @@
 
 import { useModelHub } from "@/app/(dashboard)/hooks/models/useModels";
 import { usePtuCostAttributionEnabled } from "@/app/(dashboard)/hooks/uiSettings/usePtuCostAttributionEnabled";
-import ModelInfoEditForm, { type ModelEditFormValues, type TouchedPricingField } from "@/components/ModelInfoEditForm";
+import { FocusModelEditForm, type ModelEditFormValues, type TouchedPricingField } from "./FocusModelEditForm";
 import {
   type CredentialItem,
   credentialListCall,
@@ -75,14 +75,14 @@ export function FocusModelEditor({
           (candidate: { providers?: string[]; model_group: string }) =>
             candidate.providers?.includes(wildcardProvider) && candidate.model_group !== model.litellm_model_name,
         )
-        .map((candidate: { model_group: string }) => ({ value: candidate.model_group, label: candidate.model_group })) ?? [],
+        .map((candidate: { model_group: string }) => ({
+          value: candidate.model_group,
+          label: candidate.model_group,
+        })) ?? [],
     [model.litellm_model_name, modelHubData?.data, wildcardProvider],
   );
 
-  const handleSubmit = async (
-    values: ModelEditFormValues,
-    isFieldTouched: (field: TouchedPricingField) => boolean,
-  ) => {
+  const handleSubmit = async (values: ModelEditFormValues, isFieldTouched: (field: TouchedPricingField) => boolean) => {
     setIsSaving(true);
     try {
       const parsedExtraParams = values.litellm_extra_params ? JSON.parse(values.litellm_extra_params) : {};
@@ -110,7 +110,11 @@ export function FocusModelEditor({
       setCost("output_cost", "output_cost_per_token");
       setCost("cache_read_cost", "cache_read_input_token_cost");
       setCost("cache_write_cost", "cache_creation_input_token_cost");
-      if (!isFieldTouched("cache_read_cost") && isFieldTouched("input_cost") && litellmParams.input_cost_per_token != null) {
+      if (
+        !isFieldTouched("cache_read_cost") &&
+        isFieldTouched("input_cost") &&
+        litellmParams.input_cost_per_token != null
+      ) {
         litellmParams.cache_read_input_token_cost = litellmParams.input_cost_per_token;
       }
 
@@ -151,23 +155,21 @@ export function FocusModelEditor({
   };
 
   return (
-    <ModelInfoEditForm
-      localModelData={model}
-      modelData={{ ...model, model_info: { ...model.model_info } }}
+    <FocusModelEditForm
+      model={model}
       teamAlias={teamAlias}
       accessToken={accessToken}
-      isEditing
       isSaving={isSaving}
       isWildcardModel={isWildcardModel}
-      ptuCostAttributionEnabled={ptuCostAttributionEnabled}
+      isPtuEnabled={ptuCostAttributionEnabled}
       showCacheControl={showCacheControl}
       setShowCacheControl={setShowCacheControl}
       onCancel={onCancel}
       onSubmit={handleSubmit}
       modelAccessGroups={modelAccessGroups}
-      guardrailsList={guardrails}
-      tagsList={tags}
-      credentialsList={credentials}
+      guardrails={guardrails}
+      tags={tags}
+      credentials={credentials}
       healthCheckModelOptions={healthCheckModelOptions}
     />
   );

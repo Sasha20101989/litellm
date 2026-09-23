@@ -26,7 +26,20 @@ import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/utils/dataUtils";
 import { canModifyModel } from "@/utils/modelPermissions";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, ChevronDown, Copy, KeyRound, Loader2, Pencil, RefreshCw, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  CircleX,
+  Copy,
+  KeyRound,
+  Loader2,
+  Pencil,
+  RefreshCw,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FocusModelEditor } from "./FocusModelEditor";
@@ -37,6 +50,33 @@ interface FocusModelDetailsPanelProps {
   onDelete: (modelId: string) => void;
 }
 
+interface ConnectionTestResult {
+  modelId: string;
+  status: "success" | "error";
+  message: string;
+}
+
+function ConnectionTestStatus({ result, modelId }: { result: ConnectionTestResult | null; modelId: string }) {
+  if (!result || result.modelId !== modelId) return null;
+  const isSuccess = result.status === "success";
+  const StatusIcon = isSuccess ? CheckCircle2 : CircleX;
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`mt-3 flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm ${
+        isSuccess
+          ? "border-success/30 bg-success/10 text-success"
+          : "border-destructive/30 bg-destructive/10 text-destructive"
+      }`}
+    >
+      <StatusIcon className="mt-0.5 size-4 shrink-0" />
+      <span className="break-words">{result.message}</span>
+    </div>
+  );
+}
+
 export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModelDetailsPanelProps) {
   const { t } = useTranslation("gateway");
   const { accessToken, userId, userRole, isViewOnly } = useAuthorized();
@@ -45,6 +85,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
   const { availableModelAccessGroups } = useModelFilterFacets();
   const queryClient = useQueryClient();
   const [isTesting, setIsTesting] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<ConnectionTestResult | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isUpdateApiKeyOpen, setIsUpdateApiKeyOpen] = useState(false);
@@ -88,6 +129,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
   };
   const handleTestConnection = async () => {
     if (!accessToken || !model) return;
+    setConnectionTestResult(null);
     setIsTesting(true);
     try {
       const response = await testConnectionRequest(
@@ -103,10 +145,14 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
       if (response.status !== "success") {
         throw new Error(response?.result?.error || response?.message || t("models.unknown"));
       }
-      toast.success(t("models.details.connectionSuccess"));
+      const message = t("models.details.connectionSuccess");
+      setConnectionTestResult({ modelId, status: "success", message });
+      toast.success(message);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      toast.fromError(t("models.details.connectionError", { error: message.slice(0, 160) }));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const message = t("models.details.connectionError", { error: errorMessage.slice(0, 160) });
+      setConnectionTestResult({ modelId, status: "error", message });
+      toast.fromError(message);
     } finally {
       setIsTesting(false);
     }
@@ -206,11 +252,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
           {isTesting ? t("models.details.testingConnection") : t("models.details.testConnection")}
         </Button>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button variant="outline" className="gap-2" disabled={!canEdit && !isAdmin} />
-            }
-          >
+          <DropdownMenuTrigger render={<Button variant="outline" className="gap-2" disabled={!canEdit && !isAdmin} />}>
             <KeyRound className="size-4" />
             {t("models.details.credentials")}
             <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -228,13 +270,13 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
         </DropdownMenu>
       </div>
 
+      <ConnectionTestStatus result={connectionTestResult} modelId={modelId} />
+
       {isEditing && accessToken && (
-        <div className="mt-6 rounded-xl border border-border bg-muted/25 p-4">
-          <div className="mb-5 flex items-center justify-between gap-3 border-b border-border pb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">{t("models.details.editModel")}</h3>
-              <p className="mt-1 text-xs text-muted-foreground">{t("models.details.editDescription")}</p>
-            </div>
+        <div className="mt-6">
+          <div className="mb-5 border-b border-border pb-4">
+            <h3 className="text-sm font-semibold text-foreground">{t("models.details.editModel")}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">{t("models.details.editDescription")}</p>
           </div>
           <FocusModelEditor
             model={model}
