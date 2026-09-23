@@ -36,7 +36,7 @@ export function clearTokenCookies() {
   // Include current path in case of custom server root path
   const currentPath = window.location.pathname;
   const uiCookiePath = getUiCookiePath();
-  const paths = ["/", uiCookiePath];
+  const paths = ["/", uiCookiePath, "/new-ui"];
 
   // Add the current path directory if it's different from root and /ui
   if (currentPath && currentPath !== "/" && !currentPath.startsWith("/ui")) {
@@ -77,22 +77,24 @@ export function clearTokenCookies() {
  * (e.g. nginx-ingress) adds HttpOnly to the server-set cookie.
  *
  * Strategy:
- *  1. Set a JS-accessible cookie at path "/ui". Because nginx only modifies
+ *  1. Set JS-accessible cookies at paths "/ui" and "/new-ui". Because nginx only modifies
  *     server-set Set-Cookie headers, a cookie created via document.cookie will
- *     never carry HttpOnly. Using path "/ui" avoids colliding with the
- *     server-set HttpOnly cookie at path "/".
+ *     never carry HttpOnly. Using these paths avoids colliding with the
+ *     server-set HttpOnly cookie at path "/" while keeping both dashboards
+ *     authenticated.
  *  2. Also store in sessionStorage as a secondary fallback.
  */
 export function storeLoginToken(token: string) {
   if (typeof window === "undefined") return;
   if (!token || !token.trim()) return;
 
-  // 1. JS-accessible cookie at /ui — survives same-tab navigations and
-  //    is readable by getCookie() via document.cookie.
+  // 1. JS-accessible cookies for the legacy and focused dashboards — survive
+  //    same-tab navigations and are readable by getCookie() via document.cookie.
   try {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     const cookiePath = getUiCookiePath();
     document.cookie = `token=${encodeURIComponent(token)}; path=${cookiePath}; SameSite=Lax${secure}`;
+    document.cookie = `token=${encodeURIComponent(token)}; path=/new-ui; SameSite=Lax${secure}`;
   } catch {
     // cookie setting may fail in restrictive environments
   }

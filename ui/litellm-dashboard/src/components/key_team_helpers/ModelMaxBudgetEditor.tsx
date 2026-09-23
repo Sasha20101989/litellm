@@ -123,7 +123,7 @@ export function ModelMaxBudgetEditor({
       <div>
         <div className="mb-2">{blurb}</div>
         <Button variant="outline" size="sm" onClick={addEntry} disabled={!premiumUser} title={hintWhenLocked}>
-          <Plus className="w-3 h-3" />+ {t("virtualKeys.edit.addModelBudget")}
+          <Plus className="w-3 h-3" /> {t("virtualKeys.edit.addModelBudget")}
         </Button>
       </div>
     );
@@ -210,7 +210,7 @@ export function ModelMaxBudgetEditor({
         );
       })}
       <Button variant="outline" size="sm" onClick={addEntry} disabled={!premiumUser} title={hintWhenLocked}>
-        <Plus className="w-3 h-3" />+ {t("virtualKeys.edit.addModelBudget")}
+        <Plus className="w-3 h-3" /> {t("virtualKeys.edit.addModelBudget")}
       </Button>
     </div>
   );

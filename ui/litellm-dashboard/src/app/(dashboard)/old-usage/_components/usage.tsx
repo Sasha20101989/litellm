@@ -62,7 +62,7 @@ type UsageDateRange = { from?: Date; to?: Date };
 
 type TeamSpendTotal = { name: string; value: number };
 
-type TagOption = { value: string; label: string; disabled: boolean };
+type TagOption = { value: string; label: string };
 
 const ALL_TAGS = "all-tags";
 
@@ -129,13 +129,12 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
     .map((key: any) => ({ token: String(key["token"]), alias: String(key["key_alias"]) }));
 
   const tagOptions: TagOption[] = [
-    { value: ALL_TAGS, label: "All Tags", disabled: false },
+    { value: ALL_TAGS, label: "All Tags" },
     ...allTagNames
       .filter((tag) => tag !== ALL_TAGS)
       .map((tag) => ({
         value: tag,
-        label: premiumUser ? tag : `✨ ${tag} (Enterprise only Feature)`,
-        disabled: !premiumUser,
+        label: tag,
       })),
   ];
 
@@ -901,7 +900,7 @@ const UsagePage: React.FC<UsagePageProps> = ({ accessToken, token, userRole, use
                   <ComboboxEmpty>No tags found</ComboboxEmpty>
                   <ComboboxList>
                     {(option: TagOption) => (
-                      <ComboboxItem key={option.value} value={option} disabled={option.disabled}>
+                      <ComboboxItem key={option.value} value={option}>
                         {option.label}
                       </ComboboxItem>
                     )}

@@ -6,6 +6,7 @@ import type { Dayjs } from "dayjs";
 import * as React from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod/v4";
+import { useTranslation } from "react-i18next";
 
 import { TagsInput } from "@/app/(dashboard)/guardrails/_components/content_filter/TagsInput";
 import { FormField } from "@/components/shared/form/FormField";
@@ -51,12 +52,6 @@ interface PtuEditField {
   isCount?: boolean;
 }
 
-const PTU_EDIT_FIELDS: PtuEditField[] = [
-  { name: PTU_COUNT_FIELD, label: "PTU Count", input: "number", placeholder: "e.g. 15", isCount: true },
-  { name: PTU_RATE_FIELD, label: "Cost per PTU / Hour (USD)", input: "number", placeholder: "e.g. 2.00" },
-  { name: PTU_START_FIELD, label: "PTU Effective From (UTC)", input: "datetime" },
-  { name: PTU_END_FIELD, label: "PTU Effective To (UTC)", input: "datetime" },
-];
 
 export type TouchedPricingField = "input_cost" | "output_cost" | "cache_read_cost" | "cache_write_cost";
 
@@ -150,13 +145,17 @@ const isJson = (value: string): boolean => {
   }
 };
 
-const buildSchema = (ptuEnabled: boolean, isFieldTouched: (field: TouchedPricingField) => boolean) =>
+const buildSchema = (
+  ptuEnabled: boolean,
+  isFieldTouched: (field: TouchedPricingField) => boolean,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) =>
   z.object(modelEditShape).superRefine((values, ctx) => {
     const reject = (path: ModelEditFieldName, message: string) =>
       ctx.addIssue({ code: "custom", path: [path], message });
 
     if (values.litellm_extra_params && !isJson(values.litellm_extra_params)) {
-      reject("litellm_extra_params", "Please enter valid JSON");
+      reject("litellm_extra_params", t("models.editor.validation.validJson"));
     }
 
     // antd validates only mounted fields, and the PTU block does not render when the flag is off.
@@ -165,24 +164,24 @@ const buildSchema = (ptuEnabled: boolean, isFieldTouched: (field: TouchedPricing
     }
 
     if (!isPositiveWholePtuCount(values.ptu_count)) {
-      reject("ptu_count", `PTU Count must be a whole number between 1 and ${MAX_PTU_COUNT.toLocaleString()}`);
+      reject("ptu_count", t("models.editor.validation.ptuCount", { max: MAX_PTU_COUNT.toLocaleString() }));
     }
     if (!isNonNegativePtuRate(values.cost_per_ptu_per_hour)) {
       reject(
         "cost_per_ptu_per_hour",
-        `Cost per PTU / Hour must be between 0 and ${MAX_COST_PER_PTU_PER_HOUR.toLocaleString()}`,
+        t("models.editor.validation.ptuRate", { max: MAX_COST_PER_PTU_PER_HOUR.toLocaleString() }),
       );
     }
     if (isFilledPtuValue(values.ptu_count) !== isFilledPtuValue(values.cost_per_ptu_per_hour)) {
-      const message = "PTU Count and Cost per PTU / Hour must be set together";
+      const message = t("models.editor.validation.ptuPair");
       reject("ptu_count", message);
       reject("cost_per_ptu_per_hour", message);
     }
     if (isFilledPtuValue(values.ptu_count) && !isFilledPtuValue(values.ptu_effective_from)) {
-      reject("ptu_effective_from", "PTU Effective From is required when PTU Count is set");
+      reject("ptu_effective_from", t("models.editor.validation.ptuStartRequired"));
     }
     if (!ptuWindowIsOrdered(values.ptu_effective_from, values.ptu_effective_to)) {
-      const message = "PTU Effective To must be after PTU Effective From";
+      const message = t("models.editor.validation.ptuOrder");
       reject("ptu_effective_from", message);
       reject("ptu_effective_to", message);
     }
@@ -195,7 +194,7 @@ const buildSchema = (ptuEnabled: boolean, isFieldTouched: (field: TouchedPricing
         isFilledPtuValue(value) &&
         Number(value) !== 0
       ) {
-        reject(field, "A PTU deployment bills by reserved capacity, so this cost must be 0 or blank");
+        reject(field, t("models.editor.validation.ptuPricing"));
       }
     }
   });
@@ -262,10 +261,10 @@ export const toModelEditFormValues = (localModelData: any, isWildcardModel: bool
   ),
 });
 
-const displayCost = (localModelData: any, field: TouchedPricingField): string => {
+const displayCost = (localModelData: any, field: TouchedPricingField, notSet: string): string => {
   const { param, info } = COST_SOURCES[field];
   const rate = localModelData?.litellm_params?.[param] ?? localModelData?.model_info?.[info];
-  return rate != null ? (Number(rate) * 1_000_000).toFixed(4) : "Not Set";
+  return rate != null ? (Number(rate) * 1_000_000).toFixed(4) : notSet;
 };
 
 interface ModelInfoEditFormProps {

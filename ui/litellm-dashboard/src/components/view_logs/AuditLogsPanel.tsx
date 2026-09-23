@@ -99,30 +99,6 @@ export default function AuditLogsPanel({
     setDrawerOpen(true);
   }, []);
 
-  if (!premiumUser) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "20px" }}>
-        <h1 style={{ display: "block", marginBottom: "10px" }}>✨ {t("audit.enterpriseTitle")}</h1>
-        <p style={{ display: "block", marginBottom: "10px" }}>{t("audit.enterpriseDescription")}</p>
-        <p style={{ display: "block", marginBottom: "20px", fontStyle: "italic" }}>{t("audit.preview")}</p>
-        <img
-          src={resolveLogoSrc(auditLogsPreviewImg)}
-          alt={t("audit.previewAlt")}
-          style={{
-            maxWidth: "100%",
-            maxHeight: "700px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-            margin: "0 auto",
-          }}
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="flex items-center justify-between mb-4">

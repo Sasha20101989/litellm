@@ -132,7 +132,6 @@ const EmailSettings: React.FC<EmailSettingsProps> = ({ accessToken, premiumUser,
                           name={key}
                           defaultValue={value as string}
                           type={isSensitive && !isVisible ? "password" : "text"}
-                          disabled={isLocked}
                         />
                         {isSensitive && (
                           <InputGroupAddon align="inline-end">

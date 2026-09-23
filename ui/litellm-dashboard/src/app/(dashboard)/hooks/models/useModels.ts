@@ -119,8 +119,22 @@ export interface AutoRouterDeployment extends AutoRouterCandidateDeployment {
     updated_at?: string | null;
     team_id?: string | null;
     created_by?: string | null;
+    access_groups?: string[] | null;
+    team_public_model_name?: string | null;
   } | null;
 }
+
+export interface ModelFilterFacets {
+  availableModelGroups: string[];
+  availableModelGroupOptions: Array<{ value: string; label: string }>;
+  availableModelAccessGroups: string[];
+}
+
+const NO_MODEL_FILTER_FACETS: ModelFilterFacets = {
+  availableModelGroups: [],
+  availableModelGroupOptions: [],
+  availableModelAccessGroups: [],
+};
 
 export const isAutoRouterDeployment = (deployment: AutoRouterCandidateDeployment): boolean =>
   Boolean(deployment?.litellm_params?.model?.startsWith(AUTO_ROUTER_MODEL_PREFIX));
@@ -135,6 +149,40 @@ export const selectAutoRouterModelGroups = (deployments: AutoRouterCandidateDepl
 
 export const selectAutoRouterDeployments = (deployments: AutoRouterDeployment[]): AutoRouterDeployment[] =>
   deployments.filter(isAutoRouterDeployment);
+
+export const selectModelFilterFacets = (deployments: AutoRouterDeployment[]): ModelFilterFacets => {
+  const modelGroups = new Map<string, string>();
+  const plainDeployments = deployments.filter((deployment) => !isAutoRouterDeployment(deployment));
+
+  for (const deployment of plainDeployments) {
+    const modelName = deployment.model_name;
+    if (!modelName) continue;
+
+    // Mirrors getDisplayModelName(): the public team name is what people see in
+    // the legacy table, while model_name remains the filter value sent to the API.
+    const displayName = deployment.model_info?.team_public_model_name || modelName;
+    const previous = modelGroups.get(modelName);
+    if (!previous || previous === modelName) {
+      modelGroups.set(modelName, displayName);
+    }
+  }
+
+  const availableModelGroupOptions = Array.from(modelGroups, ([value, label]) => ({ value, label })).sort((left, right) =>
+    left.label.localeCompare(right.label),
+  );
+
+  return {
+    availableModelGroups: availableModelGroupOptions.map(({ value }) => value),
+    availableModelGroupOptions,
+    availableModelAccessGroups: Array.from(
+      new Set(
+        plainDeployments
+          .flatMap((deployment) => deployment.model_info?.access_groups ?? [])
+          .filter((accessGroup): accessGroup is string => Boolean(accessGroup)),
+      ),
+    ).sort(),
+  };
+};
 
 export const selectPlainModelGroups = (deployments: AutoRouterCandidateDeployment[]): ReadonlySet<string> => {
   const autoRouterGroups = selectAutoRouterModelGroups(deployments);
@@ -211,6 +259,14 @@ const useDeployments = <TSelected>(
     select,
   });
 };
+
+/**
+ * Full model catalogue for filters. It deliberately shares the `models/list`
+ * query namespace with other deployment consumers, so model mutations
+ * invalidate it together with every other model list.
+ */
+export const useModelFilterFacets = (): ModelFilterFacets =>
+  useDeployments(selectModelFilterFacets).data ?? NO_MODEL_FILTER_FACETS;
 
 export const useAutoRouterModelGroups = (): ReadonlySet<string> =>
   useDeployments(selectAutoRouterModelGroups).data ?? NO_AUTO_ROUTERS;

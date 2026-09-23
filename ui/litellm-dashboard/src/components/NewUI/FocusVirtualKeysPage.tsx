@@ -28,6 +28,7 @@ import KeyInfoView from "@/components/templates/key_info_view";
 import { DEBOUNCE_WAIT_MS } from "@/utils/debounceConstants";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/localStorageUtils";
+import { uiHref } from "@/utils/uiHref";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@tanstack/react-pacer/debouncer";
 import { ColumnFiltersState, functionalUpdate, OnChangeFn } from "@tanstack/react-table";
@@ -41,11 +42,13 @@ import {
   Loader2,
   Menu,
   Moon,
+  Network,
   RefreshCw,
   Search,
   Sun,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { parseAsString, useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -59,6 +62,7 @@ const FOCUS_THEME_STORAGE_KEY = "litellm_focus_virtual_keys_theme";
 type FilterColumn = (typeof FILTER_COLUMNS)[number];
 type KeyStatus = (typeof KEY_STATUS_VALUES)[number];
 type FocusTheme = "light" | "dark";
+type BudgetState = "warning" | "exceeded";
 
 const TABLE_STATE_OPTIONS: UrlTableStateOptions<FilterColumn> = {
   sortFields: SORT_FIELDS,
@@ -118,6 +122,22 @@ const formatDate = (value: string | null | undefined, locale: string, fallback: 
 
 const formatMoney = (value: number | null | undefined): string => `$${formatNumberWithCommas(value, 2)}`;
 
+const getBudgetState = (spend: number | null | undefined, maxBudget: number | null | undefined): BudgetState | null => {
+  if (!Number.isFinite(maxBudget) || !maxBudget || maxBudget <= 0 || !Number.isFinite(spend)) return null;
+
+  const ratio = spend / maxBudget;
+  if (ratio >= 1) return "exceeded";
+  if (ratio >= 0.8) return "warning";
+  return null;
+};
+
+const budgetTextClass = (field: FocusField, budgetState: BudgetState | null): string => {
+  if (field !== "spendBudget") return "text-foreground";
+  if (budgetState === "exceeded") return "text-destructive";
+  if (budgetState === "warning") return "text-amber-700";
+  return "text-foreground";
+};
+
 const draftFromFilters = (filters: ColumnFiltersState): Record<FilterColumn, string> =>
   Object.fromEntries(FILTER_COLUMNS.map((id) => [id, filterValue(filters, id) ?? ""])) as Record<FilterColumn, string>;
 
@@ -167,16 +187,16 @@ function KeyRow({
     keyData.user_email ||
     keyData.user_id ||
     t("focusKeys.unknown");
+  const budgetState = getBudgetState(keyData.spend, keyData.max_budget);
+  const spendBudgetValue = `${formatMoney(keyData.spend)} / ${
+    keyData.max_budget == null ? t("focusKeys.unlimited") : formatMoney(keyData.max_budget)
+  }`;
   const fields: Array<[FocusField, string, string]> = [
     ["team", t("focusKeys.fields.team"), keyData.team_alias || keyData.team_id || t("focusKeys.unassigned")],
     ["user", t("focusKeys.fields.user"), owner],
     ["createdAt", t("focusKeys.fields.createdAt"), formatDate(keyData.created_at, locale, t("focusKeys.unknown"))],
     ["lastActivity", t("focusKeys.fields.lastActivity"), formatDate(keyData.last_active, locale, t("focusKeys.never"))],
-    [
-      "spendBudget",
-      t("focusKeys.fields.spendBudget"),
-      `${formatMoney(keyData.spend)} / ${keyData.max_budget == null ? t("focusKeys.unlimited") : formatMoney(keyData.max_budget)}`,
-    ],
+    ["spendBudget", t("focusKeys.fields.spendBudget"), spendBudgetValue],
     ["totalSpend", t("focusKeys.fields.totalSpend"), formatMoney(keyData.total_spend)],
     [
       "budgetReset",
@@ -207,7 +227,6 @@ function KeyRow({
               <p className="truncate font-semibold text-foreground">
                 {keyData.key_alias || keyData.key_name || keyData.token}
               </p>
-              <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{keyData.token}</p>
             </div>
             <span className={`focus-status focus-status-${status}`}>{t(`focusKeys.status.${status}`)}</span>
           </div>
@@ -217,8 +236,16 @@ function KeyRow({
               .map(([field, label, value]) => (
                 <div key={field} className="min-w-0">
                   <dt className="text-[11px] text-muted-foreground">{label}</dt>
-                  <dd className="mt-0.5 truncate text-sm text-foreground" title={value}>
-                    {value}
+                  <dd
+                    className={`mt-0.5 text-sm ${budgetTextClass(field, budgetState)}`}
+                    title={value}
+                  >
+                    <span className="truncate">{value}</span>
+                    {field === "spendBudget" && budgetState && (
+                      <span className="ml-2 whitespace-nowrap text-xs font-medium">
+                        {t(`focusKeys.budget.${budgetState}`)}
+                      </span>
+                    )}
                   </dd>
                 </div>
               ))}
@@ -469,9 +496,12 @@ function FocusVirtualKeysPage() {
         <SheetContent side="left" className="w-72 p-4" showCloseButton>
           <SheetTitle>{t("focusKeys.title")}</SheetTitle>
           <nav className="mt-4" aria-label={t("focusKeys.title")}>
-            <div className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary" aria-current="page">
+            <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary" aria-current="page"><KeyRound className="size-4" />
               {t("focusKeys.title")}
             </div>
+            <Link href={uiHref("new-ui/models-and-endpoints")} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">
+              <Network className="size-4" /> {t("focusKeys.navigation.modelsAndEndpoints")}
+            </Link>
           </nav>
         </SheetContent>
       </Sheet>
@@ -564,9 +594,9 @@ function FocusVirtualKeysPage() {
                   if (id) onSortingChange([{ id, desc: sort.desc }]);
                 }}
               >
-                <SelectTrigger size="sm" aria-label={t("focusKeys.sort.label")}>
-                  <SelectValue />
-                </SelectTrigger>
+              <SelectTrigger size="sm" aria-label={t("focusKeys.sort.label")}>
+                <SelectValue>{sortLabels[sort.id]}</SelectValue>
+              </SelectTrigger>
                 <SelectContent>
                   {SORT_FIELDS.map((field) => (
                     <SelectItem key={field} value={field}>

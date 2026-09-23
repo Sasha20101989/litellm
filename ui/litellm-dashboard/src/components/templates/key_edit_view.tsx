@@ -26,7 +26,6 @@ import RouterSettingsAccordion, { RouterSettingsAccordionRef } from "../common_c
 import { routerSettingsEditorValue, routerSettingsUpdate } from "../common_components/routerSettingsPayload";
 import { withNormalizedEstimates } from "./estimatedOutputTokens";
 import {
-  currentValuePlaceholder,
   keyTypeFromRoutes,
   modelSentinelOptions,
   parseAllowedRoutes,
@@ -608,7 +607,6 @@ export function KeyEditView({
                     onChange={onChange}
                     value={value as string[] | undefined}
                     accessToken={accessToken}
-                    disabled={!premiumUser}
                   />
                 ) : (
                   <div />
@@ -633,11 +631,7 @@ export function KeyEditView({
             <FormField
               control={form.control}
               name="prompts"
-              label={
-                premiumUser
-                  ? t("virtualKeys.edit.prompts")
-                  : labelWithHint(t("virtualKeys.edit.prompts"), t("virtualKeys.edit.promptsPremium"))
-              }
+              label={t("virtualKeys.edit.prompts")}
             >
               {({ value, onChange, id }) => (
                 <TagsInput
@@ -645,16 +639,7 @@ export function KeyEditView({
                   value={(value as string[] | undefined) ?? []}
                   onValueChange={onChange}
                   options={promptsList.map((name) => ({ value: name, label: name }))}
-                  disabled={!premiumUser}
-                  placeholder={currentValuePlaceholder(
-                    premiumUser,
-                    keyData.metadata?.prompts,
-                    t("virtualKeys.edit.promptsUpgrade"),
-                    {
-                      emptyHint: t("virtualKeys.edit.selectOrEnterPrompts"),
-                      formatCurrent: (values) => t("virtualKeys.edit.currentValues", { values }),
-                    },
-                  )}
+                  placeholder={t("virtualKeys.edit.selectOrEnterPrompts")}
                 />
               )}
             </FormField>
@@ -677,27 +662,14 @@ export function KeyEditView({
           <FormField
             control={form.control}
             name="allowed_passthrough_routes"
-            label={
-              premiumUser
-                ? t("virtualKeys.edit.passThroughRoutes")
-                : labelWithHint(t("virtualKeys.edit.passThroughRoutes"), t("virtualKeys.edit.passThroughPremium"))
-            }
+            label={t("virtualKeys.edit.passThroughRoutes")}
           >
             {({ value, onChange }) => (
               <PassThroughRoutesSelector
                 value={value as string[] | undefined}
                 onChange={onChange}
                 accessToken={accessToken || ""}
-                placeholder={currentValuePlaceholder(
-                  premiumUser,
-                  keyData.metadata?.allowed_passthrough_routes,
-                  t("virtualKeys.edit.passThroughUpgrade"),
-                  {
-                    emptyHint: t("virtualKeys.edit.selectPassThroughRoutes"),
-                    formatCurrent: (values) => t("virtualKeys.edit.currentValues", { values }),
-                  },
-                )}
-                disabled={!premiumUser}
+                placeholder={t("virtualKeys.edit.selectPassThroughRoutes")}
               />
             )}
           </FormField>

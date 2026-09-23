@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { CircleHelp } from "lucide-react";
 import React, { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ModelSettingsModalProps {
@@ -32,6 +33,7 @@ const labelWithHint = (label: string, hint: string): React.ReactNode => (
 );
 
 const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isVisible, onCancel, onSuccess }) => {
+  const { t } = useTranslation("gateway");
   const { mutateAsync, isPending } = useStoreModelInDB();
   const { data: proxyConfigData, isLoading: isLoadingConfig, refetch } = useProxyConfig(ConfigType.GENERAL_SETTINGS);
 
@@ -63,16 +65,16 @@ const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isVisible, onCa
     try {
       await mutateAsync(formValues, {
         onSuccess: () => {
-          toast.success("Model storage settings updated successfully");
+          toast.success(t("models.modelSettings.updated"));
           refetch();
           onSuccess?.();
         },
         onError: (error) => {
-          toast.fromError("Failed to save model storage settings: " + parseErrorMessage(error));
+          toast.fromError(`${t("models.modelSettings.saveError")}: ${parseErrorMessage(error)}`);
         },
       });
     } catch (error) {
-      toast.fromError("Failed to save model storage settings: " + parseErrorMessage(error));
+      toast.fromError(`${t("models.modelSettings.saveError")}: ${parseErrorMessage(error)}`);
     }
   };
 
@@ -85,7 +87,7 @@ const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isVisible, onCa
     <Dialog open={isVisible} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-base">Model Settings</DialogTitle>
+          <DialogTitle className="text-base">{t("models.modelSettings.title")}</DialogTitle>
         </DialogHeader>
         <TooltipProvider>
           <form onSubmit={(event) => event.preventDefault()}>
@@ -94,16 +96,15 @@ const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isVisible, onCa
                 control={form.control}
                 name="store_model_in_db"
                 label={labelWithHint(
-                  "Store Model in DB",
-                  proxyConfigData?.find((f) => f.field_name === "store_model_in_db")?.field_description ||
-                    "If enabled, models and config are stored in and loaded from the database.",
+                  t("models.modelSettings.storeInDatabase"),
+                  t("models.modelSettings.storeInDatabaseHint"),
                 )}
               >
                 {({ id, value, onChange, onBlur }) =>
                   isLoadingConfig ? (
                     <Skeleton
                       role="status"
-                      aria-label="Loading model settings"
+                      aria-label={t("models.modelSettings.loading")}
                       className="h-[18.4px] w-8 rounded-full"
                     />
                   ) : (
@@ -122,14 +123,14 @@ const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isVisible, onCa
         </TooltipProvider>
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel} disabled={isPending || isLoadingConfig}>
-            Cancel
+            {t("models.modelSettings.cancel")}
           </Button>
           <Button
             disabled={isPending || isLoadingConfig}
             aria-busy={isPending}
             onClick={() => void form.handleSubmit(handleFormSubmit)()}
           >
-            {isPending ? "Saving..." : "Save Settings"}
+            {isPending ? t("models.modelSettings.saving") : t("models.modelSettings.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

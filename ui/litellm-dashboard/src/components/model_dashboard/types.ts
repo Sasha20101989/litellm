@@ -8,6 +8,8 @@ export interface ModelInfo {
   access_groups: string[] | null;
   blocked?: boolean;
   team_public_model_name?: string;
+  mode?: string;
+  [key: string]: unknown;
 }
 
 export interface LiteLLMParams {
