@@ -1,5 +1,6 @@
 "use client";
 
+import LanguageSelector from "@/components/LanguageSelector/LanguageSelector";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +10,7 @@ import { KeyRound, Menu, Moon, Network, Sun } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FocusAddModelPanel } from "./FocusAddModelPanel";
 import { FocusModelsList } from "./FocusModelsList";
 
 type FocusTheme = "light" | "dark";
@@ -130,6 +132,7 @@ export default function FocusModelsAndEndpointsPage() {
             <p className="mt-1 text-sm text-muted-foreground">{t("focusModelsAndEndpoints.subtitle")}</p>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageSelector />
             <Button
               variant="outline"
               size="icon"
@@ -188,6 +191,7 @@ function InnerTabs({ section, t }: { section: FocusModelsTab; t: (key: string) =
       {innerTabs.map((tab) => (
         <TabsContent key={tab} value={tab} className="min-h-64">
           {section === "models" && tab === "allModels" ? <FocusModelsList /> : null}
+          {section === "models" && tab === "addModel" ? <FocusAddModelPanel /> : null}
         </TabsContent>
       ))}
     </Tabs>
