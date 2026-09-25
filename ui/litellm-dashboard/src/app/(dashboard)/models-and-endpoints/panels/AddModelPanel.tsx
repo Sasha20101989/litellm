@@ -11,12 +11,13 @@ import {
   type MountedFormValues,
 } from "@/components/common_components/MountedFormField";
 import { Providers, getPlaceholder, getProviderModels } from "@/components/provider_info_helpers";
+import { MODEL_CREATE_DEFAULTS } from "@/features/models-and-endpoints/modelFormContract";
 import { useModelCostMap } from "@/app/(dashboard)/hooks/models/useModelCostMap";
 import { useCredentials } from "@/app/(dashboard)/hooks/credentials/useCredentials";
 import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 
-const INITIAL_VALUES: MountedFormValues = { litellm_credential_name: null };
+const INITIAL_VALUES: MountedFormValues = { ...MODEL_CREATE_DEFAULTS, litellm_credential_name: null };
 
 export default function AddModelPanel() {
   const { accessToken } = useAuthorized();

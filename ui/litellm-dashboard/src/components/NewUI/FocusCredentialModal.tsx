@@ -1,6 +1,7 @@
 "use client";
 
 import { useProviderFields } from "@/app/(dashboard)/hooks/providers/useProviderFields";
+import { credentialFormDefaults } from "@/features/models-and-endpoints/useCredentialsWorkspace";
 import {
   MountedFormField,
   MountedFormProvider,
@@ -29,19 +30,6 @@ interface FocusCredentialModalProps {
   onSubmit: (values: Record<string, unknown>) => Promise<void>;
 }
 
-function initialValues(existingCredential?: CredentialItem | null): MountedFormValues {
-  if (!existingCredential) {
-    return { credential_name: "", custom_llm_provider: "" };
-  }
-  return {
-    credential_name: existingCredential.credential_name,
-    custom_llm_provider: existingCredential.credential_info?.custom_llm_provider ?? "",
-    ...Object.fromEntries(
-      Object.entries(existingCredential.credential_values ?? {}).map(([key, value]) => [key, value ?? null]),
-    ),
-  };
-}
-
 export function FocusCredentialModal({
   open,
   mode,
@@ -55,7 +43,7 @@ export function FocusCredentialModal({
   const { data: providerMetadata, isLoading: isLoadingProviders } = useProviderFields();
   const form = useForm<MountedFormValues>({
     mode: "onChange",
-    defaultValues: initialValues(existingCredential),
+    defaultValues: credentialFormDefaults(existingCredential) as MountedFormValues,
   });
   const registry = useMountRegistry();
   const selectedProvider =
@@ -78,7 +66,7 @@ export function FocusCredentialModal({
       provider.provider_display_name === selectedProvider,
   );
   const close = () => {
-    form.reset(initialValues(existingCredential));
+    form.reset(credentialFormDefaults(existingCredential) as MountedFormValues);
     onCancel();
   };
   const submit = async () => {

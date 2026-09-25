@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { credentialFormDefaults } from "@/features/models-and-endpoints/useCredentialsWorkspace";
 import { SearchSelect, type SearchSelectOption } from "@/components/shared/SearchSelect";
 import { SimpleTooltip } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -46,15 +47,7 @@ export default function CredentialModal({
     (existingCredential?.credential_info.custom_llm_provider as Providers) ?? Providers.OpenAI,
   );
 
-  const initialValues = existingCredential
-    ? {
-        credential_name: existingCredential.credential_name,
-        custom_llm_provider: existingCredential.credential_info.custom_llm_provider,
-        ...Object.fromEntries(
-          Object.entries(existingCredential.credential_values || {}).map(([key, value]) => [key, value ?? null]),
-        ),
-      }
-    : undefined;
+  const initialValues = existingCredential ? credentialFormDefaults(existingCredential) : undefined;
 
   const form = useForm<MountedFormValues>({ mode: "onChange", defaultValues: initialValues });
   const registry = useMountRegistry();

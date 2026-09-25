@@ -3,42 +3,18 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-import { useCredentials } from "@/app/(dashboard)/hooks/credentials/useCredentials";
-import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
-import {
-  credentialCreateCall,
-  credentialDeleteCall,
-  CredentialItem,
-  credentialUpdateCall,
-} from "@/components/networking";
+import { useCredentialsWorkspace } from "@/features/models-and-endpoints/useCredentialsWorkspace";
+import { CredentialItem } from "@/components/networking";
 import { Button } from "@/components/ui/button";
-import { stripMaskedSecrets } from "@/utils/maskedSecretUtils";
-import { isProxyAdminRole } from "@/utils/roles";
 
 import DeleteResourceModal from "../common_components/DeleteResourceModal";
 import { toast } from "@/lib/toast";
 import CredentialModal from "./CredentialModal";
 import CredentialsTable from "./CredentialsTable";
 
-const restrictedFields = ["credential_name", "custom_llm_provider"];
-
-const buildCredential = (values: Record<string, unknown>, credentialValues: Record<string, unknown>) => ({
-  credential_name: values.credential_name as string,
-  credential_values: credentialValues,
-  credential_info: {
-    custom_llm_provider: values.custom_llm_provider as string,
-  },
-});
-
-const withoutRestrictedFields = (values: Record<string, unknown>): Record<string, unknown> =>
-  Object.fromEntries(Object.entries(values).filter(([key]) => !restrictedFields.includes(key)));
-
 export default function CredentialsPanel() {
-  const { accessToken, userRole } = useAuthorized();
-  // Admin Viewer follows the read-parity rule: see credentials, do not modify.
-  const canModifyCredentials = isProxyAdminRole(userRole ?? "");
-  const { data: credentialsResponse, isLoading, refetch: refetchCredentials } = useCredentials();
-  const credentialList = credentialsResponse?.credentials || [];
+  const workspace = useCredentialsWorkspace();
+  const { credentials: credentialList, isLoading, canModifyCredentials } = workspace;
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -48,44 +24,33 @@ export default function CredentialsPanel() {
   const [isCredentialDeleting, setIsCredentialDeleting] = useState(false);
 
   const handleUpdateCredential = async (values: Record<string, unknown>) => {
-    if (!accessToken) {
-      return;
-    }
     try {
-      const newCredential = buildCredential(values, stripMaskedSecrets(withoutRestrictedFields(values)));
-      await credentialUpdateCall(accessToken, values.credential_name as string, newCredential);
+      if (!(await workspace.updateCredential(values))) return;
       toast.success("Credential updated successfully");
       setIsUpdateModalOpen(false);
-      await refetchCredentials();
     } catch (error) {
       toast.error("Failed to update credential");
     }
   };
 
   const handleAddCredential = async (values: Record<string, unknown>) => {
-    if (!accessToken) {
-      return;
-    }
     try {
-      const newCredential = buildCredential(values, withoutRestrictedFields(values));
-      await credentialCreateCall(accessToken, newCredential);
+      if (!(await workspace.createCredential(values))) return;
       toast.success("Credential added successfully");
       setIsAddModalOpen(false);
-      await refetchCredentials();
     } catch (error) {
       toast.error("Failed to add credential");
     }
   };
 
   const handleDeleteCredential = async () => {
-    if (!accessToken || !credentialToDelete) {
+    if (!credentialToDelete) {
       return;
     }
     setIsCredentialDeleting(true);
     try {
-      await credentialDeleteCall(accessToken, credentialToDelete.credential_name);
+      if (!(await workspace.deleteCredential(credentialToDelete.credential_name))) return;
       toast.success("Credential deleted successfully");
-      await refetchCredentials();
     } catch (error) {
       toast.error("Failed to delete credential");
     } finally {

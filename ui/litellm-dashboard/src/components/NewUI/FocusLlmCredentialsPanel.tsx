@@ -1,15 +1,9 @@
 "use client";
 
-import { useCredentials } from "@/app/(dashboard)/hooks/credentials/useCredentials";
-import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
+import { useCredentialsWorkspace } from "@/features/models-and-endpoints/useCredentialsWorkspace";
 import DeleteResourceModal from "@/components/common_components/DeleteResourceModal";
 import { ProviderLogo } from "@/components/molecules/models/ProviderLogo";
-import {
-  credentialCreateCall,
-  credentialDeleteCall,
-  credentialUpdateCall,
-  type CredentialItem,
-} from "@/components/networking";
+import { type CredentialItem } from "@/components/networking";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,14 +15,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/utils/dataUtils";
-import { stripMaskedSecrets } from "@/utils/maskedSecretUtils";
-import { isProxyAdminRole } from "@/utils/roles";
 import { Copy, KeyRound, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FocusCredentialModal } from "./FocusCredentialModal";
-
-const RESTRICTED_FIELDS = new Set(["credential_name", "custom_llm_provider"]);
 
 type ModalMode = "add" | "edit" | null;
 
@@ -40,15 +30,6 @@ interface CredentialListProps {
   canModify: boolean;
   onEdit: (credential: CredentialItem) => void;
   onDelete: (credential: CredentialItem) => void;
-}
-
-function credentialPayload(values: Record<string, unknown>, shouldStripSecrets: boolean) {
-  const credentialValues = Object.fromEntries(Object.entries(values).filter(([key]) => !RESTRICTED_FIELDS.has(key)));
-  return {
-    credential_name: String(values.credential_name),
-    credential_values: shouldStripSecrets ? stripMaskedSecrets(credentialValues) : credentialValues,
-    credential_info: { custom_llm_provider: String(values.custom_llm_provider) },
-  };
 }
 
 function CredentialList({
@@ -163,9 +144,8 @@ function CredentialCard({
 
 export function FocusLlmCredentialsPanel() {
   const { t } = useTranslation("gateway");
-  const { accessToken, userRole } = useAuthorized();
-  const { data, isLoading, isError, refetch } = useCredentials();
-  const canModify = isProxyAdminRole(userRole ?? "");
+  const workspace = useCredentialsWorkspace();
+  const { credentials: allCredentials, isLoading, isError, canModifyCredentials: canModify } = workspace;
   const [search, setSearch] = useState("");
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedCredential, setSelectedCredential] = useState<CredentialItem | null>(null);
@@ -174,7 +154,7 @@ export function FocusLlmCredentialsPanel() {
   const [isDeleting, setIsDeleting] = useState(false);
   const credentials = useMemo(
     () =>
-      [...(data?.credentials ?? [])]
+      [...allCredentials]
         .filter((credential) => {
           const query = search.trim().toLowerCase();
           if (!query) return true;
@@ -184,7 +164,7 @@ export function FocusLlmCredentialsPanel() {
           );
         })
         .sort((left, right) => left.credential_name.localeCompare(right.credential_name)),
-    [data?.credentials, search],
+    [allCredentials, search],
   );
 
   const closeModal = () => {
@@ -196,19 +176,17 @@ export function FocusLlmCredentialsPanel() {
     setModalMode("edit");
   };
   const saveCredential = async (values: Record<string, unknown>) => {
-    if (!accessToken || !modalMode) return;
+    if (!modalMode) return;
     setIsSaving(true);
     try {
-      const payload = credentialPayload(values, modalMode === "edit");
       if (modalMode === "edit") {
-        await credentialUpdateCall(accessToken, payload.credential_name, payload);
+        if (!(await workspace.updateCredential(values))) return;
         toast.success(t("models.credentials.notifications.updated"));
       } else {
-        await credentialCreateCall(accessToken, payload);
+        if (!(await workspace.createCredential(values))) return;
         toast.success(t("models.credentials.notifications.added"));
       }
       closeModal();
-      await refetch();
     } catch (error) {
       console.error("Failed to save credential:", error);
       toast.fromError(
@@ -223,13 +201,12 @@ export function FocusLlmCredentialsPanel() {
     }
   };
   const deleteCredential = async () => {
-    if (!accessToken || !credentialToDelete) return;
+    if (!credentialToDelete) return;
     setIsDeleting(true);
     try {
-      await credentialDeleteCall(accessToken, credentialToDelete.credential_name);
+      if (!(await workspace.deleteCredential(credentialToDelete.credential_name))) return;
       toast.success(t("models.credentials.notifications.deleted"));
       setCredentialToDelete(null);
-      await refetch();
     } catch (error) {
       console.error("Failed to delete credential:", error);
       toast.fromError(t("models.credentials.notifications.deleteFailed"));

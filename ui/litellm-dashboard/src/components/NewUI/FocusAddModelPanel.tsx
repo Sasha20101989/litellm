@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { modelCreationScope } from "@/utils/modelPermissions";
+import { MODEL_CREATE_DEFAULTS } from "@/features/models-and-endpoints/modelFormContract";
 import { isProxyAdminRole, isUserTeamAdminForSingleTeam } from "@/utils/roles";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, CircleAlert, CircleX, Loader2, Plus, Trash2 } from "lucide-react";
@@ -43,11 +44,8 @@ import {
 } from "./focusModelCreatePayload";
 
 const INITIAL_VALUES: MountedFormValues = {
+  ...MODEL_CREATE_DEFAULTS,
   custom_llm_provider: Providers.Anthropic,
-  mode: "chat",
-  model: [],
-  model_mappings: [],
-  litellm_credential_name: "",
 };
 
 const MODEL_MODES = [

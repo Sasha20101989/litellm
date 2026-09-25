@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SimpleTooltip } from "@/components/ui/tooltip";
-import { applyPtuModelInfo } from "../utils/ptuModelInfo";
 import { usePtuCostAttributionEnabled } from "@/app/(dashboard)/hooks/uiSettings/usePtuCostAttributionEnabled";
 import { ArrowLeft, CheckIcon, CopyIcon, Info } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { copyToClipboard as utilCopyToClipboard } from "../utils/dataUtils";
-import { stripMaskedSecrets } from "../utils/maskedSecretUtils";
+import { buildModelUpdatePayload, type ModelFormValues, type TouchedPricingField } from "@/features/models-and-endpoints/modelFormContract";
+import { useCredentialsWorkspace } from "@/features/models-and-endpoints/useCredentialsWorkspace";
 import { truncateString } from "../utils/textUtils";
 import AutoRouterConnectionTest from "./add_model/auto_router_connection_test";
 import { buildSavedJevConnectionTestRequest } from "./add_model/build_auto_router_routing_test_request";
@@ -33,7 +33,6 @@ import {
   CredentialItem,
   credentialCreateCall,
   credentialGetCall,
-  credentialListCall,
   getGuardrailsList,
   modelDeleteCall,
   modelInfoV1Call,
@@ -44,10 +43,11 @@ import {
 import { Logo } from "@/components/molecules/logo/Logo";
 import { ModelPricingSummary } from "@/components/molecules/models/ModelPricingSummary";
 import UpdateModelCredentialsModal from "./update_model_credentials_modal";
-import ModelInfoEditForm, { type ModelEditFormValues, type TouchedPricingField } from "./ModelInfoEditForm";
+import ModelInfoEditForm from "./ModelInfoEditForm";
 import { Tag } from "./tag_management/types";
 import { getDisplayModelName } from "./view_model/model_name_display";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 interface ModelInfoViewProps {
   modelId: string;
@@ -70,6 +70,7 @@ export default function ModelInfoView({
   onModelUpdate,
   modelAccessGroups,
 }: ModelInfoViewProps) {
+  const { t } = useTranslation("gateway");
   const queryClient = useQueryClient();
   const [localModelData, setLocalModelData] = useState<any>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -87,7 +88,7 @@ export default function ModelInfoView({
   const [autoRouterTestTargets, setAutoRouterTestTargets] = useState<AutoRouterTestTarget[]>([]);
   const [guardrailsList, setGuardrailsList] = useState<string[]>([]);
   const [tagsList, setTagsList] = useState<Record<string, Tag>>({});
-  const [credentialsList, setCredentialsList] = useState<CredentialItem[]>([]);
+  const { credentials: credentialsList } = useCredentialsWorkspace();
 
   // Fetch model data using hook
   const { data: rawModelDataResponse, isLoading: isLoadingModel } = useModelsInfo(1, 50, undefined, modelId);
@@ -141,7 +142,7 @@ export default function ModelInfoView({
   // Broader than the editor check: adaptive and quality routers equally have no upstream
   // credential, so the credential actions are meaningless for every auto-router strategy.
   const isAnyAutoRouter = isAutoRouterDeployment(modelData?.litellm_params);
-  const deleteLabel = isAnyAutoRouter ? "Delete Auto-Router" : "Delete Model";
+  const deleteLabel = isAnyAutoRouter ? t("models.modelDetails.deleteAutoRouter") : t("models.modelDetails.deleteModel");
   const isComplexityRouterModel = isComplexityRouterParams(modelData?.litellm_params);
 
   const usingExistingCredential =
@@ -228,21 +229,10 @@ export default function ModelInfoView({
       }
     };
 
-    const fetchCredentials = async () => {
-      if (!accessToken) return;
-      try {
-        const response = await credentialListCall(accessToken);
-        setCredentialsList(response.credentials || []);
-      } catch (error) {
-        console.error("Failed to fetch credentials:", error);
-      }
-    };
-
     getExistingCredential();
     getModelInfo();
     fetchGuardrails();
     fetchTags();
-    fetchCredentials();
   }, [accessToken, modelId]);
 
   const handleReuseCredential = async (values: any) => {
@@ -260,172 +250,21 @@ export default function ModelInfoView({
   };
 
   const handleModelUpdate = async (
-    values: ModelEditFormValues,
+    values: ModelFormValues,
     isFieldTouched: (field: TouchedPricingField) => boolean,
   ) => {
+    if (!accessToken || !localModelData) return;
+    setIsSaving(true);
     try {
-      if (!accessToken) return;
-      setIsSaving(true);
-
-      // Parse LiteLLM extra params from JSON text area
-      let parsedExtraParams: Record<string, any> = {};
-      try {
-        parsedExtraParams = values.litellm_extra_params ? JSON.parse(values.litellm_extra_params) : {};
-        delete parsedExtraParams.litellm_credential_name;
-      } catch (e) {
-        toast.fromError("Invalid JSON in Nexoplane Params");
-        setIsSaving(false);
-        return;
-      }
-
-      let updatedLitellmParams: Record<string, any> = {
-        ...parsedExtraParams,
-        model: values.litellm_model_name,
-        api_base: values.api_base,
-        custom_llm_provider: values.custom_llm_provider,
-        organization: values.organization,
-        tpm: values.tpm,
-        rpm: values.rpm,
-        max_retries: values.max_retries,
-        timeout: values.timeout,
-        stream_timeout: values.stream_timeout,
-        tags: values.tags,
-      };
-
-      if (isFieldTouched("input_cost")) {
-        if (values.input_cost !== undefined && values.input_cost !== null && values.input_cost !== "") {
-          updatedLitellmParams.input_cost_per_token = Number(values.input_cost) / 1_000_000;
-        } else {
-          // Explicit null signals the backend to remove the pricing override.
-          updatedLitellmParams.input_cost_per_token = null;
-        }
-      }
-      if (isFieldTouched("output_cost")) {
-        if (values.output_cost !== undefined && values.output_cost !== null && values.output_cost !== "") {
-          updatedLitellmParams.output_cost_per_token = Number(values.output_cost) / 1_000_000;
-        } else {
-          updatedLitellmParams.output_cost_per_token = null;
-        }
-      }
-
-      // Cache Read Cost:
-      //   - explicit value provided → use it
-      //   - field touched but empty → explicit null (signals backend to remove override)
-      //   - only input_cost touched → fall back to input_cost (guarded against null)
-      if (isFieldTouched("cache_read_cost") || isFieldTouched("input_cost")) {
-        if (values.cache_read_cost !== undefined && values.cache_read_cost !== null && values.cache_read_cost !== "") {
-          updatedLitellmParams.cache_read_input_token_cost = Number(values.cache_read_cost) / 1_000_000;
-        } else if (isFieldTouched("cache_read_cost")) {
-          updatedLitellmParams.cache_read_input_token_cost = null;
-        } else if (
-          updatedLitellmParams.input_cost_per_token !== undefined &&
-          updatedLitellmParams.input_cost_per_token !== null
-        ) {
-          updatedLitellmParams.cache_read_input_token_cost = updatedLitellmParams.input_cost_per_token;
-        }
-      }
-
-      // Cache Write Cost: explicit value if provided, else explicit null so the
-      // backend removes the override and falls back to the model-level default.
-      // Sending 0 here would persist a zero rate even when the user intended to unset it.
-      if (isFieldTouched("cache_write_cost")) {
-        if (
-          values.cache_write_cost !== undefined &&
-          values.cache_write_cost !== null &&
-          values.cache_write_cost !== ""
-        ) {
-          updatedLitellmParams.cache_creation_input_token_cost = Number(values.cache_write_cost) / 1_000_000;
-        } else {
-          updatedLitellmParams.cache_creation_input_token_cost = null;
-        }
-      }
-
-      const storedCredentialName: string | null = localModelData?.litellm_params?.litellm_credential_name ?? null;
-      const selectedCredentialName: string | null = values.litellm_credential_name ?? null;
-      if (selectedCredentialName !== storedCredentialName) {
-        updatedLitellmParams.litellm_credential_name = selectedCredentialName;
-      } else {
-        delete updatedLitellmParams.litellm_credential_name;
-      }
-      if (values.guardrails) {
-        updatedLitellmParams.guardrails = values.guardrails;
-      }
-      if ((values.vector_store_ids?.length ?? 0) > 0) {
-        updatedLitellmParams.vector_store_ids = values.vector_store_ids;
-      } else if (values.vector_store_ids !== undefined) {
-        // User explicitly cleared previously-set vector stores — send [] to clear on backend
-        updatedLitellmParams.vector_store_ids = [];
-      } else {
-        delete updatedLitellmParams.vector_store_ids;
-      }
-
-      // Handle cache control settings
-      const hadInjectionPoints = Boolean(localModelData?.litellm_params?.cache_control_injection_points);
-      if (values.cache_control && (values.cache_control_injection_points?.length ?? 0) > 0) {
-        updatedLitellmParams.cache_control_injection_points = values.cache_control_injection_points;
-      } else if (hadInjectionPoints) {
-        updatedLitellmParams.cache_control_injection_points = null;
-      } else {
-        delete updatedLitellmParams.cache_control_injection_points;
-      }
-
-      // Parse the model_info from the form values
-      let updatedModelInfo;
-      try {
-        updatedModelInfo = values.model_info ? JSON.parse(values.model_info) : modelData?.model_info;
-        // Update access_groups from the form
-        if (values.model_access_group) {
-          updatedModelInfo = {
-            ...updatedModelInfo,
-            access_groups: values.model_access_group,
-          };
-        }
-        // Override health_check_model from the form
-        if (values.health_check_model !== undefined) {
-          updatedModelInfo = {
-            ...updatedModelInfo,
-            health_check_model: values.health_check_model,
-          };
-        }
-        if (values.team_id) updatedModelInfo = { ...updatedModelInfo, team_id: values.team_id };
-        updatedModelInfo = applyPtuModelInfo(updatedModelInfo, values, ptuCostAttributionEnabled);
-      } catch (e) {
-        toast.fromError("Invalid JSON in Model Info");
-        return;
-      }
-
-      // Final guard: never PATCH a redacted secret. The /model/info snapshot that
-      // seeds this form masks secrets, and any save re-sends the whole params blob;
-      // without this strip a masked value would be re-encrypted over the real secret.
-      // Credential rotation has its own dedicated path (UpdateModelCredentialsModal).
-      const safeLitellmParams = stripMaskedSecrets(updatedLitellmParams);
-      const { litellm_credential_name: _sentCredential, ...localLitellmParams } = safeLitellmParams;
-
-      const updateData = {
-        model_name: values.model_name,
-        litellm_params: safeLitellmParams,
-        model_info: updatedModelInfo,
-      };
-
-      await modelPatchUpdateCall(accessToken, updateData, modelId);
-
-      const updatedModelData = {
-        ...localModelData,
-        model_name: values.model_name,
-        litellm_model_name: values.litellm_model_name,
-        litellm_params:
-          selectedCredentialName === null
-            ? localLitellmParams
-            : { ...localLitellmParams, litellm_credential_name: selectedCredentialName },
-        model_info: updatedModelInfo,
-      };
-
-      setLocalModelData(updatedModelData);
-
-      if (onModelUpdate) {
-        onModelUpdate(updatedModelData);
-      }
-
+      const update = buildModelUpdatePayload({
+        model: localModelData,
+        values,
+        isFieldTouched,
+        ptuCostAttributionEnabled,
+      });
+      await modelPatchUpdateCall(accessToken, update.patch, modelId);
+      setLocalModelData(update.updatedModel);
+      onModelUpdate?.(update.updatedModel);
       toast.success("Model settings updated successfully");
       setIsEditing(false);
     } catch (error) {
@@ -442,9 +281,9 @@ export default function ModelInfoView({
       <div className="p-4">
         <Button variant="ghost" onClick={onClose} className="mb-4">
           <ArrowLeft className="size-4" />
-          Back to Models
+          {t("models.modelDetails.back")}
         </Button>
-        <p className="text-sm">Loading...</p>
+        <p className="text-sm">{t("models.modelDetails.loading")}</p>
       </div>
     );
   }
@@ -455,9 +294,9 @@ export default function ModelInfoView({
       <div className="p-4">
         <Button variant="ghost" onClick={onClose} className="mb-4">
           <ArrowLeft className="size-4" />
-          Back to Models
+          {t("models.modelDetails.back")}
         </Button>
-        <p className="text-sm">Model not found</p>
+        <p className="text-sm">{t("models.modelDetails.notFound")}</p>
       </div>
     );
   }
@@ -566,9 +405,9 @@ export default function ModelInfoView({
         <div>
           <Button variant="ghost" onClick={onClose} className="mb-4">
             <ArrowLeft className="size-4" />
-            Back to Models
+            {t("models.modelDetails.back")}
           </Button>
-          <h2 className="text-xl font-semibold">Public Model Name: {getDisplayModelName(modelData)}</h2>
+          <h2 className="text-xl font-semibold">{t("models.modelDetails.publicName", { name: getDisplayModelName(modelData) })}</h2>
           <div className="flex items-center cursor-pointer">
             <span className="text-sm text-muted-foreground font-mono">{modelData.model_info.id}</span>
             <Button
@@ -595,7 +434,7 @@ export default function ModelInfoView({
               data-testid="test-connection-button"
             >
               <RefreshIcon className="h-4 w-4" />
-              Test Connection
+              {t("models.modelDetails.testConnection")}
             </Button>
           )}
 
@@ -710,7 +549,7 @@ export default function ModelInfoView({
             {/* Settings Card */}
             <Card className="block p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Model Settings</h3>
+                <h3 className="text-lg font-medium">{t("models.modelDetails.settings")}</h3>
                 <div className="flex gap-2">
                   {isAutoRouterModel && canEditRouter && !isEditing && (
                     <Button onClick={() => setIsAutoRouterModalOpen(true)} className="flex items-center">
