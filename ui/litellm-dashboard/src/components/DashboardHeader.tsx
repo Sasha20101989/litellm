@@ -8,7 +8,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ToolbarSeparator } from "@/components/shared/ToolbarSeparator";
-import { getBreadcrumb } from "@/components/leftnav";
+import { getBreadcrumb, getBreadcrumbItemKey } from "@/components/leftnav";
 import { BlogDropdown } from "@/components/Navbar/BlogDropdown/BlogDropdown";
 import { DocsLink } from "@/components/Navbar/DocsLink/DocsLink";
 import { CommunityEngagementButtons } from "@/components/Navbar/CommunityEngagementButtons/CommunityEngagementButtons";
@@ -28,7 +28,9 @@ import { useTranslation } from "react-i18next";
 // lives in the sidebar header); mirrors the design's breadcrumb-left / tools-right layout.
 export function DashboardHeader() {
   const { t } = useTranslation("navigation");
-  const { title, itemKey } = getBreadcrumb(usePathname());
+  const pathname = usePathname();
+  const { title } = getBreadcrumb(pathname);
+  const itemKey = getBreadcrumbItemKey(pathname);
   const translatedTitle = itemKey ? t(`sidebar.items.${itemKey}`, { defaultValue: title }) : title;
   const { isControlPlane, selectedWorker } = useWorker();
   const showWorkerSwitch = isControlPlane && selectedWorker !== null;

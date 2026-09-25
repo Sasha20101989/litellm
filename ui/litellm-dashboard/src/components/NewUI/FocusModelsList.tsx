@@ -49,6 +49,8 @@ const MODEL_SORT_FIELDS = [
   "input_cost",
   "model_info_db_model",
 ] as const;
+type ModelSortField = (typeof MODEL_SORT_FIELDS)[number];
+
 const DEFAULT_FIELD_VISIBILITY: Record<FocusModelField, boolean> = {
   team: true,
   source: true,

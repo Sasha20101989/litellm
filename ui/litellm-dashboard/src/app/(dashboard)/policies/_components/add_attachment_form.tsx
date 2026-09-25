@@ -489,7 +489,7 @@ const AddAttachmentForm: React.FC<AddAttachmentFormProps> = ({
               </FormField>
             </FieldGroup>
 
-            {impactResult && <ImpactPreviewAlert impactResult={impactResult} isDefault={form.watch("default")} />}
+            {impactResult && <ImpactPreviewAlert impactResult={impactResult} />}
 
             <div className="flex justify-end space-x-2 mt-4">
               <Button type="button" variant="secondary" onClick={handleClose}>

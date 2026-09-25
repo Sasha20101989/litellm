@@ -420,6 +420,18 @@ export const getBreadcrumb = (pathname: string): { section: string | null; title
   return { section: null, title: prettify(route) };
 };
 
+export const getBreadcrumbItemKey = (pathname: string): string | null => {
+  const route = routeForPathname(pathname);
+  for (const group of menuGroups) {
+    for (const item of group.items) {
+      if (routeOf(item) === route) return item.key;
+      const child = item.children?.find((candidate) => routeOf(candidate) === route);
+      if (child) return child.key;
+    }
+  }
+  return null;
+};
+
 const Sidebar_: React.FC<SidebarProps> = ({
   collapsed = false,
   onToggleCollapsed,

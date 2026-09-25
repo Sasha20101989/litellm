@@ -75,7 +75,10 @@ const SpendRow: React.FC<{ label: string; value: string; hint?: string; subdued?
 const HeroCard: React.FC<{ view: BenchmarkView }> = ({ view }) => {
   const { t } = useTranslation("gateway");
   const stats = view.stats;
-  const cheaper = stats.saved_spend >= 0;
+  const savedSpend = stats.saved_spend;
+  const savedPct = stats.saved_pct;
+  const savings = savedSpend != null && savedPct != null ? { savedSpend, savedPct } : null;
+  const cheaper = savings != null && savings.savedSpend >= 0;
   return (
     <Card className="overflow-hidden py-0">
       <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -85,15 +88,17 @@ const HeroCard: React.FC<{ view: BenchmarkView }> = ({ view }) => {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <p className="min-w-0 break-all text-center text-4xl font-semibold tracking-tight text-foreground xl:text-6xl">
-              {usd(stats.saved_spend)}
+              {savings == null ? t("virtualKeys.sharedDetails.unavailable") : usd(savings.savedSpend)}
             </p>
-            <Badge
-              variant="secondary"
-              className={`h-6 px-2.5 text-sm ${cheaper ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}
-            >
-              {stats.saved_spend !== 0 && (cheaper ? "-" : "+")}
-              {Math.abs(stats.saved_pct).toFixed(0)}%
-            </Badge>
+            {savings != null && (
+              <Badge
+                variant="secondary"
+                className={`h-6 px-2.5 text-sm ${cheaper ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}
+              >
+                {savings.savedSpend !== 0 && (cheaper ? "-" : "+")}
+                {Math.abs(savings.savedPct).toFixed(0)}%
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -132,7 +137,12 @@ const HeroCard: React.FC<{ view: BenchmarkView }> = ({ view }) => {
             </p>
           )}
           <Separator />
-          <SpendRow label={t("virtualKeys.sharedDetails.highestTierSpend")} value={usd(stats.baseline_spend)} />
+          <SpendRow
+            label={t("virtualKeys.sharedDetails.highestTierSpend")}
+            value={
+              stats.baseline_spend == null ? t("virtualKeys.sharedDetails.unavailable") : usd(stats.baseline_spend)
+            }
+          />
         </div>
       </div>
     </Card>
@@ -314,7 +324,9 @@ const BenchmarksBody: React.FC<BenchmarksBodyProps> = ({ isPending, error, data,
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
           label={t("virtualKeys.sharedDetails.avgSavedSession")}
-          value={usd(stats.saved_per_session)}
+          value={
+            stats.saved_per_session == null ? t("virtualKeys.sharedDetails.unavailable") : usd(stats.saved_per_session)
+          }
           hint={t("virtualKeys.sharedDetails.sessions", { count: stats.sessions })}
         />
         <Metric label={t("virtualKeys.sharedDetails.avgTurnsSession")} value={stats.avg_turns_per_session.toFixed(1)} />
