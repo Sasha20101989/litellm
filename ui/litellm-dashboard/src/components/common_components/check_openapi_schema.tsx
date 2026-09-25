@@ -25,12 +25,28 @@ interface OpenAPISchema {
   required?: string[];
 }
 
+interface SchemaFormFieldsText {
+  textInput: string;
+  numericInput: string;
+  wholeNumberInput: string;
+  booleanInput: string;
+  jsonInput: string;
+  jsonPlaceholder: string;
+  validJsonError: string;
+  requiredError: string;
+  errorPrefix: string;
+  selectOptions: string;
+  allowedValues: string;
+}
+
 interface SchemaFormFieldsProps {
   schemaComponent: string;
   excludedFields?: string[];
   setValue: UseFormSetValue<MountedFormValues>;
   overrideLabels?: { [key: string]: string };
   overrideTooltips?: { [key: string]: string };
+  overrideHelp?: { [key: string]: string };
+  text?: SchemaFormFieldsText;
   customValidation?: {
     [key: string]: (rule: unknown, value: unknown) => Promise<void>;
   };
@@ -67,15 +83,42 @@ const toSchemaNumber = (raw: string, isInteger: boolean): number | null => {
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
-const getFieldHelp = (key: string, property: SchemaProperty, type: string): string => {
+const DEFAULT_TEXT: SchemaFormFieldsText = {
+  textInput: "Text input",
+  numericInput: "Numeric input",
+  wholeNumberInput: "Whole number input",
+  booleanInput: "True/False value",
+  jsonInput: "Must be valid JSON format",
+  jsonPlaceholder: "Enter as JSON",
+  validJsonError: "Please enter valid JSON",
+  requiredError: "is required",
+  errorPrefix: "Error",
+  selectOptions: "Select from available options",
+  allowedValues: "Allowed values",
+};
+
+const getFieldHelp = ({
+  key,
+  property,
+  type,
+  overrideHelp,
+  text,
+}: {
+  key: string;
+  property: SchemaProperty;
+  type: string;
+  overrideHelp: Record<string, string>;
+  text: SchemaFormFieldsText;
+}): string => {
+  if (overrideHelp[key]) return overrideHelp[key];
   // Default help text based on type
   const defaultHelp =
     {
-      string: "Text input",
-      number: "Numeric input",
-      integer: "Whole number input",
-      boolean: "True/False value",
-    }[type] || "Text input";
+      string: text.textInput,
+      number: text.numericInput,
+      integer: text.wholeNumberInput,
+      boolean: text.booleanInput,
+    }[type] || text.textInput;
 
   // Specific field help text
   const specificHelp: { [key: string]: string } = {
@@ -100,11 +143,11 @@ const getFieldHelp = (key: string, property: SchemaProperty, type: string): stri
 
   // Add format requirements for special cases
   if (isJSONField(key, property)) {
-    return `${helpText}\nMust be valid JSON format`;
+    return `${helpText}\n${text.jsonInput}`;
   }
 
   if (property.enum) {
-    return `Select from available options\nAllowed values: ${property.enum.join(", ")}`;
+    return `${text.selectOptions}\n${text.allowedValues}: ${property.enum.join(", ")}`;
   }
 
   return helpText;
@@ -116,6 +159,8 @@ const SchemaFormFields: React.FC<SchemaFormFieldsProps> = ({
   setValue,
   overrideLabels = {},
   overrideTooltips = {},
+  overrideHelp = {},
+  text = DEFAULT_TEXT,
   customValidation = {},
   defaultValues = {},
 }) => {
@@ -169,7 +214,7 @@ const SchemaFormFields: React.FC<SchemaFormFieldsProps> = ({
 
     const validate = {
       ...(isRequired && {
-        required: (value: unknown) => (isBlank(value) ? `${label} is required` : true),
+        required: (value: unknown) => (isBlank(value) ? `${label} ${text.requiredError}` : true),
       }),
       ...(customValidation[key] && {
         custom: async (value: unknown) => {
@@ -182,8 +227,7 @@ const SchemaFormFields: React.FC<SchemaFormFieldsProps> = ({
         },
       }),
       ...(isJSONField(key, property) && {
-        json: (value: unknown) =>
-          value && !validateJSON(value as string) ? "Please enter valid JSON" : (true as const),
+        json: (value: unknown) => (value && !validateJSON(value as string) ? text.validJsonError : (true as const)),
       }),
     };
 
@@ -207,7 +251,11 @@ const SchemaFormFields: React.FC<SchemaFormFieldsProps> = ({
         required={isRequired}
         rules={Object.keys(validate).length > 0 ? { validate } : undefined}
         defaultValue={defaultValues[key]}
-        help={<div className="text-xs text-muted-foreground">{getFieldHelp(key, property, type)}</div>}
+        help={
+          <div className="text-xs text-muted-foreground">
+            {getFieldHelp({ key, property, type, overrideHelp, text })}
+          </div>
+        }
       >
         {(control) => {
           if (isJSONField(key, property)) {
@@ -216,7 +264,7 @@ const SchemaFormFields: React.FC<SchemaFormFieldsProps> = ({
                 {...control}
                 value={control.value as string | undefined}
                 rows={4}
-                placeholder="Enter as JSON"
+                placeholder={text.jsonPlaceholder}
                 className="font-mono"
               />
             );
@@ -266,7 +314,11 @@ const SchemaFormFields: React.FC<SchemaFormFieldsProps> = ({
   };
 
   if (error) {
-    return <div className="text-destructive">Error: {error}</div>;
+    return (
+      <div className="text-destructive">
+        {text.errorPrefix}: {error}
+      </div>
+    );
   }
 
   if (!schemaProperties?.properties) {

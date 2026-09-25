@@ -1,16 +1,16 @@
 "use client";
 
-import LanguageSelector from "@/components/LanguageSelector/LanguageSelector";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/localStorageUtils";
 import { uiHref } from "@/utils/uiHref";
-import { KeyRound, Menu, Moon, Network, Sun } from "lucide-react";
+import { KeyRound, Menu, Network } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FocusAddModelPanel } from "./FocusAddModelPanel";
+import { FocusAppearanceControls } from "./FocusAppearanceControls";
 import { FocusModelsList } from "./FocusModelsList";
 
 type FocusTheme = "light" | "dark";
@@ -131,19 +131,12 @@ export default function FocusModelsAndEndpointsPage() {
             <h1 className="text-2xl font-bold tracking-tight">{t("focusModelsAndEndpoints.title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t("focusModelsAndEndpoints.subtitle")}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <LanguageSelector />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-              aria-label={
-                theme === "dark" ? t("focusModelsAndEndpoints.theme.light") : t("focusModelsAndEndpoints.theme.dark")
-              }
-            >
-              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </Button>
-          </div>
+          <FocusAppearanceControls
+            theme={theme}
+            lightThemeLabel={t("focusModelsAndEndpoints.theme.light")}
+            darkThemeLabel={t("focusModelsAndEndpoints.theme.dark")}
+            onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+          />
         </header>
         <Tabs defaultValue="models" className="mt-5 gap-5">
           <div className="min-w-0 border-b border-border">

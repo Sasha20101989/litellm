@@ -420,6 +420,56 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
   // Check if team selection is required
   const isTeamSelectionRequired = modelsToPick.includes("no-default-models");
   const isFormDisabled = isTeamSelectionRequired && !selectedCreateKeyTeam;
+  const advancedFieldLabels: Record<string, string> = {
+    spend: t("virtualKeys.createKey.optional.advancedSpend"),
+    user_id: t("virtualKeys.createKey.optional.advancedUserId"),
+    agent_id: t("virtualKeys.createKey.optional.advancedAgentId"),
+    max_parallel_requests: t("virtualKeys.createKey.optional.advancedMaxParallelRequests"),
+    budget_limits: t("virtualKeys.createKey.optional.advancedBudgetLimits"),
+    allowed_cache_controls: t("virtualKeys.createKey.optional.advancedAllowedCacheControls"),
+    config: t("virtualKeys.createKey.optional.advancedConfig"),
+    permissions: t("virtualKeys.createKey.optional.advancedPermissions"),
+    model_max_budget: t("virtualKeys.createKey.optional.advancedModelMaxBudget"),
+    budget_fallbacks: t("virtualKeys.createKey.optional.advancedBudgetFallbacks"),
+    model_rpm_limit: t("virtualKeys.createKey.optional.advancedModelRpmLimit"),
+    model_tpm_limit: t("virtualKeys.createKey.optional.advancedModelTpmLimit"),
+    mcp_rpm_limit: t("virtualKeys.createKey.optional.advancedMcpRpmLimit"),
+    tag_rpm_limit: t("virtualKeys.createKey.optional.advancedTagRpmLimit"),
+    policies: t("virtualKeys.createKey.optional.advancedPolicies"),
+    prompts: t("virtualKeys.createKey.optional.advancedPrompts"),
+    blocked: t("virtualKeys.createKey.optional.advancedBlocked"),
+    aliases: t("virtualKeys.createKey.optional.advancedAliases"),
+    object_permission: t("virtualKeys.createKey.optional.advancedObjectPermission"),
+    key: t("virtualKeys.createKey.optional.advancedCustomKey"),
+    default_estimated_output_tokens: t("virtualKeys.createKey.optional.advancedEstimatedOutputTokens"),
+    default_estimated_output_tokens_per_model: t(
+      "virtualKeys.createKey.optional.advancedEstimatedOutputTokensPerModel",
+    ),
+    budget_id: t("virtualKeys.createKey.optional.advancedBudgetId"),
+    disable_global_guardrails: t("virtualKeys.createKey.optional.advancedDisableGlobalGuardrails"),
+    enable_prompt_caching: t("virtualKeys.createKey.optional.advancedEnablePromptCaching"),
+    throttle_on_budget_exceeded: t("virtualKeys.createKey.optional.advancedThrottleOnBudgetExceeded"),
+    enforced_params: t("virtualKeys.createKey.optional.advancedEnforcedParams"),
+    allowed_routes: t("virtualKeys.createKey.optional.advancedAllowedRoutes"),
+    allowed_passthrough_routes: t("virtualKeys.createKey.optional.advancedAllowedPassthroughRoutes"),
+    allowed_vector_store_indexes: t("virtualKeys.createKey.optional.advancedVectorStoreIndexes"),
+    rpm_limit_type: t("virtualKeys.createKey.optional.advancedRpmLimitType"),
+    tpm_limit_type: t("virtualKeys.createKey.optional.advancedTpmLimitType"),
+    router_settings: t("virtualKeys.createKey.optional.advancedRouterSettings"),
+    access_group_ids: t("virtualKeys.createKey.optional.advancedAccessGroupIds"),
+    soft_budget: t("virtualKeys.createKey.optional.advancedSoftBudget"),
+    send_invite_email: t("virtualKeys.createKey.optional.advancedSendInviteEmail"),
+    key_type: t("virtualKeys.createKey.optional.advancedKeyType"),
+    auto_rotate: t("virtualKeys.createKey.optional.advancedAutoRotate"),
+    rotation_interval: t("virtualKeys.createKey.optional.advancedRotationInterval"),
+    project_id: t("virtualKeys.createKey.optional.advancedProjectId"),
+  };
+  const advancedFieldHelp: Record<string, string> = Object.fromEntries(
+    Object.keys(advancedFieldLabels).map((field) => [
+      field,
+      t(`virtualKeys.createKey.optional.advancedFieldHelp.${field}`),
+    ]),
+  );
 
   const handleCreate = async (formValues: MountedFormValues) => {
     try {
@@ -679,9 +729,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
             <form onSubmit={handleSubmit}>
               {/* Section 1: Key Ownership */}
               <div className="mb-8">
-                <h3 className="text-lg font-medium text-foreground mb-4">
-                  {t("virtualKeys.createKey.ownership")}
-                </h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">{t("virtualKeys.createKey.ownership")}</h3>
                 <Field className="mb-4">
                   <FieldLabel>
                     <span>
@@ -730,10 +778,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                     name="user_id"
                     className="mt-4"
                     required
-                    rules={requiredRule(
-                      keyOwner === "another_user",
-                      t("virtualKeys.createKey.userIdRequired"),
-                    )}
+                    rules={requiredRule(keyOwner === "another_user", t("virtualKeys.createKey.userIdRequired"))}
                   >
                     {(control) => (
                       <div>
@@ -779,9 +824,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                         value: a.agent_id,
                       }))}
                     />
-                    <div className="text-xs text-muted-foreground mt-2">
-                      {t("virtualKeys.createKey.agentHint")}
-                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">{t("virtualKeys.createKey.agentHint")}</div>
                   </div>
                 )}
                 <MountedFormField
@@ -863,18 +906,14 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
               {/* Show message when team selection is required */}
               {isFormDisabled && (
                 <div className="mb-8 p-4 bg-info/10 border border-info/20 rounded-md">
-                  <p className="text-info text-sm">
-                    {t("virtualKeys.createKey.selectTeamMessage")}
-                  </p>
+                  <p className="text-info text-sm">{t("virtualKeys.createKey.selectTeamMessage")}</p>
                 </div>
               )}
 
               {/* Section 2: Key Details */}
               {!isFormDisabled && (
                 <div className="mb-8">
-                  <h3 className="text-lg font-medium text-foreground mb-4">
-                    {t("virtualKeys.createKey.details")}
-                  </h3>
+                  <h3 className="text-lg font-medium text-foreground mb-4">{t("virtualKeys.createKey.details")}</h3>
                   <MountedFormField
                     label={
                       <span>
@@ -1013,12 +1052,10 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                               ? team.max_budget
                               : t("virtualKeys.createKey.optional.unlimited"),
                         })}
-                        rules={ceilingRule(
-                          team?.max_budget,
-                          (limit) =>
-                            t("virtualKeys.createKey.optional.teamMaxBudget", {
-                              value: formatNumberWithCommas(limit, 4),
-                            }),
+                        rules={ceilingRule(team?.max_budget, (limit) =>
+                          t("virtualKeys.createKey.optional.teamMaxBudget", {
+                            value: formatNumberWithCommas(limit, 4),
+                          }),
                         )}
                       >
                         {(control) => (
@@ -1119,9 +1156,8 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                               ? team.tpm_limit
                               : t("virtualKeys.createKey.optional.unlimited"),
                         })}
-                        rules={ceilingRule(
-                          team?.tpm_limit,
-                          (limit) => t("virtualKeys.createKey.optional.tpmValidation", { value: limit }),
+                        rules={ceilingRule(team?.tpm_limit, (limit) =>
+                          t("virtualKeys.createKey.optional.tpmValidation", { value: limit }),
                         )}
                       >
                         {(control) => (
@@ -1165,9 +1201,8 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                               ? team.rpm_limit
                               : t("virtualKeys.createKey.optional.unlimited"),
                         })}
-                        rules={ceilingRule(
-                          team?.rpm_limit,
-                          (limit) => t("virtualKeys.createKey.optional.rpmValidation", { value: limit }),
+                        rules={ceilingRule(team?.rpm_limit, (limit) =>
+                          t("virtualKeys.createKey.optional.rpmValidation", { value: limit }),
                         )}
                       >
                         {(control) => (
@@ -1211,9 +1246,8 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                               ? team.tpd_limit
                               : t("virtualKeys.createKey.optional.unlimited"),
                         })}
-                        rules={ceilingRule(
-                          team?.tpd_limit,
-                          (limit) => t("virtualKeys.createKey.optional.tpdValidation", { value: limit }),
+                        rules={ceilingRule(team?.tpd_limit, (limit) =>
+                          t("virtualKeys.createKey.optional.tpdValidation", { value: limit }),
                         )}
                       >
                         {(control) => (
@@ -1821,6 +1855,22 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                           <SchemaFormFields
                             schemaComponent="GenerateKeyRequest"
                             setValue={form.setValue}
+                            overrideLabels={advancedFieldLabels}
+                            overrideTooltips={advancedFieldHelp}
+                            overrideHelp={advancedFieldHelp}
+                            text={{
+                              textInput: t("virtualKeys.createKey.optional.textInput"),
+                              numericInput: t("virtualKeys.createKey.optional.numericInput"),
+                              wholeNumberInput: t("virtualKeys.createKey.optional.wholeNumberInput"),
+                              booleanInput: t("virtualKeys.createKey.optional.advancedBooleanInput"),
+                              jsonInput: t("virtualKeys.createKey.optional.jsonInput"),
+                              jsonPlaceholder: t("virtualKeys.createKey.optional.jsonPlaceholder"),
+                              validJsonError: t("virtualKeys.createKey.optional.validJsonError"),
+                              requiredError: t("virtualKeys.createKey.optional.requiredError"),
+                              errorPrefix: t("virtualKeys.createKey.optional.errorPrefix"),
+                              selectOptions: t("virtualKeys.createKey.optional.selectOptions"),
+                              allowedValues: t("virtualKeys.createKey.optional.allowedValues"),
+                            }}
                             excludedFields={[
                               "key_alias",
                               "team_id",

@@ -41,17 +41,16 @@ import {
   KeyRound,
   Loader2,
   Menu,
-  Moon,
   Network,
   RefreshCw,
   Search,
-  Sun,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { parseAsString, useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FocusAppearanceControls } from "./FocusAppearanceControls";
 import { FocusSelectedKeyState, FocusVisibilityMenu } from "./FocusVisibilityMenu";
 
 const FILTER_COLUMNS = ["team_id", "org_id", "user_id", "key_hash", "status"] as const;
@@ -236,10 +235,7 @@ function KeyRow({
               .map(([field, label, value]) => (
                 <div key={field} className="min-w-0">
                   <dt className="text-[11px] text-muted-foreground">{label}</dt>
-                  <dd
-                    className={`mt-0.5 text-sm ${budgetTextClass(field, budgetState)}`}
-                    title={value}
-                  >
+                  <dd className={`mt-0.5 text-sm ${budgetTextClass(field, budgetState)}`} title={value}>
                     <span className="truncate">{value}</span>
                     {field === "spendBudget" && budgetState && (
                       <span className="ml-2 whitespace-nowrap text-xs font-medium">
@@ -496,10 +492,17 @@ function FocusVirtualKeysPage() {
         <SheetContent side="left" className="w-72 p-4" showCloseButton>
           <SheetTitle>{t("focusKeys.title")}</SheetTitle>
           <nav className="mt-4" aria-label={t("focusKeys.title")}>
-            <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary" aria-current="page"><KeyRound className="size-4" />
+            <div
+              className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary"
+              aria-current="page"
+            >
+              <KeyRound className="size-4" />
               {t("focusKeys.title")}
             </div>
-            <Link href={uiHref("new-ui/models-and-endpoints")} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">
+            <Link
+              href={uiHref("new-ui/models-and-endpoints")}
+              className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
               <Network className="size-4" /> {t("focusKeys.navigation.modelsAndEndpoints")}
             </Link>
           </nav>
@@ -518,16 +521,13 @@ function FocusVirtualKeysPage() {
                 <p className="mt-1 text-sm text-muted-foreground">{t("focusKeys.subtitle")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <div className="hidden lg:block">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-                    aria-label={theme === "dark" ? t("focusKeys.theme.light") : t("focusKeys.theme.dark")}
-                  >
-                    {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                  </Button>
-                </div>
+                <FocusAppearanceControls
+                  theme={theme}
+                  lightThemeLabel={t("focusKeys.theme.light")}
+                  darkThemeLabel={t("focusKeys.theme.dark")}
+                  onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+                  className="hidden lg:flex"
+                />
                 {!isViewOnly && (
                   <CreateKey
                     team={null}
@@ -594,9 +594,9 @@ function FocusVirtualKeysPage() {
                   if (id) onSortingChange([{ id, desc: sort.desc }]);
                 }}
               >
-              <SelectTrigger size="sm" aria-label={t("focusKeys.sort.label")}>
-                <SelectValue>{sortLabels[sort.id]}</SelectValue>
-              </SelectTrigger>
+                <SelectTrigger size="sm" aria-label={t("focusKeys.sort.label")}>
+                  <SelectValue>{sortLabels[sort.id]}</SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {SORT_FIELDS.map((field) => (
                     <SelectItem key={field} value={field}>
@@ -685,40 +685,40 @@ function FocusVirtualKeysPage() {
 
         {selectedKeyId && (
           <section className="min-w-0">
-          {selectedKeyId && !selectedKey && !selectedKeyLoadFailed && (
-            <FocusSelectedKeyState onBack={() => void setSelectedKeyId(null)}>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              {t("focusKeys.loadingKey")}
-            </FocusSelectedKeyState>
-          )}
-          {selectedKeyId && selectedKeyLoadFailed && (
-            <FocusSelectedKeyState error onBack={() => void setSelectedKeyId(null)}>
-              {t("focusKeys.keyNotFound")}
-            </FocusSelectedKeyState>
-          )}
-          {selectedKey && (
-            <div className="min-h-screen overflow-auto p-3 sm:p-5">
+            {selectedKeyId && !selectedKey && !selectedKeyLoadFailed && (
+              <FocusSelectedKeyState onBack={() => void setSelectedKeyId(null)}>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                {t("focusKeys.loadingKey")}
+              </FocusSelectedKeyState>
+            )}
+            {selectedKeyId && selectedKeyLoadFailed && (
+              <FocusSelectedKeyState error onBack={() => void setSelectedKeyId(null)}>
+                {t("focusKeys.keyNotFound")}
+              </FocusSelectedKeyState>
+            )}
+            {selectedKey && (
+              <div className="min-h-screen overflow-auto p-3 sm:p-5">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="mb-3 ml-12 lg:hidden"
                   onClick={() => void setSelectedKeyId(null)}
                 >
-                <ArrowLeft className="size-4" />
-                {t("focusKeys.back")}
-              </Button>
-              <KeyInfoView
-                key={selectedKeyId ?? selectedKey.token}
-                keyId={selectedKeyId ?? selectedKey.token}
-                keyData={selectedKey}
-                teams={teams}
-                onClose={() => void setSelectedKeyId(null)}
-                onDelete={() => void refresh()}
-                onKeyDataUpdate={updateSelectedKey}
-                backButtonText={t("focusKeys.back")}
-              />
-            </div>
-          )}
+                  <ArrowLeft className="size-4" />
+                  {t("focusKeys.back")}
+                </Button>
+                <KeyInfoView
+                  key={selectedKeyId ?? selectedKey.token}
+                  keyId={selectedKeyId ?? selectedKey.token}
+                  keyData={selectedKey}
+                  teams={teams}
+                  onClose={() => void setSelectedKeyId(null)}
+                  onDelete={() => void refresh()}
+                  onKeyDataUpdate={updateSelectedKey}
+                  backButtonText={t("focusKeys.back")}
+                />
+              </div>
+            )}
           </section>
         )}
       </div>
@@ -781,15 +781,13 @@ function FocusVirtualKeysPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Button
-        variant="outline"
-        size="icon"
+      <FocusAppearanceControls
+        theme={theme}
+        lightThemeLabel={t("focusKeys.theme.light")}
+        darkThemeLabel={t("focusKeys.theme.dark")}
+        onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         className="fixed bottom-4 right-4 z-raised lg:hidden"
-        onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-        aria-label={theme === "dark" ? t("focusKeys.theme.light") : t("focusKeys.theme.dark")}
-      >
-        {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-      </Button>
+      />
     </div>
   );
 }
