@@ -40,9 +40,9 @@ export default function ModelsAndEndpointsPage() {
       userID,
       isViewOnly,
       teams: teams ?? null,
-      disableModelAddForInternalUsers: uiSettings?.values?.disable_model_add_for_internal_users === true,
+      uiSettings: uiSettings ?? null,
     }),
-    [isViewOnly, teams, uiSettings?.values?.disable_model_add_for_internal_users, userID, userRole],
+    [isViewOnly, teams, uiSettings, userID, userRole],
   );
   const visibleSections = useMemo(() => getVisibleModelSections(sectionContext), [sectionContext]);
   const selectedSection = visibleSections.find((section) => section.id === activeKey) ?? visibleSections[0];

@@ -43,7 +43,7 @@ export interface ModelSectionContext {
   userID: string | null;
   isViewOnly: boolean;
   teams: ModelCreationLimits["teams"];
-  disableModelAddForInternalUsers: boolean;
+  uiSettings: { values?: { disable_model_add_for_internal_users?: boolean } } | null;
 }
 
 type ModelSectionRenderer = "default" | "focus";
@@ -64,7 +64,13 @@ const isInternalUser = (userRole: string | null): boolean =>
 
 const modelCreationLimits = (context: ModelSectionContext): ModelCreationLimits => ({
   teams: context.teams,
-  disabledForInternalUsers: context.disableModelAddForInternalUsers && isInternalUser(context.userRole),
+  disabledForInternalUsers:
+    isInternalUser(context.userRole) && context.uiSettings?.values?.disable_model_add_for_internal_users === true,
+});
+
+const autoRouterVisibilityLimits = (context: ModelSectionContext): ModelCreationLimits => ({
+  teams: context.teams,
+  disabledForInternalUsers: false,
 });
 
 const isAdmin = ({ userRole }: ModelSectionContext): boolean => all_admin_roles.includes(userRole ?? "");
@@ -127,7 +133,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
       isAdmin(context) ||
       autoRouterCreationScope(
         { userRole: context.userRole, userID: context.userID, isViewOnly: context.isViewOnly },
-        modelCreationLimits(context),
+        autoRouterVisibilityLimits(context),
       ) !== "forbidden",
     panel: AutoRoutersTabPanel,
     showBetaBadge: true,
