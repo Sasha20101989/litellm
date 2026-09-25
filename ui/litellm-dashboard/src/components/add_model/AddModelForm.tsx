@@ -296,7 +296,7 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                       <MountedFormField
                         label="Existing Credentials"
                         name="litellm_credential_name"
-                        defaultValue={null}
+                        defaultValue=""
                         className="mb-4"
                       >
                         {(control) => (
@@ -304,8 +304,8 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                             inputId={control.id}
                             placeholder="Select or search for existing credentials"
                             options={credentialOptions}
-                            value={(control.value as string | null | undefined) ?? ""}
-                            onValueChange={(value) => control.onChange(value === "" ? null : value)}
+                            value={(control.value as string | undefined) ?? ""}
+                            onValueChange={(value) => control.onChange(value ?? "")}
                           />
                         )}
                       </MountedFormField>
@@ -369,9 +369,9 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                           )}
                           name="team_id"
                           className="mb-4"
-                          required={isTeamOnly && !isAdmin}
+                          required={teamByok.teamSelectionRequired}
                           rules={
-                            isTeamOnly && !isAdmin
+                            teamByok.teamSelectionRequired
                               ? { validate: { required: requiredRule("Please select a team.") } }
                               : undefined
                           }

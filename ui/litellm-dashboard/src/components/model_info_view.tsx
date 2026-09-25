@@ -11,7 +11,11 @@ import { usePtuCostAttributionEnabled } from "@/app/(dashboard)/hooks/uiSettings
 import { ArrowLeft, CheckIcon, CopyIcon, Info } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { copyToClipboard as utilCopyToClipboard } from "../utils/dataUtils";
-import { buildModelUpdatePayload, type ModelFormValues, type TouchedPricingField } from "@/features/models-and-endpoints/modelFormContract";
+import {
+  buildModelUpdatePayload,
+  type ModelFormValues,
+  type TouchedPricingField,
+} from "@/features/models-and-endpoints/modelFormContract";
 import {
   loadModelCredentialCommand,
   reuseModelCredentialCommand,
@@ -79,6 +83,7 @@ export default function ModelInfoView({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [isCredentialModalOpen, setIsCredentialModalOpen] = useState(false);
   const [isUpdateCredentialsModalOpen, setIsUpdateCredentialsModalOpen] = useState(false);
+  const [shouldRefreshLocalModel, setShouldRefreshLocalModel] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [existingCredential, setExistingCredential] = useState<CredentialItem | null>(null);
@@ -129,6 +134,7 @@ export default function ModelInfoView({
   const rawModelData = modelData && { ...modelData, model_info: Object.fromEntries(rawModelInfoEntries) };
 
   const isAdmin = userRole === "Admin";
+  const canReuseCredentials = isAdmin && !isViewOnly;
   const actor = { userRole, userID, isViewOnly };
   const origin = {
     teamId: modelData?.model_info?.team_id,
@@ -144,16 +150,18 @@ export default function ModelInfoView({
   // Broader than the editor check: adaptive and quality routers equally have no upstream
   // credential, so the credential actions are meaningless for every auto-router strategy.
   const isAnyAutoRouter = isAutoRouterDeployment(modelData?.litellm_params);
-  const deleteLabel = isAnyAutoRouter ? t("models.modelDetails.deleteAutoRouter") : t("models.modelDetails.deleteModel");
+  const deleteLabel = isAnyAutoRouter
+    ? t("models.modelDetails.deleteAutoRouter")
+    : t("models.modelDetails.deleteModel");
   const isComplexityRouterModel = isComplexityRouterParams(modelData?.litellm_params);
 
   const usingExistingCredential =
     modelData?.litellm_params?.litellm_credential_name != null &&
     modelData?.litellm_params?.litellm_credential_name != undefined;
 
-  // Initialize localModelData from modelData when available
+  // Project the invalidated model query after credential reuse without overwriting local edit results.
   useEffect(() => {
-    if (modelData && !localModelData) {
+    if (modelData && (!localModelData || shouldRefreshLocalModel)) {
       let processedModelData = modelData;
       if (!processedModelData.litellm_model_name) {
         processedModelData = {
@@ -166,20 +174,21 @@ export default function ModelInfoView({
         };
       }
       setLocalModelData(processedModelData);
+      setShouldRefreshLocalModel(false);
 
       // Check if cache control is enabled
       if (processedModelData?.litellm_params?.cache_control_injection_points) {
         setShowCacheControl(true);
       }
     }
-  }, [modelData, localModelData]);
+  }, [localModelData, modelData, shouldRefreshLocalModel]);
 
   useEffect(() => {
     const getExistingCredential = async () => {
       if (!accessToken) return;
       if (usingExistingCredential) return;
       const result = await loadModelCredentialCommand({
-        access: { accessToken, canMutate: isAdmin, isViewOnly },
+        access: { accessToken, canMutate: canReuseCredentials, isViewOnly },
         modelId,
       });
       if (result.status === "blocked") return;
@@ -240,7 +249,7 @@ export default function ModelInfoView({
     getModelInfo();
     fetchGuardrails();
     fetchTags();
-  }, [accessToken, isAdmin, isViewOnly, modelData, modelId, usingExistingCredential]);
+  }, [accessToken, canReuseCredentials, isAdmin, isViewOnly, modelData, modelId, usingExistingCredential]);
 
   const handleReuseCredential = async (values: Record<string, unknown>) => {
     if (!accessToken || !localModelData) return;
@@ -254,6 +263,7 @@ export default function ModelInfoView({
     };
     const result = await reuseModelCredentialCommand(reuseRequest);
     if (result.status === "blocked") return;
+    setShouldRefreshLocalModel(true);
     toast.success("Credential stored successfully");
   };
 
@@ -422,7 +432,9 @@ export default function ModelInfoView({
             <ArrowLeft className="size-4" />
             {t("models.modelDetails.back")}
           </Button>
-          <h2 className="text-xl font-semibold">{t("models.modelDetails.publicName", { name: getDisplayModelName(modelData) })}</h2>
+          <h2 className="text-xl font-semibold">
+            {t("models.modelDetails.publicName", { name: getDisplayModelName(modelData) })}
+          </h2>
           <div className="flex items-center cursor-pointer">
             <span className="text-sm text-muted-foreground font-mono">{modelData.model_info.id}</span>
             <Button
@@ -470,7 +482,7 @@ export default function ModelInfoView({
                 variant="outline"
                 onClick={() => setIsCredentialModalOpen(true)}
                 className="flex items-center"
-                disabled={!isAdmin}
+                disabled={!canReuseCredentials}
                 data-testid="reuse-credentials-button"
               >
                 <KeyIcon className="h-4 w-4" />

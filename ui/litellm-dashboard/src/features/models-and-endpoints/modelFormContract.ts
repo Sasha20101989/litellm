@@ -80,9 +80,8 @@ export const MODEL_CREATE_DEFAULTS = {
   litellm_credential_name: "",
 } as const;
 
-/** Shell adapters intentionally retain legacy mounted-field semantics while sharing field identities. */
-export const modelCreateFormDefaults = (shell: "legacy" | "focus"): Record<string, unknown> =>
-  shell === "legacy" ? { litellm_credential_name: null } : { ...MODEL_CREATE_DEFAULTS };
+/** Canonical create defaults consumed by both legacy and Focus form shells. */
+export const modelCreateFormDefaults = (): Record<string, unknown> => ({ ...MODEL_CREATE_DEFAULTS });
 
 /** Renderer-neutral identities and defaults for both model form shells. */
 export const MODEL_FORM_FIELDS = {

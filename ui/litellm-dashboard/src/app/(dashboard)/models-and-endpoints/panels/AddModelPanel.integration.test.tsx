@@ -97,7 +97,7 @@ const advancedOpenExtras = {
   vector_store_ids: undefined,
 };
 
-const baseModelInfo = { access_groups: undefined, mode: undefined };
+const baseModelInfo = { access_groups: undefined, mode: "chat" };
 
 const { api_base: _omitted, ...ALWAYS_MOUNTED_WITHOUT_API_BASE } = alwaysMounted;
 
@@ -277,18 +277,15 @@ describe("AddModelPanel submit payload contract", () => {
     });
   });
 
-  it("mounts team_id only once the Team-BYOK switch is on", async () => {
-    const { user, fillRequired, submit } = await setup();
+  it("requires team_id once the Team-BYOK switch is on", async () => {
+    const { user, fillRequired } = await setup();
     await fillRequired();
     await user.click(screen.getByRole("switch", { name: "Team-BYOK Model" }));
     await screen.findByText("Select Team");
-    await submit();
+    await user.click(screen.getByTestId("add-model-btn"));
 
-    expect(lastCreatedModel()).toStrictEqual({
-      model_name: "gpt-4o",
-      litellm_params: { ...alwaysMounted },
-      model_info: { ...baseModelInfo, team_id: undefined },
-    });
+    expect(await screen.findByText("Please select a team.")).toBeInTheDocument();
+    expect(modelCreateCall).not.toHaveBeenCalled();
   });
 });
 

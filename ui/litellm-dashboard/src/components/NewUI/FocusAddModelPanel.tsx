@@ -33,7 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { modelCreationScope } from "@/utils/modelPermissions";
 import {
-  MODEL_CREATE_DEFAULTS,
+  modelCreateFormDefaults,
   teamByokPolicy,
   type ModelFormValidationMessages,
   validatePtuFormValues,
@@ -54,7 +54,7 @@ import {
 } from "./focusModelCreatePayload";
 
 const INITIAL_VALUES: MountedFormValues = {
-  ...MODEL_CREATE_DEFAULTS,
+  ...modelCreateFormDefaults(),
   custom_llm_provider: Providers.Anthropic,
 };
 
@@ -556,8 +556,12 @@ export function FocusAddModelPanel() {
                 <MountedFormField
                   name="team_id"
                   label={t("models.create.team")}
-                  required
-                  rules={{ validate: { required: required(t("models.create.validation.team")) } }}
+                  required={teamByok.teamSelectionRequired}
+                  rules={
+                    teamByok.teamSelectionRequired
+                      ? { validate: { required: required(t("models.create.validation.team")) } }
+                      : undefined
+                  }
                 >
                   {(control) => (
                     <TeamDropdown

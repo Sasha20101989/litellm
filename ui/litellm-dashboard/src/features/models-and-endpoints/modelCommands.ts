@@ -93,6 +93,6 @@ export async function reuseModelCredentialCommand({
     model_id: modelId,
     credential_info: { custom_llm_provider: provider },
   });
-  await invalidateCredentials(queryClient);
+  await Promise.all([invalidateCredentials(queryClient), invalidateModels(queryClient)]);
   return { status: "success", value: null };
 }

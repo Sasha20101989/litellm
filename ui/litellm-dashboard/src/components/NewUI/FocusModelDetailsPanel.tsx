@@ -2,14 +2,8 @@
 
 import ReuseCredentialsModal from "@/components/model_add/reuse_credentials";
 import { ModelData } from "@/components/model_dashboard/types";
-import {
-  CredentialItem,
-  testConnectionRequest,
-} from "@/components/networking";
-import {
-  loadModelCredentialCommand,
-  reuseModelCredentialCommand,
-} from "@/features/models-and-endpoints/modelCommands";
+import { CredentialItem, testConnectionRequest } from "@/components/networking";
+import { loadModelCredentialCommand, reuseModelCredentialCommand } from "@/features/models-and-endpoints/modelCommands";
 import UpdateModelCredentialsModal from "@/components/update_model_credentials_modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,6 +102,7 @@ export function FocusModelDetailsPanel({
   const [existingCredential, setExistingCredential] = useState<CredentialItem | null>(null);
   const [isLoadingCredential, setIsLoadingCredential] = useState(false);
   const queryClient = useQueryClient();
+  const canReuseCredentials = isProxyAdmin && !isViewOnly;
   const publicName = model?.model_name || model?.litellm_model_name || t("models.unknown");
   const handleCopyModelId = async () => {
     if (!(await copyToClipboard(modelId))) return;
@@ -145,11 +140,11 @@ export function FocusModelDetailsPanel({
     }
   };
   const openReuseCredentials = async () => {
-    if (!accessToken) return;
+    if (!accessToken || !canReuseCredentials) return;
     setIsLoadingCredential(true);
     try {
       const result = await loadModelCredentialCommand({
-        access: { accessToken, canMutate: isProxyAdmin, isViewOnly },
+        access: { accessToken, canMutate: canReuseCredentials, isViewOnly },
         modelId,
       });
       if (result.status === "blocked") return;
@@ -168,11 +163,11 @@ export function FocusModelDetailsPanel({
     }
   };
   const handleReuseCredentials = async (values: Record<string, unknown>) => {
-    if (!accessToken || !model) return;
+    if (!accessToken || !model || !canReuseCredentials) return;
     try {
       toast.info(t("models.reuseCredentials.saving"));
       const reuseRequest = {
-        access: { accessToken, canMutate: isProxyAdmin, isViewOnly },
+        access: { accessToken, canMutate: canReuseCredentials, isViewOnly },
         modelId,
         credentialName: String(values.credential_name),
         provider: model.litellm_params?.custom_llm_provider,
@@ -182,7 +177,6 @@ export function FocusModelDetailsPanel({
       if (result.status === "blocked") return;
       toast.success(t("models.reuseCredentials.success"));
       setIsReuseCredentialsOpen(false);
-      await onRefresh();
     } catch (error) {
       console.error("Failed to store model credentials:", error);
       toast.fromError(t("models.reuseCredentials.error"));
@@ -248,7 +242,11 @@ export function FocusModelDetailsPanel({
           {isTesting ? t("models.details.testingConnection") : t("models.details.testConnection")}
         </Button>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" className="gap-2" disabled={!canEdit && !isProxyAdmin} />}>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="outline" className="gap-2" disabled={isViewOnly || (!canEdit && !canReuseCredentials)} />
+            }
+          >
             <KeyRound className="size-4" />
             {t("models.details.credentials")}
             <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -258,7 +256,10 @@ export function FocusModelDetailsPanel({
               <KeyRound className="size-4" />
               {t("models.details.updateApiKey")}
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={!isProxyAdmin || isLoadingCredential} onClick={() => void openReuseCredentials()}>
+            <DropdownMenuItem
+              disabled={!canReuseCredentials || isLoadingCredential}
+              onClick={() => void openReuseCredentials()}
+            >
               {isLoadingCredential ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               {t("models.details.reuseCredentials")}
             </DropdownMenuItem>

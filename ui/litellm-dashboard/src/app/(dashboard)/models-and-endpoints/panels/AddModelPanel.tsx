@@ -18,7 +18,7 @@ import { useCredentials } from "@/app/(dashboard)/hooks/credentials/useCredentia
 import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 
-const INITIAL_VALUES: MountedFormValues = modelCreateFormDefaults("legacy");
+const INITIAL_VALUES: MountedFormValues = modelCreateFormDefaults();
 
 export default function AddModelPanel() {
   const { accessToken, userId, userRole, isViewOnly } = useAuthorized();
