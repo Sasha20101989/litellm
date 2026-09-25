@@ -5,6 +5,7 @@ import type { ModelData } from "@/components/model_dashboard/types";
 import type { CredentialItem } from "@/components/networking";
 import { FormField } from "@/components/shared/form/FormField";
 import { UtcDateTimeInput } from "@/components/shared/form/UtcDateTimeInput";
+import TeamDropdown from "@/components/common_components/team_dropdown";
 import NumericalInput from "@/components/shared/numerical_input";
 import type { Tag } from "@/components/tag_management/types";
 import { Button } from "@/components/ui/button";
@@ -15,240 +16,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UiLoadingSpinner } from "@/components/ui/ui-loading-spinner";
 import VectorStoreSelector from "@/components/vector_store_management/VectorStoreSelector";
-import { isMaskedSecret } from "@/utils/maskedSecretUtils";
 import {
-  MAX_COST_PER_PTU_PER_HOUR,
-  MAX_PTU_COUNT,
-  isFilledPtuValue,
-  isNonNegativePtuRate,
-  isPositiveWholePtuCount,
-  ptuWindowIsOrdered,
-} from "@/utils/ptuValidation";
-import { utcIsoToPickerValue } from "@/utils/ptuDatetime";
+  buildModelEditSchema,
+  initializeModelEditForm,
+  type ModelFormValues,
+  type ModelFormValidationMessages,
+  type TouchedPricingField,
+} from "@/features/models-and-endpoints/modelFormContract";
+import { MAX_COST_PER_PTU_PER_HOUR, MAX_PTU_COUNT } from "@/utils/ptuValidation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Dayjs } from "dayjs";
 import { CircleHelp } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { z } from "zod/v4";
 import {
   FocusCacheControlInjectionPoints,
   type FocusCacheControlInjectionPoint,
 } from "./FocusCacheControlInjectionPoints";
 
-export type TouchedPricingField = "input_cost" | "output_cost" | "cache_read_cost" | "cache_write_cost";
-
-export interface ModelEditFormValues {
-  model_name?: string;
-  litellm_model_name?: string;
-  api_base?: string;
-  custom_llm_provider?: string;
-  organization?: string;
-  tpm?: string | number | null;
-  rpm?: string | number | null;
-  max_retries?: string | number | null;
-  timeout?: string | number | null;
-  stream_timeout?: string | number | null;
-  input_cost?: string | number | null;
-  output_cost?: string | number | null;
-  cache_read_cost?: string | number | null;
-  cache_write_cost?: string | number | null;
-  ptu_count?: string | number | null;
-  cost_per_ptu_per_hour?: string | number | null;
-  ptu_effective_from?: Dayjs | null;
-  ptu_effective_to?: Dayjs | null;
-  cache_control?: boolean;
+export type ModelEditFormValues = ModelFormValues & {
   cache_control_injection_points?: FocusCacheControlInjectionPoint[];
-  model_access_group?: string[];
-  guardrails?: string[];
-  vector_store_ids?: string[];
-  tags?: string[];
-  health_check_model?: string | null;
-  litellm_credential_name?: string;
-  litellm_extra_params?: string;
-  model_info?: string;
-}
-
-type ModelEditFieldName = keyof ModelEditFormValues;
-type Translate = (key: string, options?: Record<string, unknown>) => string;
-
-const PRICING_FIELDS: readonly TouchedPricingField[] = [
-  "input_cost",
-  "output_cost",
-  "cache_read_cost",
-  "cache_write_cost",
-];
-
-const scalar = z.union([z.string(), z.number(), z.null()]).optional();
-const text = z.string().optional();
-const modelEditShape = {
-  model_name: text,
-  litellm_model_name: text,
-  api_base: text,
-  custom_llm_provider: text,
-  organization: text,
-  tpm: scalar,
-  rpm: scalar,
-  max_retries: scalar,
-  timeout: scalar,
-  stream_timeout: scalar,
-  input_cost: scalar,
-  output_cost: scalar,
-  cache_read_cost: scalar,
-  cache_write_cost: scalar,
-  ptu_count: scalar,
-  cost_per_ptu_per_hour: scalar,
-  ptu_effective_from: z.custom<Dayjs | null>().nullish(),
-  ptu_effective_to: z.custom<Dayjs | null>().nullish(),
-  cache_control: z.boolean().optional(),
-  cache_control_injection_points: z.array(z.custom<FocusCacheControlInjectionPoint>()).optional(),
-  model_access_group: z.array(z.string()).optional(),
-  guardrails: z.array(z.string()).optional(),
-  vector_store_ids: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-  health_check_model: z.string().nullish(),
-  litellm_credential_name: text,
-  litellm_extra_params: text,
-  model_info: text,
 };
 
-function isJson(value: string): boolean {
-  try {
-    JSON.parse(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
+type ModelEditFieldName = keyof ModelEditFormValues;
 
-function buildSchema(isPtuEnabled: boolean, isFieldTouched: (field: TouchedPricingField) => boolean, t: Translate) {
-  return z.object(modelEditShape).superRefine((values, context) => {
-    const reject = (path: ModelEditFieldName, message: string) =>
-      context.addIssue({ code: "custom", path: [path], message });
-
-    if (values.litellm_extra_params && !isJson(values.litellm_extra_params)) {
-      reject("litellm_extra_params", t("models.editor.validation.validJson"));
-    }
-    if (values.model_info && !isJson(values.model_info)) {
-      reject("model_info", t("models.editor.validation.validJson"));
-    }
-    if (!isPtuEnabled) return;
-
-    if (!isPositiveWholePtuCount(values.ptu_count)) {
-      reject("ptu_count", t("models.editor.validation.ptuCount", { max: MAX_PTU_COUNT.toLocaleString() }));
-    }
-    if (!isNonNegativePtuRate(values.cost_per_ptu_per_hour)) {
-      reject(
-        "cost_per_ptu_per_hour",
-        t("models.editor.validation.ptuRate", { max: MAX_COST_PER_PTU_PER_HOUR.toLocaleString() }),
-      );
-    }
-    if (isFilledPtuValue(values.ptu_count) !== isFilledPtuValue(values.cost_per_ptu_per_hour)) {
-      const message = t("models.editor.validation.ptuPair");
-      reject("ptu_count", message);
-      reject("cost_per_ptu_per_hour", message);
-    }
-    if (isFilledPtuValue(values.ptu_count) && !isFilledPtuValue(values.ptu_effective_from)) {
-      reject("ptu_effective_from", t("models.editor.validation.ptuStartRequired"));
-    }
-    if (!ptuWindowIsOrdered(values.ptu_effective_from, values.ptu_effective_to)) {
-      const message = t("models.editor.validation.ptuOrder");
-      reject("ptu_effective_from", message);
-      reject("ptu_effective_to", message);
-    }
-    for (const field of PRICING_FIELDS) {
-      if (!isFieldTouched(field)) continue;
-      if (!isFilledPtuValue(values.ptu_count)) continue;
-      const value = values[field];
-      if (!isFilledPtuValue(value)) continue;
-      if (Number(value) === 0) continue;
-      reject(field, t("models.editor.validation.ptuPricing"));
-    }
-  });
-}
-
-function perMillionTokens(...rates: (number | null | undefined)[]): number | null {
-  const rate = rates.find((candidate) => candidate != null);
-  return rate == null ? null : rate * 1_000_000;
-}
-
-function stringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
-}
-
-function buildPricingValues(
-  model: ModelData,
-): Pick<ModelEditFormValues, "input_cost" | "output_cost" | "cache_read_cost" | "cache_write_cost"> {
-  const params = model.litellm_params;
-  const info = model.model_info;
-  return {
-    input_cost: perMillionTokens(params.input_cost_per_token, info.input_cost_per_token as number | undefined),
-    output_cost: perMillionTokens(params.output_cost_per_token, info.output_cost_per_token as number | undefined),
-    cache_read_cost: perMillionTokens(
-      params.cache_read_input_token_cost as number | undefined,
-      info.cache_read_input_token_cost as number | undefined,
-    ),
-    cache_write_cost: perMillionTokens(
-      params.cache_creation_input_token_cost as number | undefined,
-      info.cache_creation_input_token_cost as number | undefined,
-    ),
-  };
-}
-
-function buildPtuValues(
-  model: ModelData,
-): Pick<ModelEditFormValues, "ptu_count" | "cost_per_ptu_per_hour" | "ptu_effective_from" | "ptu_effective_to"> {
-  const info = model.model_info;
-  return {
-    ptu_count: (info.ptu_count as string | number | null | undefined) ?? null,
-    cost_per_ptu_per_hour: (info.cost_per_ptu_per_hour as string | number | null | undefined) ?? null,
-    ptu_effective_from: utcIsoToPickerValue(info.ptu_effective_from as string | null | undefined),
-    ptu_effective_to: utcIsoToPickerValue(info.ptu_effective_to as string | null | undefined),
-  };
-}
-
-function buildExtraParams(model: ModelData): string {
-  const visibleParams = Object.fromEntries(
-    Object.entries(model.litellm_params).filter(
-      ([key, value]) => key !== "litellm_credential_name" && !isMaskedSecret(value),
-    ),
-  );
-  return JSON.stringify(visibleParams, null, 2);
-}
-
-export function toModelEditFormValues(model: ModelData, isWildcardModel: boolean): ModelEditFormValues {
-  const params = model.litellm_params;
-  const info = model.model_info;
-  const vectorStoreIds = stringArray(params.vector_store_ids);
-  const cacheControlInjectionPoints = Array.isArray(params.cache_control_injection_points)
-    ? (params.cache_control_injection_points as FocusCacheControlInjectionPoint[])
-    : [];
-  return {
-    model_name: model.model_name,
-    litellm_model_name: model.litellm_model_name,
-    api_base: params.api_base,
-    custom_llm_provider: params.custom_llm_provider,
-    organization: params.organization,
-    tpm: params.tpm,
-    rpm: params.rpm,
-    max_retries: params.max_retries,
-    timeout: params.timeout,
-    stream_timeout: params.stream_timeout,
-    ...buildPricingValues(model),
-    ...buildPtuValues(model),
-    cache_control: cacheControlInjectionPoints.length > 0,
-    cache_control_injection_points: cacheControlInjectionPoints,
-    model_access_group: stringArray(info.access_groups),
-    guardrails: stringArray(params.guardrails),
-    vector_store_ids: vectorStoreIds.length > 0 ? vectorStoreIds : undefined,
-    tags: stringArray(params.tags),
-    ...(isWildcardModel ? { health_check_model: info.health_check_model as string | null | undefined } : {}),
-    litellm_credential_name: params.litellm_credential_name ?? "",
-    litellm_extra_params: buildExtraParams(model),
-    model_info: JSON.stringify(info, null, 2),
-  };
-}
+export const toModelEditFormValues = (model: ModelData, isWildcardModel: boolean): ModelEditFormValues =>
+  initializeModelEditForm(model, isWildcardModel, { includeModelInfo: true }) as ModelEditFormValues;
 
 interface FocusModelEditFormProps {
   model: ModelData;
@@ -328,11 +122,24 @@ export function FocusModelEditForm({
   const { t } = useTranslation("gateway");
   const touchedFields = useRef<ReadonlySet<string>>(new Set());
   const isFieldTouched = useCallback((field: TouchedPricingField) => touchedFields.current.has(field), []);
+  const validationMessages: ModelFormValidationMessages = {
+    validJson: t("models.editor.validation.validJson"),
+    ptuCount: t("models.editor.validation.ptuCount", { max: MAX_PTU_COUNT.toLocaleString() }),
+    ptuRate: t("models.editor.validation.ptuRate", { max: MAX_COST_PER_PTU_PER_HOUR.toLocaleString() }),
+    ptuPair: t("models.editor.validation.ptuPair"),
+    ptuStartRequired: t("models.editor.validation.ptuStartRequired"),
+    ptuOrder: t("models.editor.validation.ptuOrder"),
+    ptuPricing: t("models.editor.validation.ptuPricing"),
+  };
   const resolver: Resolver<ModelEditFormValues> = (values, context, options) =>
-    zodResolver(buildSchema(isPtuEnabled, isFieldTouched, t))(values, context, options);
+    zodResolver(buildModelEditSchema({ isPtuEnabled, isFieldTouched, messages: validationMessages }))(
+      values,
+      context,
+      options,
+    );
   const form = useForm<ModelEditFormValues>({
     resolver,
-    defaultValues: toModelEditFormValues(model, isWildcardModel),
+    defaultValues: initializeModelEditForm(model, isWildcardModel, { includeModelInfo: true }) as ModelEditFormValues,
   });
   const markTouched = (field: string) => {
     touchedFields.current = new Set([...touchedFields.current, field]);
@@ -340,7 +147,7 @@ export function FocusModelEditForm({
   const submit = (event: React.FormEvent<HTMLFormElement>) =>
     form.handleSubmit((values) => onSubmit(values, isFieldTouched))(event);
   const cancel = () => {
-    form.reset(toModelEditFormValues(model, isWildcardModel));
+    form.reset(initializeModelEditForm(model, isWildcardModel, { includeModelInfo: true }) as ModelEditFormValues);
     touchedFields.current = new Set();
     onCancel();
   };
@@ -413,14 +220,16 @@ export function FocusModelEditForm({
             t("models.editor.fields.organization"),
             t("models.editor.placeholders.organization"),
           )}
-          <div>
-            <p className="text-sm font-medium text-foreground">{t("models.editor.fields.team")}</p>
-            <div className="mt-2 rounded-md bg-muted px-3 py-2 text-sm">
-              {teamAlias
-                ? `${teamAlias} (${model.model_info?.team_id})`
-                : model.model_info?.team_id || t("models.editor.notSet")}
-            </div>
-          </div>
+          <FormField
+            control={form.control}
+            name="team_id"
+            label={t("models.editor.fields.team")}
+            description={teamAlias ?? undefined}
+          >
+            {({ id, value, onChange }) => (
+              <TeamDropdown id={id} value={(value as string | null | undefined) ?? null} onChange={onChange} />
+            )}
+          </FormField>
         </FormSection>
 
         <FormSection

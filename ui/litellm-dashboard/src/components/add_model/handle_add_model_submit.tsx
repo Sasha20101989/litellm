@@ -3,8 +3,10 @@ import {
   type ModelCreateMessages,
   type ModelCreateValues,
 } from "@/features/models-and-endpoints/modelFormContract";
+import { createModelsCommand } from "@/features/models-and-endpoints/modelCommands";
 import { toast } from "@/lib/toast";
-import { type Model, modelCreateCall } from "../networking";
+import type { Model } from "../networking";
+import type { QueryClient } from "@tanstack/react-query";
 
 const legacyMessages: ModelCreateMessages = {
   jsonStringExpected: (fieldName) => `Failed to parse ${fieldName}: expected JSON text`,
@@ -33,22 +35,30 @@ export const handleAddModelSubmit = async (
   values: Record<string, unknown>,
   accessToken: string,
   form: { resetFields: () => void },
-  callback?: () => void,
+  commandContext: { canMutate: boolean; isViewOnly: boolean; queryClient: QueryClient; onSuccess?: () => void },
 ) => {
   try {
     const deployments = await prepareModelAddRequest(values, accessToken, form);
-    if (!deployments?.length) return;
-    for (const deployment of deployments) {
-      const newModel: Model = {
+    if (!deployments?.length) return false;
+    const models: Model[] = deployments.map((deployment) => ({
         model_name: deployment.modelName,
         litellm_params: deployment.litellmParamsObj,
         model_info: deployment.modelInfoObj,
-      };
-      await modelCreateCall(accessToken, newModel);
+    }));
+    const result = await createModelsCommand({
+      access: { accessToken, canMutate: commandContext.canMutate, isViewOnly: commandContext.isViewOnly },
+      models,
+      queryClient: commandContext.queryClient,
+    });
+    if (result.status === "blocked") return false;
+    for (const model of models) {
+      toast.success(`Model ${model.model_name} created successfully`);
     }
-    callback?.();
+    commandContext.onSuccess?.();
     form.resetFields();
+    return true;
   } catch (error) {
     toast.fromError(`Failed to add model: ${String(error)}`);
+    return false;
   }
 };

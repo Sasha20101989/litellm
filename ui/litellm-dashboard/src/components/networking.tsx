@@ -653,7 +653,11 @@ export const getModelCostMapReloadStatus = async (accessToken: string) => {
     throw error;
   }
 };
-export const modelCreateCall = async (accessToken: string, formValues: Model) => {
+export const modelCreateCall = async (
+  accessToken: string,
+  formValues: Model,
+  options: { showSuccessToast?: boolean } = {},
+) => {
   try {
     const data = await apiClient.post(`/model/new`, {
       accessToken,
@@ -662,11 +666,10 @@ export const modelCreateCall = async (accessToken: string, formValues: Model) =>
       },
     });
 
-    // Close any existing messages before showing new ones
-    toast.dismiss();
-
-    // Sequential success messages
-    toast.success(`Model ${formValues.model_name} created successfully`);
+    if (options.showSuccessToast !== false) {
+      toast.dismiss();
+      toast.success(`Model ${formValues.model_name} created successfully`);
+    }
 
     return data;
   } catch (error) {

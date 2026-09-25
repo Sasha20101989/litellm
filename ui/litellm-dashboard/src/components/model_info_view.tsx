@@ -12,6 +12,11 @@ import { ArrowLeft, CheckIcon, CopyIcon, Info } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { copyToClipboard as utilCopyToClipboard } from "../utils/dataUtils";
 import { buildModelUpdatePayload, type ModelFormValues, type TouchedPricingField } from "@/features/models-and-endpoints/modelFormContract";
+import {
+  loadModelCredentialCommand,
+  reuseModelCredentialCommand,
+  updateModelCommand,
+} from "@/features/models-and-endpoints/modelCommands";
 import { useCredentialsWorkspace } from "@/features/models-and-endpoints/useCredentialsWorkspace";
 import { truncateString } from "../utils/textUtils";
 import AutoRouterConnectionTest from "./add_model/auto_router_connection_test";
@@ -31,12 +36,9 @@ import ReuseCredentialsModal from "./model_add/reuse_credentials";
 import { toast } from "@/lib/toast";
 import {
   CredentialItem,
-  credentialCreateCall,
-  credentialGetCall,
   getGuardrailsList,
   modelDeleteCall,
   modelInfoV1Call,
-  modelPatchUpdateCall,
   tagListCall,
   testConnectionRequest,
 } from "./networking";
@@ -176,7 +178,12 @@ export default function ModelInfoView({
     const getExistingCredential = async () => {
       if (!accessToken) return;
       if (usingExistingCredential) return;
-      let existingCredentialResponse = await credentialGetCall(accessToken, null, modelId);
+      const result = await loadModelCredentialCommand({
+        access: { accessToken, canMutate: isAdmin, isViewOnly },
+        modelId,
+      });
+      if (result.status === "blocked") return;
+      const existingCredentialResponse = result.value;
       setExistingCredential({
         credential_name: existingCredentialResponse["credential_name"],
         credential_values: existingCredentialResponse["credential_values"],
@@ -233,19 +240,20 @@ export default function ModelInfoView({
     getModelInfo();
     fetchGuardrails();
     fetchTags();
-  }, [accessToken, modelId]);
+  }, [accessToken, isAdmin, isViewOnly, modelData, modelId, usingExistingCredential]);
 
-  const handleReuseCredential = async (values: any) => {
-    if (!accessToken) return;
-    let credentialItem = {
-      credential_name: values.credential_name,
-      model_id: modelId,
-      credential_info: {
-        custom_llm_provider: localModelData.litellm_params?.custom_llm_provider,
-      },
-    };
+  const handleReuseCredential = async (values: Record<string, unknown>) => {
+    if (!accessToken || !localModelData) return;
     toast.info("Storing credential..");
-    let credentialResponse = await credentialCreateCall(accessToken, credentialItem);
+    const reuseRequest = {
+      access: { accessToken, canMutate: isAdmin, isViewOnly },
+      modelId,
+      credentialName: String(values.credential_name),
+      provider: localModelData.litellm_params?.custom_llm_provider,
+      queryClient,
+    };
+    const result = await reuseModelCredentialCommand(reuseRequest);
+    if (result.status === "blocked") return;
     toast.success("Credential stored successfully");
   };
 
@@ -262,7 +270,14 @@ export default function ModelInfoView({
         isFieldTouched,
         ptuCostAttributionEnabled,
       });
-      await modelPatchUpdateCall(accessToken, update.patch, modelId);
+      const updateRequest = {
+        access: { accessToken, canMutate: canEditModel, isViewOnly },
+        modelId,
+        patch: update.patch,
+        queryClient,
+      };
+      const result = await updateModelCommand(updateRequest);
+      if (result.status === "blocked") return;
       setLocalModelData(update.updatedModel);
       onModelUpdate?.(update.updatedModel);
       toast.success("Model settings updated successfully");

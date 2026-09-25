@@ -134,6 +134,7 @@ function FocusSelectedDetail({ workspace }: { workspace: ReturnType<typeof useMo
         isError={workspace.selectedModelDetail.isError}
         canEdit={selectedModelCapabilities.canEdit}
         isProxyAdmin={workspace.isProxyAdmin}
+        isViewOnly={workspace.isViewOnly}
         accessToken={workspace.accessToken}
         modelAccessGroups={workspace.availableModelAccessGroups}
         teamAlias={workspace.teamOptions.find((team) => team.value === workspace.selectedModelDetail.model?.model_info?.team_id)?.label ?? null}

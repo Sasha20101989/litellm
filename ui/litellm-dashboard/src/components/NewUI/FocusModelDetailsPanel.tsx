@@ -4,10 +4,12 @@ import ReuseCredentialsModal from "@/components/model_add/reuse_credentials";
 import { ModelData } from "@/components/model_dashboard/types";
 import {
   CredentialItem,
-  credentialCreateCall,
-  credentialGetCall,
   testConnectionRequest,
 } from "@/components/networking";
+import {
+  loadModelCredentialCommand,
+  reuseModelCredentialCommand,
+} from "@/features/models-and-endpoints/modelCommands";
 import UpdateModelCredentialsModal from "@/components/update_model_credentials_modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +36,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FocusModelEditor } from "./FocusModelEditor";
 
@@ -44,6 +47,7 @@ interface FocusModelDetailsPanelProps {
   isError: boolean;
   canEdit: boolean;
   isProxyAdmin: boolean;
+  isViewOnly: boolean;
   accessToken: string | null;
   modelAccessGroups: string[];
   teamAlias: string | null;
@@ -86,6 +90,7 @@ export function FocusModelDetailsPanel({
   isError,
   canEdit,
   isProxyAdmin,
+  isViewOnly,
   accessToken,
   modelAccessGroups,
   teamAlias,
@@ -102,6 +107,7 @@ export function FocusModelDetailsPanel({
   const [isReuseCredentialsOpen, setIsReuseCredentialsOpen] = useState(false);
   const [existingCredential, setExistingCredential] = useState<CredentialItem | null>(null);
   const [isLoadingCredential, setIsLoadingCredential] = useState(false);
+  const queryClient = useQueryClient();
   const publicName = model?.model_name || model?.litellm_model_name || t("models.unknown");
   const handleCopyModelId = async () => {
     if (!(await copyToClipboard(modelId))) return;
@@ -142,7 +148,12 @@ export function FocusModelDetailsPanel({
     if (!accessToken) return;
     setIsLoadingCredential(true);
     try {
-      const response = await credentialGetCall(accessToken, null, modelId);
+      const result = await loadModelCredentialCommand({
+        access: { accessToken, canMutate: isProxyAdmin, isViewOnly },
+        modelId,
+      });
+      if (result.status === "blocked") return;
+      const response = result.value as CredentialItem;
       setExistingCredential({
         credential_name: response.credential_name,
         credential_values: response.credential_values,
@@ -160,11 +171,15 @@ export function FocusModelDetailsPanel({
     if (!accessToken || !model) return;
     try {
       toast.info(t("models.reuseCredentials.saving"));
-      await credentialCreateCall(accessToken, {
-        credential_name: values.credential_name,
-        model_id: modelId,
-        credential_info: { custom_llm_provider: model.litellm_params?.custom_llm_provider },
-      });
+      const reuseRequest = {
+        access: { accessToken, canMutate: isProxyAdmin, isViewOnly },
+        modelId,
+        credentialName: String(values.credential_name),
+        provider: model.litellm_params?.custom_llm_provider,
+        queryClient,
+      };
+      const result = await reuseModelCredentialCommand(reuseRequest);
+      if (result.status === "blocked") return;
       toast.success(t("models.reuseCredentials.success"));
       setIsReuseCredentialsOpen(false);
       await onRefresh();
@@ -263,8 +278,10 @@ export function FocusModelDetailsPanel({
             model={model}
             modelId={modelId}
             accessToken={accessToken}
-          modelAccessGroups={modelAccessGroups}
+            modelAccessGroups={modelAccessGroups}
             teamAlias={teamAlias}
+            canMutate={canEdit}
+            isViewOnly={isViewOnly}
             onCancel={() => setIsEditing(false)}
             onSaved={onRefresh}
           />

@@ -1,6 +1,14 @@
 "use client";
 
-import type { ProviderCredentialFieldMetadata } from "@/components/networking";
+import {
+  isJsonCredentialFile,
+  isProviderCredentialFieldRequired,
+  JSON_CREDENTIAL_FILE_ACCEPT,
+  providerCredentialDefaultValue,
+  readProviderCredentialFile,
+  useApiVersionInference,
+  type ProviderCredentialField,
+} from "@/features/models-and-endpoints/providerCredentialContract";
 import { MountedFormField, type MountedFieldControlProps } from "@/components/common_components/MountedFormField";
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { Button } from "@/components/ui/button";
@@ -9,10 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Upload } from "lucide-react";
 import { useRef } from "react";
+import { useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 interface FocusProviderCredentialFieldsProps {
-  fields: ProviderCredentialFieldMetadata[];
+  fields: readonly ProviderCredentialField[];
   provider?: string;
 }
 
@@ -22,7 +31,7 @@ function isTechnicalPlaceholder(value: string | null | undefined): value is stri
 }
 
 function getMetadataCopy(
-  field: ProviderCredentialFieldMetadata,
+  field: ProviderCredentialField,
   provider: string | undefined,
   isRussian: boolean,
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -45,24 +54,23 @@ function getMetadataCopy(
 function ProviderFieldControl({
   field,
   control,
+  onApiBaseChange,
 }: {
-  field: ProviderCredentialFieldMetadata;
+  field: ProviderCredentialField;
   control: MountedFieldControlProps;
+  onApiBaseChange: (apiBase: string) => void;
 }) {
   const { t } = useTranslation("gateway");
   const fileInput = useRef<HTMLInputElement>(null);
-  const value = typeof control.value === "string" ? control.value : field.default_value ?? "";
+  const value = typeof control.value === "string" ? control.value : providerCredentialDefaultValue(field) ?? "";
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => control.onChange(String(reader.result ?? ""));
-    reader.readAsText(file);
+    if (file && isJsonCredentialFile(file)) readProviderCredentialFile(file, control.onChange);
   };
 
   if (field.field_type === "select") {
-    const items = (field.options ?? []).map((option) => ({ value: option, label: option }));
+    const items = field.options.map((option) => ({ value: option, label: option }));
     return (
       <Select items={items} value={value || null} onValueChange={control.onChange}>
         <SelectTrigger id={control.id} className="w-full" onBlur={control.onBlur}>
@@ -91,7 +99,7 @@ function ProviderFieldControl({
           ref={fileInput}
           id={control.id}
           type="file"
-          accept=".json,application/json"
+          accept={JSON_CREDENTIAL_FILE_ACCEPT}
           className="sr-only"
           onBlur={control.onBlur}
           onChange={handleFileChange}
@@ -130,7 +138,10 @@ function ProviderFieldControl({
     <Input
       id={control.id}
       value={value}
-      onChange={control.onChange}
+      onChange={(event) => {
+        control.onChange(event);
+        if (field.key === "api_base") onApiBaseChange(event.target.value);
+      }}
       onBlur={control.onBlur}
       placeholder={field.placeholder ?? undefined}
     />
@@ -139,7 +150,12 @@ function ProviderFieldControl({
 
 export function FocusProviderCredentialFields({ fields, provider }: FocusProviderCredentialFieldsProps) {
   const { t, i18n } = useTranslation("gateway");
+  const form = useFormContext();
   const isRussian = (i18n.resolvedLanguage ?? i18n.language).startsWith("ru");
+  const onApiBaseChange = useApiVersionInference(fields, {
+    getValue: (field) => form.getValues(field),
+    setValue: (field, value) => form.setValue(field, value),
+  });
 
   if (fields.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("models.create.noProviderFields")}</p>;
@@ -157,19 +173,21 @@ export function FocusProviderCredentialFields({ fields, provider }: FocusProvide
             label={copy.label}
             help={copy.tooltip}
             required={field.required}
-            defaultValue={field.default_value ?? undefined}
+            defaultValue={providerCredentialDefaultValue(field)}
             rules={
               field.required
                 ? {
                     validate: {
                       required: (value) =>
-                        value == null || value === "" ? t("models.create.validation.required") : true,
+                        isProviderCredentialFieldRequired(value) ? true : t("models.create.validation.required"),
                     },
                   }
                 : undefined
             }
           >
-            {(control) => <ProviderFieldControl field={localizedField} control={control} />}
+            {(control) => (
+              <ProviderFieldControl field={localizedField} control={control} onApiBaseChange={onApiBaseChange} />
+            )}
           </MountedFormField>
         );
       })}

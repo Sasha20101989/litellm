@@ -4,16 +4,17 @@ import { useModelHub } from "@/app/(dashboard)/hooks/models/useModels";
 import { usePtuCostAttributionEnabled } from "@/app/(dashboard)/hooks/uiSettings/usePtuCostAttributionEnabled";
 import { useCredentialsWorkspace } from "@/features/models-and-endpoints/useCredentialsWorkspace";
 import { buildModelUpdatePayload, type ModelFormValues, type TouchedPricingField } from "@/features/models-and-endpoints/modelFormContract";
+import { updateModelCommand } from "@/features/models-and-endpoints/modelCommands";
 import { FocusModelEditForm } from "./FocusModelEditForm";
 import {
   getGuardrailsList,
-  modelPatchUpdateCall,
   tagListCall,
 } from "@/components/networking";
 import type { ModelData } from "@/components/model_dashboard/types";
 import type { Tag } from "@/components/tag_management/types";
 import { toast } from "@/lib/toast";
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 interface FocusModelEditorProps {
@@ -22,6 +23,8 @@ interface FocusModelEditorProps {
   accessToken: string;
   modelAccessGroups: string[];
   teamAlias: string | null;
+  canMutate: boolean;
+  isViewOnly: boolean;
   onCancel: () => void;
   onSaved: () => Promise<void>;
 }
@@ -32,6 +35,8 @@ export function FocusModelEditor({
   accessToken,
   modelAccessGroups,
   teamAlias,
+  canMutate,
+  isViewOnly,
   onCancel,
   onSaved,
 }: FocusModelEditorProps) {
@@ -45,6 +50,7 @@ export function FocusModelEditor({
   const [guardrails, setGuardrails] = useState<string[]>([]);
   const [tags, setTags] = useState<Record<string, Tag>>({});
   const { credentials } = useCredentialsWorkspace();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -82,7 +88,14 @@ export function FocusModelEditor({
     setIsSaving(true);
     try {
       const update = buildModelUpdatePayload({ model, values, isFieldTouched, ptuCostAttributionEnabled });
-      await modelPatchUpdateCall(accessToken, update.patch, modelId);
+      const updateRequest = {
+        access: { accessToken, canMutate, isViewOnly },
+        modelId,
+        patch: update.patch,
+        queryClient,
+      };
+      const result = await updateModelCommand(updateRequest);
+      if (result.status === "blocked") return;
       toast.success(t("models.details.updateSuccess"));
       await onSaved();
       onCancel();

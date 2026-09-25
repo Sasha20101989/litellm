@@ -33,9 +33,9 @@ export function buildCredentialPayload(values: Record<string, unknown>, stripMas
 }
 
 export function useCredentialsWorkspace() {
-  const { accessToken, userRole } = useAuthorized();
+  const { accessToken, userRole, isViewOnly } = useAuthorized();
   const query = useCredentials();
-  const canModifyCredentials = isProxyAdminRole(userRole ?? "");
+  const canModifyCredentials = !isViewOnly && isProxyAdminRole(userRole ?? "");
   const createCredential = useCallback(
     async (values: Record<string, unknown>) => {
       if (!accessToken || !canModifyCredentials) return false;

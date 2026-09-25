@@ -11,16 +11,17 @@ import {
   type MountedFormValues,
 } from "@/components/common_components/MountedFormField";
 import { Providers, getPlaceholder, getProviderModels } from "@/components/provider_info_helpers";
-import { MODEL_CREATE_DEFAULTS } from "@/features/models-and-endpoints/modelFormContract";
+import { modelCreateFormDefaults } from "@/features/models-and-endpoints/modelFormContract";
+import { modelCreationScope } from "@/utils/modelPermissions";
 import { useModelCostMap } from "@/app/(dashboard)/hooks/models/useModelCostMap";
 import { useCredentials } from "@/app/(dashboard)/hooks/credentials/useCredentials";
 import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 
-const INITIAL_VALUES: MountedFormValues = { ...MODEL_CREATE_DEFAULTS, litellm_credential_name: null };
+const INITIAL_VALUES: MountedFormValues = modelCreateFormDefaults("legacy");
 
 export default function AddModelPanel() {
-  const { accessToken } = useAuthorized();
+  const { accessToken, userId, userRole, isViewOnly } = useAuthorized();
   const form = useForm<MountedFormValues>({ mode: "onChange", defaultValues: INITIAL_VALUES });
   const registry = useMountRegistry();
   const queryClient = useQueryClient();
@@ -31,8 +32,6 @@ export default function AddModelPanel() {
   const [providerModels, setProviderModels] = useState<string[]>([]);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["models", "list"] });
-
   const mountedValues = () => projectMountedValues(registry, form.getValues);
 
   const handleOk = async (): Promise<boolean> => {
@@ -40,13 +39,20 @@ export default function AddModelPanel() {
     if (!isValid) {
       return false;
     }
-    await handleAddModelSubmit(
+    return handleAddModelSubmit(
       mountedValues(),
       accessToken,
       { resetFields: () => form.reset(INITIAL_VALUES) },
-      refresh,
+      {
+        canMutate:
+          modelCreationScope(
+            { userRole, userID: userId, isViewOnly },
+            { teams: teams ?? null, disabledForInternalUsers: false },
+          ) !== "forbidden",
+        isViewOnly,
+        queryClient,
+      },
     );
-    return true;
   };
 
   return (

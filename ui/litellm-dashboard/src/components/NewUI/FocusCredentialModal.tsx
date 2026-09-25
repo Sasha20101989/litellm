@@ -3,6 +3,11 @@
 import { useProviderFields } from "@/app/(dashboard)/hooks/providers/useProviderFields";
 import { credentialFormDefaults } from "@/features/models-and-endpoints/useCredentialsWorkspace";
 import {
+  resetProviderCredentialFormOnProviderChange,
+  resolveProviderCredentialFields,
+  resolveProviderCredentialMetadata,
+} from "@/features/models-and-endpoints/providerCredentialContract";
+import {
   MountedFormField,
   MountedFormProvider,
   projectMountedValues,
@@ -59,12 +64,13 @@ export function FocusCredentialModal({
         })),
     [providerMetadata],
   );
-  const selectedMetadata = providerMetadata?.find(
-    (provider) =>
-      provider.provider === selectedProvider ||
-      provider.litellm_provider === selectedProvider ||
-      provider.provider_display_name === selectedProvider,
-  );
+  const selectedMetadata = resolveProviderCredentialMetadata(providerMetadata, selectedProvider);
+  const selectedProviderFields = resolveProviderCredentialFields(providerMetadata, selectedProvider);
+  const formAdapter = {
+    getFieldValue: (field: string) => form.getValues(field),
+    resetFields: () => form.reset(),
+    setFieldValue: (field: string, value: unknown) => form.setValue(field, value),
+  };
   const close = () => {
     form.reset(credentialFormDefaults(existingCredential) as MountedFormValues);
     onCancel();
@@ -139,8 +145,12 @@ export function FocusCredentialModal({
                       onValueChange={(value) => {
                         control.onChange(value ?? "");
                         if (!isEdit) {
-                          const credentialName = form.getValues("credential_name");
-                          form.reset({ credential_name: credentialName, custom_llm_provider: value ?? "" });
+                          resetProviderCredentialFormOnProviderChange(
+                            formAdapter,
+                            value,
+                            () => {},
+                            resolveProviderCredentialFields(providerMetadata, value),
+                          );
                         }
                       }}
                       placeholder={
@@ -157,7 +167,7 @@ export function FocusCredentialModal({
                 <div className="border-t border-border pt-5">
                   <FocusProviderCredentialFields
                     provider={selectedMetadata?.provider ?? selectedProvider}
-                    fields={selectedMetadata?.credential_fields ?? []}
+                    fields={selectedProviderFields}
                   />
                 </div>
               )}

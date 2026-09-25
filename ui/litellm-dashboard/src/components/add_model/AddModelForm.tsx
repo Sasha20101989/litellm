@@ -35,6 +35,7 @@ import ProviderSpecificFields from "./provider_specific_fields";
 import { TEST_MODES } from "./add_model_modes";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { teamByokPolicy } from "@/features/models-and-endpoints/modelFormContract";
 
 interface AddModelFormProps {
   form: UseFormReturn<MountedFormValues>; // For the Add Model tab
@@ -154,6 +155,7 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
 
   const isAdmin = all_admin_roles.includes(userRole);
   const isTeamAdmin = isUserTeamAdminForAnyTeam(teams, userId);
+  const teamByok = teamByokPolicy({ isProxyAdmin: isAdmin, premiumUser, isViewOnly });
   // Same owner the Auto-Routers tab uses, so the two creation forms cannot disagree about
   // who has to name a team. This form is only reachable when creation is allowed at all.
   const createScope = modelCreationScope(
@@ -325,7 +327,7 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                         <div className="grow border-t border-border"></div>
                       </div>
                       {/* Team-only Model Switch - Only show for proxy admins, not team admins */}
-                      {(isAdmin || !isTeamAdmin) && (
+                      {teamByok.visible && (
                         <Field className="mb-4">
                           <FieldLabel>
                             {labelWithHint(
@@ -350,7 +352,7 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                                     form.setValue("team_id", undefined);
                                   }
                                 }}
-                                disabled={!premiumUser}
+                                disabled={!teamByok.enabled}
                                 aria-label="Team-BYOK Model"
                               />
                             </span>
@@ -378,7 +380,7 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                             <TeamDropdown
                               value={control.value as string | undefined}
                               onChange={control.onChange}
-                              disabled={!premiumUser}
+                              disabled={!teamByok.enabled}
                             />
                           )}
                         </MountedFormField>

@@ -5,6 +5,10 @@ import { useGuardrails } from "@/app/(dashboard)/hooks/guardrails/useGuardrails"
 import { useModelCostMap } from "@/app/(dashboard)/hooks/models/useModelCostMap";
 import { useModelFilterFacets } from "@/app/(dashboard)/hooks/models/useModels";
 import { useProviderFields } from "@/app/(dashboard)/hooks/providers/useProviderFields";
+import {
+  resolveProviderCredentialFields,
+  resolveProviderCredentialMetadata,
+} from "@/features/models-and-endpoints/providerCredentialContract";
 import { useTags } from "@/app/(dashboard)/hooks/tags/useTags";
 import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
 import { usePtuCostAttributionEnabled } from "@/app/(dashboard)/hooks/uiSettings/usePtuCostAttributionEnabled";
@@ -17,7 +21,7 @@ import {
   type MountedFormValues,
 } from "@/components/common_components/MountedFormField";
 import TeamDropdown from "@/components/common_components/team_dropdown";
-import { apiClient, testConnectionRequest } from "@/components/networking";
+import { type Model, testConnectionRequest } from "@/components/networking";
 import { ProviderLogo } from "@/components/molecules/models/ProviderLogo";
 import { getProviderModels, Providers } from "@/components/provider_info_helpers";
 import { MultiSelect } from "@/components/shared/MultiSelect";
@@ -28,7 +32,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { modelCreationScope } from "@/utils/modelPermissions";
-import { MODEL_CREATE_DEFAULTS } from "@/features/models-and-endpoints/modelFormContract";
+import {
+  MODEL_CREATE_DEFAULTS,
+  teamByokPolicy,
+  type ModelFormValidationMessages,
+  validatePtuFormValues,
+} from "@/features/models-and-endpoints/modelFormContract";
+import { createModelsCommand } from "@/features/models-and-endpoints/modelCommands";
 import { isProxyAdminRole, isUserTeamAdminForSingleTeam } from "@/utils/roles";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, CircleAlert, CircleX, Loader2, Plus, Trash2 } from "lucide-react";
@@ -144,7 +154,7 @@ function ModelMappingsEditor({
 
 export function FocusAddModelPanel() {
   const { t } = useTranslation("gateway");
-  const { accessToken, userId, userRole, isViewOnly } = useAuthorized();
+  const { accessToken, userId, userRole, premiumUser, isViewOnly } = useAuthorized();
   const { data: teams } = useTeams();
   const { data: credentialsData } = useCredentials();
   const { data: providerMetadata, isLoading: isLoadingProviders } = useProviderFields();
@@ -172,6 +182,7 @@ export function FocusAddModelPanel() {
     { teams: teams ?? null, disabledForInternalUsers: false },
   );
   const isAdmin = userRole != null && isProxyAdminRole(userRole);
+  const teamByok = teamByokPolicy({ isProxyAdmin: isAdmin, premiumUser, isViewOnly });
   const providerOptions: SearchSelectOption[] = useMemo(
     () =>
       [...(providerMetadata ?? [])]
@@ -183,7 +194,8 @@ export function FocusAddModelPanel() {
         })),
     [providerMetadata],
   );
-  const selectedProviderMetadata = providerMetadata?.find((provider) => provider.provider === selectedProvider);
+  const selectedProviderMetadata = resolveProviderCredentialMetadata(providerMetadata, selectedProvider);
+  const selectedProviderFields = resolveProviderCredentialFields(providerMetadata, selectedProvider);
   const providerModels = useMemo(
     () => (selectedProvider ? getProviderModels(selectedProvider, modelCostMap) : []),
     [modelCostMap, selectedProvider],
@@ -261,6 +273,27 @@ export function FocusAddModelPanel() {
   const preparePayloads = async () => {
     const isValid = await form.trigger(registry.mountedNames() as string[]);
     if (!isValid) return null;
+    const validationMessages: ModelFormValidationMessages = {
+      validJson: t("models.create.validation.validJson"),
+      ptuCount: t("models.editor.validation.ptuCount", { max: "1,000,000" }),
+      ptuRate: t("models.editor.validation.ptuRate", { max: "1,000,000" }),
+      ptuPair: t("models.editor.validation.ptuPair"),
+      ptuStartRequired: t("models.editor.validation.ptuStartRequired"),
+      ptuOrder: t("models.editor.validation.ptuOrder"),
+      ptuPricing: t("models.editor.validation.ptuPricing"),
+    };
+    const ptuIssues = validatePtuFormValues({
+      values: mountedValues(),
+      isPtuEnabled,
+      isFieldTouched: () => true,
+      messages: validationMessages,
+    });
+    if (ptuIssues.length > 0) {
+      for (const issue of ptuIssues) {
+        form.setError(issue.field, { type: "validate", message: issue.message });
+      }
+      return null;
+    }
     const messages = {
       jsonStringExpected: (fieldName: string) => t("models.create.validation.jsonString", { fieldName }),
       jsonObjectExpected: (fieldName: string) => t("models.create.validation.jsonObject", { fieldName }),
@@ -304,14 +337,16 @@ export function FocusAddModelPanel() {
     try {
       const payloads = await preparePayloads();
       if (!payloads?.length) return;
-      for (const payload of payloads) {
-        await apiClient.post("/model/new", { accessToken, body: payload });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["models", "list"] });
+      const created = await createModelsCommand({
+        access: { accessToken, canMutate: scope !== "forbidden", isViewOnly },
+        models: payloads as Model[],
+        queryClient,
+      });
+      if (created.status === "blocked") return;
       form.reset(INITIAL_VALUES);
       setIsTeamOnly(false);
       setIsAdvancedOpen(false);
-      const message = t("models.create.success", { count: payloads.length });
+      const message = t("models.create.success", { count: created.value.count });
       setResult({ status: "success", message });
       toast.success(message);
     } catch (error) {
@@ -495,14 +530,11 @@ export function FocusAddModelPanel() {
               )}
             </MountedFormField>
             {!selectedCredential && (
-              <FocusProviderCredentialFields
-                fields={selectedProviderMetadata?.credential_fields ?? []}
-                provider={selectedProvider}
-              />
+              <FocusProviderCredentialFields fields={selectedProviderFields} provider={selectedProvider} />
             )}
           </section>
 
-          {isAdmin && (
+          {teamByok.visible && (
             <section className="space-y-4 rounded-lg border border-border bg-background p-4 sm:p-5">
               <div>
                 <h3 className="text-sm font-semibold">{t("models.create.sections.access")}</h3>
@@ -516,6 +548,8 @@ export function FocusAddModelPanel() {
                     setIsTeamOnly(checked);
                     if (!checked) form.setValue("team_id", undefined);
                   }}
+                  disabled={!teamByok.enabled}
+                  aria-label={t("models.create.teamOnly")}
                 />
               </label>
               {isTeamOnly && (
@@ -530,6 +564,7 @@ export function FocusAddModelPanel() {
                       id={control.id}
                       value={control.value as string | undefined}
                       onChange={control.onChange}
+                      disabled={!teamByok.enabled}
                     />
                   )}
                 </MountedFormField>
