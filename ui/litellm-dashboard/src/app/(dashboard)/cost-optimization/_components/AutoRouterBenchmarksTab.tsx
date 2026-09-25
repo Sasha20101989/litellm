@@ -398,6 +398,7 @@ export const AutoRouterUsageView: React.FC<AutoRouterBenchmarksTabProps> = ({ ac
 };
 
 const AutoRouterBenchmarksTab: React.FC<AutoRouterBenchmarksTabProps> = ({ accessToken, activity }) => {
+  const { t } = useTranslation("gateway");
   const [visitedTabs, setVisitedTabs] = useState<readonly string[]>(["usage"]);
 
   const handleTabChange = (value: unknown) => {
@@ -412,10 +413,10 @@ const AutoRouterBenchmarksTab: React.FC<AutoRouterBenchmarksTabProps> = ({ acces
     <Tabs defaultValue="usage" onValueChange={handleTabChange} className="w-full gap-4">
       <TabsList>
         <TabsTrigger value="usage" className="px-3">
-          Usage
+          {t("sync.autoRouterUsage")}
         </TabsTrigger>
         <TabsTrigger value="shadow-evals" className="px-3">
-          Shadow Evals
+          {t("sync.shadowEvaluations")}
         </TabsTrigger>
       </TabsList>
 

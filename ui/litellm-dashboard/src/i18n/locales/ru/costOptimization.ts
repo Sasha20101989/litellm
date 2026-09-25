@@ -22,6 +22,7 @@ export const ruCostOptimization = {
     utcDays: "Расходы сгруппированы по дням UTC",
     totalSaved: "Общая экономия",
     loading: "Загрузка...",
+    loadingMore: "Данные ещё загружаются. Строки и итоги обновятся после получения оставшейся части периода.",
     totalSavedHint: "Сжатие + кэширование промптов + автомаршрутизатор",
     compressionSavings: "Экономия от сжатия",
     compressedTokens: "Сжато токенов: {{count}}",

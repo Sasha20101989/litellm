@@ -73,6 +73,23 @@ const LOCALIZED_FILES = [
   "src/app/(dashboard)/vector-stores/_components/index.tsx",
   "src/app/(dashboard)/vector-stores/_components/vector_store_info.tsx",
   "src/components/vector_store_management/VectorStoreSelector.tsx",
+  "src/app/(dashboard)/api-reference/_components/APIReferenceView.tsx",
+  "src/app/(dashboard)/cost-optimization/_components/AutoRouterBenchmarksTab.tsx",
+  "src/app/(dashboard)/cost-optimization/_components/CacheLeakageCard.tsx",
+  "src/app/(dashboard)/mcp-servers/_components/MCPServerCard.tsx",
+  "src/app/(dashboard)/mcp-servers/_components/mcp_servers.tsx",
+  "src/app/(dashboard)/models-and-endpoints/components/ModelsTableColumns.tsx",
+  "src/components/Navbar/UserDropdown/UserDropdown.tsx",
+  "src/components/SidebarAccountMenu/SidebarAccountMenu.tsx",
+  "src/components/model_dashboard/types.ts",
+  "src/components/organisms/create_key_button.tsx",
+  "src/components/routing_groups/RoutingGroupModal.tsx",
+  "src/components/routing_groups/RoutingGroupUsagePanel.tsx",
+  "src/components/shared/SavingsTiles.tsx",
+  "src/components/templates/KeySavingsTab.tsx",
+  "src/components/templates/key_edit_view.tsx",
+  "src/components/templates/key_info_view.tsx",
+  "src/components/view_logs/AuditLogsTableColumns.tsx",
 ];
 
 // These values are product names, identifiers, or protocol terms. Translating
@@ -84,6 +101,14 @@ const TECHNICAL_LITERAL_ALLOWLIST = [
     reason: "configuration identifier",
   },
   { pattern: /^(?:SSO|URL|MCP|A2A|OpenID|OAuth)$/, reason: "protocol or industry term" },
+  {
+    pattern:
+      /^(?:ID|24h|7d|30d|90d|\(UTC\)|TPD \(batch\):|USD|-&gt;|->|cURL|Python \(OpenAI SDK\)|JavaScript \(OpenAI SDK\)|OpenAI Python SDK|LlamaIndex|Langchain Py|Client Secret Basic|Client Secret Post)$/,
+    reason: "protocol, SDK, time range, or unit",
+  },
+  { pattern: /^https:\/\/www\.litellm\.ai\/enterprise$/, reason: "external URL" },
+  { pattern: /^\{.*\}$/, reason: "JSON configuration example" },
+  { pattern: /^fast-chat$/, reason: "model identifier" },
   { pattern: /^(?:TPM|RPM):$/, reason: "rate-limit identifier" },
   { pattern: /^us-west-2$/, reason: "AWS region identifier" },
   { pattern: /^\{"key": "value"\}$/, reason: "JSON example" },
@@ -113,6 +138,21 @@ function isInsideTechnicalMarkup(node) {
   return false;
 }
 
+const USER_VISIBLE_PROPERTY_NAMES = new Set(["description", "label", "placeholder", "title", "tooltip"]);
+
+function propertyName(node) {
+  return ts.isIdentifier(node.name) || ts.isStringLiteral(node.name) ? node.name.text : undefined;
+}
+
+function isUserVisibleToast(node) {
+  return (
+    ts.isPropertyAccessExpression(node.expression) &&
+    ts.isIdentifier(node.expression.expression) &&
+    node.expression.expression.text === "toast" &&
+    ["error", "fromError", "success", "warning"].includes(node.expression.name.text)
+  );
+}
+
 export function auditSource(source, file = "source.tsx") {
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const findings = [];
@@ -137,6 +177,14 @@ export function auditSource(source, file = "source.tsx") {
       if (["placeholder", "title", "aria-label", "alt"].includes(name)) {
         record(node, node.initializer.text, `jsx-${name}`);
       }
+    } else if (
+      ts.isPropertyAssignment(node) &&
+      USER_VISIBLE_PROPERTY_NAMES.has(propertyName(node) ?? "") &&
+      ts.isStringLiteral(node.initializer)
+    ) {
+      record(node, node.initializer.text, `property-${propertyName(node)}`);
+    } else if (ts.isCallExpression(node) && isUserVisibleToast(node) && ts.isStringLiteral(node.arguments[0])) {
+      record(node, node.arguments[0].text, "toast");
     }
     ts.forEachChild(node, visit);
   };

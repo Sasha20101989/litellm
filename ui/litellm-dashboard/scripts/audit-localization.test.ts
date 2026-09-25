@@ -15,4 +15,11 @@ describe("localization audit", () => {
   it("allows the Nexoplane product name", () => {
     expect(auditSource('return <img alt="Nexoplane" />', "fixture.tsx")).toEqual([]);
   });
+
+  it("reports raw copy in configuration objects and toasts", () => {
+    expect(auditSource('const column = { title: "Lifetime Spend" }; toast.error("Save failed")', "fixture.tsx")).toEqual([
+      expect.objectContaining({ kind: "property-title", text: "Lifetime Spend" }),
+      expect.objectContaining({ kind: "toast", text: "Save failed" }),
+    ]);
+  });
 });

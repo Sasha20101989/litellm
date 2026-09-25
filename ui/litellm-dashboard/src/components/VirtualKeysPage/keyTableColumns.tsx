@@ -31,17 +31,14 @@ interface KeyStatus {
   tooltip?: string;
 }
 
-const SPEND_BUDGET_SORT_FIELDS: DataTableSortField[] = [
-  { id: "spend", label: "Spend" },
-  { id: "max_budget", label: "Budget" },
-];
+const SPEND_BUDGET_SORT_FIELD_IDS = ["spend", "max_budget"] as const;
 
 export const KEY_TABLE_SORT_FIELDS: readonly string[] = [
   "key_alias",
   "token",
   "created_at",
   "updated_at",
-  ...SPEND_BUDGET_SORT_FIELDS.map((field) => field.id),
+  ...SPEND_BUDGET_SORT_FIELD_IDS,
 ];
 
 const getKeyStatus = (key: KeyResponse, t: TFunction<"gateway">): KeyStatus => {

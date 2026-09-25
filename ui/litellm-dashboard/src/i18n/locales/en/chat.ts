@@ -447,6 +447,7 @@ export const enChat = {
     cancel: "Cancel",
     saveAndSend: "Save & Send",
     edit: "Edit message",
+    imageOmitted: "Image omitted",
     stopped: "stopped",
     copied: "Copied!",
     copy: "Copy",

@@ -1,13 +1,18 @@
 use litellm_auth::ResolvedCredential;
-use litellm_core::ocr::{LiteLLMOcrResponse, Ocr, OcrOp, OcrOpResult};
-use litellm_host_python::{RouteHost, missing_state, to_py};
-use pyo3::exceptions::PyBaseException;
-use pyo3::gc::{PyTraverseError, PyVisit};
-use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use litellm_core::ocr::route::{Ocr, OcrOp, OcrProjection};
+use litellm_host_python::{InvokeError, ProtocolHost, missing_state, to_py};
+use litellm_llms::base_llm::ocr::{error::Error, transformation::LiteLLMOcrResponse};
+use pyo3::{
+    exceptions::{PyBaseException, PyException},
+    gc::{PyTraverseError, PyVisit},
+    prelude::*,
+    types::PyDict,
+};
 
-use super::errors::to_pyerr as ocr_error_to_pyerr;
-use super::project::{OcrHostHandles, project_request};
+use super::{
+    errors::to_pyerr as ocr_error_to_pyerr,
+    project::{OcrHostHandles, project_request},
+};
 
 enum OcrHostData {
     Unprojected,
@@ -15,14 +20,15 @@ enum OcrHostData {
     Released,
 }
 
-/// The Python side of the OCR route: projects the prepared arguments, reads file-like
-/// documents, acquires Azure AD tokens, and builds the public response and exception.
-pub(super) struct OcrRouteHost {
+/// The Python side of the OCR route: projects the prepared arguments (reading a file-like
+/// document as it goes), acquires Azure AD tokens, and builds the public response and
+/// exception.
+pub(super) struct OcrPythonHost {
     request: Py<PyAny>,
     data: OcrHostData,
 }
 
-impl OcrRouteHost {
+impl OcrPythonHost {
     pub(super) fn new(request: Py<PyAny>) -> Self {
         Self {
             request,
@@ -37,14 +43,6 @@ impl OcrRouteHost {
         }
     }
 
-    fn read_document(&self, py: Python<'_>) -> PyResult<litellm_core::ocr::OcrFileContent> {
-        self.handles()?
-            .reader
-            .as_ref()
-            .ok_or_else(missing_state)?
-            .read(py)
-    }
-
     fn acquire_azure_ad_token(&self, py: Python<'_>) -> PyResult<ResolvedCredential> {
         self.handles()?
             .azure_ad_token_provider
@@ -52,34 +50,63 @@ impl OcrRouteHost {
             .ok_or_else(missing_state)?
             .acquire(py)
     }
-}
 
-impl RouteHost for OcrRouteHost {
-    type Route = Ocr;
-
-    fn invoke(
+    fn projection(
         &mut self,
         py: Python<'_>,
         arguments: &Bound<'_, PyDict>,
-        op: OcrOp,
-    ) -> PyResult<OcrOpResult> {
+    ) -> PyResult<OcrProjection> {
+        let OcrHostData::Unprojected = self.data else {
+            return Err(missing_state());
+        };
+        let (request, handles) = project_request(self.request.bind(py), arguments)?;
+        let caller_token = handles.azure_ad_token_provider.is_some();
+        self.data = OcrHostData::Projected(Box::new(handles));
+        Ok(OcrProjection {
+            request,
+            caller_token,
+        })
+    }
+
+    fn map_failure(&self, py: Python<'_>, error: PyErr) -> PyErr {
+        if !error.is_instance_of::<PyException>(py) {
+            return error;
+        }
+        let provider = match &self.data {
+            OcrHostData::Projected(handles) => handles.provider,
+            _ => "",
+        };
+        let mapped = py
+            .import("litellm.rust_bridge.ocr.route_host")
+            .and_then(|module| module.getattr("map_failure"))
+            .and_then(|map| map.call1((error.value(py), self.request.bind(py), provider)))
+            .and_then(|mapped| mapped.extract::<Py<PyBaseException>>().map_err(PyErr::from));
+        match mapped {
+            Ok(mapped) => PyErr::from_value(mapped.into_bound(py).into_any()),
+            Err(_) => error,
+        }
+    }
+}
+
+impl ProtocolHost for OcrPythonHost {
+    type Protocol = Ocr;
+    type Failure = PyErr;
+
+    fn project(
+        &mut self,
+        py: Python<'_>,
+        arguments: &Bound<'_, PyDict>,
+    ) -> Result<OcrProjection, InvokeError<Error>> {
+        self.projection(py, arguments)
+            .map_err(|error| InvokeError::Python(self.map_failure(py, error)))
+    }
+
+    fn invoke(&mut self, py: Python<'_>, op: OcrOp) -> Result<(), InvokeError<Error>> {
         match op {
-            OcrOp::ProjectRequest => {
-                let OcrHostData::Unprojected = self.data else {
-                    return Err(missing_state());
-                };
-                let (request, handles) = project_request(self.request.bind(py), arguments)?;
-                let caller_token = handles.azure_ad_token_provider.is_some();
-                self.data = OcrHostData::Projected(Box::new(handles));
-                Ok(OcrOpResult::Request {
-                    request: Box::new(request),
-                    caller_token,
-                })
-            }
-            OcrOp::ReadDocument => self.read_document(py).map(OcrOpResult::Document),
-            OcrOp::AcquireAzureAdToken => self
+            OcrOp::AcquireAzureAdToken(reply) => self
                 .acquire_azure_ad_token(py)
-                .map(OcrOpResult::AzureAdToken),
+                .map(|token| reply.send(token))
+                .map_err(|error| InvokeError::Python(self.map_failure(py, error))),
         }
     }
 
@@ -90,25 +117,21 @@ impl RouteHost for OcrRouteHost {
             .map(Bound::unbind)
     }
 
-    fn native_error(error: litellm_core::ocr::Error) -> PyErr {
-        ocr_error_to_pyerr(error)
+    fn chunk(&mut self, _: Python<'_>, chunk: std::convert::Infallible) -> PyResult<Py<PyAny>> {
+        match chunk {}
     }
 
-    fn host_error(error: &PyErr) -> litellm_core::ocr::Error {
-        litellm_core::ocr::Error::InvalidRequest(error.to_string())
+    fn classify(&self, py: Python<'_>, error: Error) -> PyResult<PyErr> {
+        if let Error::Secret(source) = &error
+            && let Some(original) = crate::secrets::python_error(py, source)
+        {
+            return Ok(original);
+        }
+        Ok(self.map_failure(py, ocr_error_to_pyerr(error)))
     }
 
-    fn map_failure(&self, py: Python<'_>, error: &PyErr) -> PyResult<PyErr> {
-        let provider = match &self.data {
-            OcrHostData::Projected(handles) => handles.provider,
-            _ => "",
-        };
-        let mapped: Py<PyBaseException> = py
-            .import("litellm.rust_bridge.ocr.route_host")?
-            .getattr("map_failure")?
-            .call1((error.value(py), self.request.bind(py), provider))?
-            .extract()?;
-        Ok(PyErr::from_value(mapped.into_bound(py).into_any()))
+    fn host_error(error: &PyErr) -> Error {
+        Error::InvalidRequest(error.to_string())
     }
 
     fn close(&mut self, _: Python<'_>) {
@@ -117,13 +140,10 @@ impl RouteHost for OcrRouteHost {
 
     fn traverse(&self, visit: &PyVisit<'_>) -> Result<(), PyTraverseError> {
         visit.call(&self.request)?;
-        if let OcrHostData::Projected(handles) = &self.data {
-            if let Some(reader) = &handles.reader {
-                reader.traverse(visit)?;
-            }
-            if let Some(provider) = &handles.azure_ad_token_provider {
-                provider.traverse(visit)?;
-            }
+        if let OcrHostData::Projected(handles) = &self.data
+            && let Some(provider) = &handles.azure_ad_token_provider
+        {
+            provider.traverse(visit)?;
         }
         Ok(())
     }
@@ -174,20 +194,13 @@ del provider
                 .unwrap()
                 .cast_into::<PyDict>()
                 .unwrap();
-            let mut host = OcrRouteHost::new(py.None());
-            let projected = host.invoke(py, &kwargs, OcrOp::ProjectRequest).unwrap();
-            assert!(matches!(
-                projected,
-                OcrOpResult::Request {
-                    caller_token: true,
-                    ..
-                }
-            ));
+            let mut host = OcrPythonHost::new(py.None());
+            assert!(host.project(py, &kwargs).unwrap().caller_token);
             locals.del_item("kwargs").unwrap();
             drop(kwargs);
+            let (reply, _) = litellm_host::host::reply();
             assert_eq!(
-                host.invoke(py, &PyDict::new(py), OcrOp::AcquireAzureAdToken)
-                    .is_ok(),
+                host.invoke(py, OcrOp::AcquireAzureAdToken(reply)).is_ok(),
                 succeeds
             );
             let alive = || {

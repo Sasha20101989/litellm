@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useWatch } from "react-hook-form";
 import { z } from "zod/v4";
 import { FieldGroup } from "@/components/ui/field";
@@ -61,6 +62,7 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
   onSubmit,
   saving,
 }) => {
+  const { t } = useTranslation("gateway");
   const modelsAnchor = useComboboxAnchor();
   const strategyItems = availableStrategies.map((strategy) => ({ label: strategy, value: strategy }));
 
@@ -114,8 +116,8 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
             <FormField
               control={form.control}
               name="group_name"
-              label="Group Name"
-              description="Use this name as the model in API calls — Nexoplane routes the request to one of the group's models."
+              label={t("routingGroups.groupName")}
+              description={t("routingGroups.groupNameDescription")}
             >
               {({ ref, ...field }) => <Input {...field} ref={ref} placeholder="fast-chat" disabled={mode === "edit"} />}
             </FormField>
@@ -123,8 +125,8 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
             <FormField
               control={form.control}
               name="models"
-              label="Models"
-              description="Models from your model list that this group routes between."
+              label={t("routingGroups.models")}
+              description={t("routingGroups.modelsDescription")}
             >
               {({ id, value, onChange, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedBy }) => (
                 <Combobox multiple items={modelOptions} value={value} onValueChange={onChange}>
@@ -141,14 +143,14 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
                             id={id}
                             aria-invalid={ariaInvalid}
                             aria-describedby={ariaDescribedBy}
-                            placeholder="Select models"
+                            placeholder={t("routingGroups.selectModels")}
                           />
                         </>
                       )}
                     </ComboboxValue>
                   </ComboboxChips>
                   <ComboboxContent anchor={modelsAnchor}>
-                    <ComboboxEmpty>No models found</ComboboxEmpty>
+                    <ComboboxEmpty>{t("routingGroups.noModels")}</ComboboxEmpty>
                     <ComboboxList>
                       {(model: string) => (
                         <ComboboxItem key={model} value={model}>
@@ -164,7 +166,7 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
             <FormField
               control={form.control}
               name="routing_strategy"
-              label="Routing Strategy"
+              label={t("routingGroups.strategy")}
               description={strategyDescriptions[selectedStrategy]}
             >
               {({ id, value, onChange, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedBy }) => (
@@ -180,7 +182,7 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
                   }}
                 >
                   <SelectTrigger id={id} aria-invalid={ariaInvalid} aria-describedby={ariaDescribedBy}>
-                    <SelectValue placeholder="Select strategy" />
+                    <SelectValue placeholder={t("routingGroups.selectStrategy")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableStrategies.map((strategy) => (
@@ -207,16 +209,16 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
             )}
 
             <p className="text-xs text-muted-foreground">
-              Models not claimed by an explicit group fall through to the proxy&apos;s top-level routing strategy.
+              {t("routingGroups.fallbackDescription")}
             </p>
           </FieldGroup>
         </form>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("routingGroups.cancel")}
           </Button>
           <Button onClick={() => void form.handleSubmit(handleSubmit)()} disabled={saving} aria-busy={saving}>
-            {mode === "create" ? "Create Group" : "Save Changes"}
+            {mode === "create" ? t("routingGroups.create") : t("routingGroups.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

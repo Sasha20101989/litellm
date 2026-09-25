@@ -1,4 +1,22 @@
 export const enGateway = {
+  sync: {
+    autoRouterUsage: "Usage",
+    shadowEvaluations: "Shadow evaluations",
+  },
+  routingGroups: {
+    groupName: "Group Name",
+    groupNameDescription: "Use this name as the model in API calls. Nexoplane routes the request to one of the group's models.",
+    models: "Models",
+    modelsDescription: "Models from your model list that this group routes between.",
+    selectModels: "Select models",
+    noModels: "No models found",
+    strategy: "Routing Strategy",
+    selectStrategy: "Select strategy",
+    fallbackDescription: "Models not claimed by an explicit group use the proxy's top-level routing strategy.",
+    cancel: "Cancel",
+    create: "Create Group",
+    save: "Save Changes",
+  },
   models: {
     title: "Model Management",
     adminSubtitle: "Add and manage models for the proxy",
@@ -5509,10 +5527,14 @@ export const enGateway = {
       toolsets: "Toolsets",
       connect: "Connect",
       semanticFilter: "Semantic Filter",
+      toolSearch: "Tool Search",
       network: "Network Settings",
       submitted: "Submitted MCPs",
     },
     newBadge: "New",
+    import: {
+      fromJson: "Import from JSON",
+    },
     byokCredentialModal: {
       service: "Service",
       apiKeyRequired: "Please enter your API key",
@@ -6083,6 +6105,9 @@ export const enGateway = {
       missingFields_plural: "{{count}} user fields missing",
       missingFieldsTitle: "Missing user fields:",
       set: "Set",
+      userCredentials: "Per-user credentials",
+      credentialsSet: "Set",
+      updateCredentials: "Update",
       checking: "Checking",
       health: "Health: {{status}}",
       lastCheck: "Last check: {{date}}",

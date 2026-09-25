@@ -22,6 +22,10 @@ vi.mock("react-i18next", async () => {
 // Mock the hooks and utilities
 vi.mock("@/components/networking", () => ({
   getProxyBaseUrl: vi.fn(() => "http://localhost:4000"),
+  getProxyUISettings: vi.fn().mockResolvedValue({
+    PROXY_BASE_URL: "",
+    PROXY_LOGOUT_URL: "https://example.com/logout",
+  }),
   serverRootPath: "",
 }));
 
@@ -88,13 +92,6 @@ vi.mock("./Navbar/UserDropdown/UserDropdown", async (importOriginal) => {
     },
   };
 });
-
-vi.mock("@/utils/proxyUtils", () => ({
-  fetchProxySettings: vi.fn().mockResolvedValue({
-    PROXY_BASE_URL: "",
-    PROXY_LOGOUT_URL: "https://example.com/logout",
-  }),
-}));
 
 // Mock CommunityEngagementButtons component
 vi.mock("./Navbar/CommunityEngagementButtons/CommunityEngagementButtons", () => ({

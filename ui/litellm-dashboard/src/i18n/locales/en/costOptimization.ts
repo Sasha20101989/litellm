@@ -22,6 +22,7 @@ export const enCostOptimization = {
     utcDays: "Spend is bucketed by UTC day",
     totalSaved: "Total saved",
     loading: "Loading...",
+    loadingMore: "Data is still loading. Rows and totals will update as the rest of the range arrives.",
     totalSavedHint: "Compression + prompt caching + auto-router",
     compressionSavings: "Compression savings",
     compressedTokens: "{{count}} tokens compressed",

@@ -456,6 +456,7 @@ export const ruChat = {
     cancel: "Отмена",
     saveAndSend: "Сохранить и отправить",
     edit: "Изменить сообщение",
+    imageOmitted: "Изображение не показано",
     stopped: "остановлено",
     copied: "Скопировано!",
     copy: "Копировать",

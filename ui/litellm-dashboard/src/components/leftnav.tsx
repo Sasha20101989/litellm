@@ -77,7 +77,6 @@ import {
   rolesWithWriteAccess,
 } from "../utils/roles";
 import BetaBadge from "./BetaBadge";
-import NewBadge from "./common_components/NewBadge";
 import SidebarAccountMenu from "./SidebarAccountMenu/SidebarAccountMenu";
 import SidebarUsageCard from "./SidebarUsageCard";
 import { routeSegmentForPathname, uiHref } from "@/utils/uiHref";
@@ -102,7 +101,6 @@ interface MenuItem {
   page: string;
   route?: string;
   label: string | React.ReactNode;
-  badge?: "beta" | "new" | "new-dot";
   roles?: string[];
   children?: MenuItem[];
   icon?: React.ReactNode;
@@ -213,8 +211,11 @@ const menuGroups: MenuGroup[] = [
         page: "cost-optimization",
         icon: <PiggyBank {...ICON} />,
         roles: [...all_admin_roles, ...internalUserRoles],
-        label: "Cost Optimization",
-        badge: "beta",
+        label: (
+          <span className="flex items-center gap-2">
+            Cost Optimization <BetaBadge />
+          </span>
+        ),
       },
       { key: "logs", page: "logs", label: "Logs", icon: <Activity {...ICON} /> },
       {
@@ -233,8 +234,11 @@ const menuGroups: MenuGroup[] = [
       {
         key: "projects",
         page: "projects",
-        label: "Projects",
-        badge: "beta",
+        label: (
+          <span className="flex items-center gap-2">
+            Projects <BetaBadge />
+          </span>
+        ),
         icon: <Folder {...ICON} />,
         roles: all_admin_roles,
       },
@@ -322,7 +326,6 @@ const menuGroups: MenuGroup[] = [
         key: "settings",
         page: "settings",
         label: "Settings",
-        badge: "new",
         icon: <SettingsIcon {...ICON} />,
         roles: all_admin_roles,
         children: [
@@ -344,7 +347,6 @@ const menuGroups: MenuGroup[] = [
             key: "admin-panel",
             page: "admin-panel",
             label: "Admin Settings",
-            badge: "new-dot",
             icon: <SettingsIcon {...ICON} />,
             roles: all_admin_roles,
           },
@@ -405,17 +407,17 @@ const prettify = (key: string): string =>
 const labelText = (item: MenuItem): string => (typeof item.label === "string" ? item.label : prettify(item.key));
 
 // Breadcrumb ("Section" / "Page") for the top bar, derived from the same nav config.
-export const getBreadcrumb = (pathname: string): { section: string | null; title: string; itemKey: string | null } => {
+export const getBreadcrumb = (pathname: string): { section: string | null; title: string } => {
   const route = routeForPathname(pathname);
   for (const group of menuGroups) {
     for (const item of group.items) {
       const section = SECTION_DISPLAY[group.groupLabel] ?? group.groupLabel;
-      if (routeOf(item) === route) return { section, title: labelText(item), itemKey: item.key };
+      if (routeOf(item) === route) return { section, title: labelText(item) };
       const child = item.children?.find((c) => routeOf(c) === route);
-      if (child) return { section, title: labelText(child), itemKey: child.key };
+      if (child) return { section, title: labelText(child) };
     }
   }
-  return { section: null, title: prettify(route), itemKey: null };
+  return { section: null, title: prettify(route) };
 };
 
 const Sidebar_: React.FC<SidebarProps> = ({
@@ -441,13 +443,7 @@ const Sidebar_: React.FC<SidebarProps> = ({
   const itemLabel = (item: MenuItem) => (
     <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
       <span className="truncate group-data-[collapsed=true]/sidebar:hidden">{translatedItemLabel(item)}</span>
-      {item.badge === "beta" && <BetaBadge label={navigation.sidebar.badges.beta} />}
-      {item.badge === "new" && <NewBadge label={navigation.sidebar.badges.new} />}
-      {item.badge === "new-dot" && (
-        <NewBadge dot label={navigation.sidebar.badges.new}>
-          <span />
-        </NewBadge>
-      )}
+      {(item.key === "cost-optimization" || item.key === "projects") && <BetaBadge label={navigation.sidebar.badges.beta} />}
     </span>
   );
   const [erroredDarkLogo, setErroredDarkLogo] = useState<string | null>(null);

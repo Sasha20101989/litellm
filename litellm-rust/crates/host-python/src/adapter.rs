@@ -1,5 +1,5 @@
-use litellm_callbacks::event::{CallEvent, RequestContext, Timing, WireRequest};
-use litellm_callbacks::route::Route;
+use litellm_host::event::{FailureOrigin, MachineEvent, RequestContext, Timing, WireRequest};
+use litellm_host::protocol::Protocol;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::gc::{PyTraverseError, PyVisit};
 use pyo3::prelude::*;
@@ -11,7 +11,7 @@ pub fn missing_state() -> PyErr {
 
 /// What an adapter step produced: either the value the driver asked for, or a Python
 /// awaitable the driver hands back to the caller's task before asking again.
-pub enum AdapterStep {
+pub enum LifecycleStep {
     Await(Py<PyAny>),
     Arguments(Py<PyDict>),
     Wire(Box<WireRequest>),
@@ -19,84 +19,135 @@ pub enum AdapterStep {
     Done,
 }
 
-/// The host-typed value the driver attaches to a terminal event.
-pub enum PublicValue<'a> {
-    Response(&'a Py<PyAny>),
-    Error(&'a PyErr),
+/// What a lifecycle observes: the driver's start, the machine's own events, and one
+/// terminal event carrying the public value the caller receives.
+pub enum LifecycleEvent<'a> {
+    Started {
+        start_time: f64,
+    },
+    Machine(&'a MachineEvent),
+    Succeeded {
+        timing: Timing,
+        response: &'a Py<PyAny>,
+    },
+    Failed {
+        timing: Timing,
+        origin: FailureOrigin,
+        error: &'a PyErr,
+    },
 }
 
 /// One consumer of a call's lifecycle on the Python side. The driver calls the steps in
 /// order: `begin` before the machine starts, `before_send` and `emit` while it runs,
 /// `after_success` and one terminal `emit` after it completes. Whenever a step returns
-/// [`AdapterStep::Await`], the driver awaits it in the caller's task and continues the
+/// [`LifecycleStep::Await`], the driver awaits it in the caller's task and continues the
 /// same step through `resume`.
 ///
 /// A step that fails with an ordinary exception fails the call with that exception,
 /// except on a terminal event, where the adapter is expected to report and swallow its
 /// own errors. An exception that is not a `PyException`, such as a cancellation, ends
 /// the call without further dispatch.
-pub trait CallbackAdapter: Send + Sync {
+pub trait PythonLifecycle: Send + Sync {
     fn begin(
         &mut self,
         py: Python<'_>,
         arguments: Py<PyDict>,
         started_at: f64,
-    ) -> PyResult<AdapterStep>;
+    ) -> PyResult<LifecycleStep>;
 
     fn before_send(
         &mut self,
         py: Python<'_>,
         wire: Box<WireRequest>,
         context: &RequestContext,
-    ) -> PyResult<AdapterStep>;
+    ) -> PyResult<LifecycleStep>;
 
     fn after_success(
         &mut self,
         py: Python<'_>,
         response: Py<PyAny>,
         timing: Timing,
-    ) -> PyResult<AdapterStep>;
+    ) -> PyResult<LifecycleStep>;
 
-    fn emit(
-        &mut self,
-        py: Python<'_>,
-        event: &CallEvent,
-        public: Option<PublicValue<'_>>,
-    ) -> PyResult<AdapterStep>;
+    fn emit(&mut self, py: Python<'_>, event: LifecycleEvent<'_>) -> PyResult<LifecycleStep>;
 
-    fn resume(&mut self, py: Python<'_>, result: PyResult<Py<PyAny>>) -> PyResult<AdapterStep>;
+    /// The call streams and its stream was handed to the caller. The caller is not
+    /// inside an await here, so this step and `delivered` cannot suspend.
+    fn opened(&mut self, py: Python<'_>) -> PyResult<()>;
+
+    /// One chunk of an open stream is about to reach the caller.
+    fn delivered(&mut self, py: Python<'_>, chunk: &Py<PyAny>) -> PyResult<()>;
+
+    fn resume(&mut self, py: Python<'_>, result: PyResult<Py<PyAny>>) -> PyResult<LifecycleStep>;
 
     fn close(&mut self, py: Python<'_>);
 
     fn traverse(&self, visit: &PyVisit<'_>) -> Result<(), PyTraverseError>;
 }
 
-/// The Python side of one route: answers the route's own operations, builds the public
-/// response and maps failures to public exceptions.
-pub trait RouteHost: Send + Sync {
-    type Route: Route;
+/// Why a custom operation the host answered did not produce a result: the route's own code
+/// rejected it, which the route classifies like any other native failure, or Python code
+/// raised, which reaches the caller as it was raised.
+#[derive(Debug)]
+pub enum InvokeError<E> {
+    Native(E),
+    Python(PyErr),
+}
 
-    /// `arguments` is the keyword view the callback adapter's `begin` produced, not the
-    /// caller's own dict. A route host that projects from it inherits whatever that
-    /// adapter rewrote.
-    fn invoke(
+impl<E> From<PyErr> for InvokeError<E> {
+    fn from(error: PyErr) -> Self {
+        Self::Python(error)
+    }
+}
+
+/// The Python side of one protocol: answers its custom operations, builds the public
+/// response and classifies native failures into public exceptions.
+pub trait ProtocolHost: Send + Sync {
+    type Protocol: Protocol<Error: std::fmt::Display>;
+
+    /// The public exception a native failure maps to, kept as a value until the driver
+    /// raises it.
+    type Failure: Into<PyErr>;
+
+    /// Projects the call's request. `arguments` is the keyword view the lifecycle's
+    /// `begin` produced, not the caller's own dict, so the projection inherits whatever
+    /// that adapter rewrote.
+    fn project(
         &mut self,
         py: Python<'_>,
         arguments: &Bound<'_, PyDict>,
-        op: <Self::Route as Route>::Op,
-    ) -> PyResult<<Self::Route as Route>::OpResult>;
+    ) -> Result<
+        <Self::Protocol as Protocol>::Projection,
+        InvokeError<<Self::Protocol as Protocol>::Error>,
+    >;
+
+    /// Answers `op` through its reply.
+    fn invoke(
+        &mut self,
+        py: Python<'_>,
+        op: <Self::Protocol as Protocol>::Op,
+    ) -> Result<(), InvokeError<<Self::Protocol as Protocol>::Error>>;
 
     fn complete(
         &mut self,
         py: Python<'_>,
-        response: <Self::Route as Route>::Response,
+        response: <Self::Protocol as Protocol>::Response,
     ) -> PyResult<Py<PyAny>>;
 
-    fn native_error(error: <Self::Route as Route>::Error) -> PyErr;
+    /// One streamed chunk as the caller receives it.
+    fn chunk(
+        &mut self,
+        py: Python<'_>,
+        chunk: <Self::Protocol as Protocol>::Chunk,
+    ) -> PyResult<Py<PyAny>>;
 
-    fn host_error(error: &PyErr) -> <Self::Route as Route>::Error;
+    fn classify(
+        &self,
+        py: Python<'_>,
+        error: <Self::Protocol as Protocol>::Error,
+    ) -> PyResult<Self::Failure>;
 
-    fn map_failure(&self, py: Python<'_>, error: &PyErr) -> PyResult<PyErr>;
+    fn host_error(error: &PyErr) -> <Self::Protocol as Protocol>::Error;
 
     fn close(&mut self, py: Python<'_>);
 

@@ -1,4 +1,22 @@
 export const ruGateway = {
+  sync: {
+    autoRouterUsage: "Использование",
+    shadowEvaluations: "Теневые проверки",
+  },
+  routingGroups: {
+    groupName: "Название группы",
+    groupNameDescription: "Это имя используется как модель в API-запросах. Nexoplane направляет запрос к одной из моделей группы.",
+    models: "Модели",
+    modelsDescription: "Модели из вашего списка, между которыми маршрутизирует эта группа.",
+    selectModels: "Выберите модели",
+    noModels: "Модели не найдены",
+    strategy: "Стратегия маршрутизации",
+    selectStrategy: "Выберите стратегию",
+    fallbackDescription: "Модели, не назначенные явной группе, используют стратегию маршрутизации верхнего уровня прокси.",
+    cancel: "Отмена",
+    create: "Создать группу",
+    save: "Сохранить изменения",
+  },
   models: {
     title: "Управление моделями",
     adminSubtitle: "Добавление и управление моделями прокси",
@@ -5510,10 +5528,14 @@ export const ruGateway = {
       toolsets: "Наборы инструментов",
       connect: "Подключение",
       semanticFilter: "Семантический фильтр",
+      toolSearch: "Поиск инструментов",
       network: "Сетевые настройки",
       submitted: "Предложенные MCP",
     },
     newBadge: "Новое",
+    import: {
+      fromJson: "Импорт из JSON",
+    },
     byokCredentialModal: {
       service: "Сервис",
       apiKeyRequired: "Введите ключ API",
@@ -6089,6 +6111,9 @@ export const ruGateway = {
       missingFields_plural: "Не заполнено пользовательских полей: {{count}}",
       missingFieldsTitle: "Не заполнены пользовательские поля:",
       set: "Заполнить",
+      userCredentials: "Учётные данные пользователя",
+      credentialsSet: "Указаны",
+      updateCredentials: "Изменить",
       checking: "Проверка",
       health: "Состояние: {{status}}",
       lastCheck: "Последняя проверка: {{date}}",

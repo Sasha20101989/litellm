@@ -32,6 +32,16 @@ const RESTRICTED_FIELDS = new Set(["credential_name", "custom_llm_provider"]);
 
 type ModalMode = "add" | "edit" | null;
 
+interface CredentialListProps {
+  credentials: CredentialItem[];
+  isLoading: boolean;
+  isError: boolean;
+  hasSearch: boolean;
+  canModify: boolean;
+  onEdit: (credential: CredentialItem) => void;
+  onDelete: (credential: CredentialItem) => void;
+}
+
 function credentialPayload(values: Record<string, unknown>, shouldStripSecrets: boolean) {
   const credentialValues = Object.fromEntries(Object.entries(values).filter(([key]) => !RESTRICTED_FIELDS.has(key)));
   return {
@@ -39,6 +49,59 @@ function credentialPayload(values: Record<string, unknown>, shouldStripSecrets: 
     credential_values: shouldStripSecrets ? stripMaskedSecrets(credentialValues) : credentialValues,
     credential_info: { custom_llm_provider: String(values.custom_llm_provider) },
   };
+}
+
+function CredentialList({
+  credentials,
+  isLoading,
+  isError,
+  hasSearch,
+  canModify,
+  onEdit,
+  onDelete,
+}: CredentialListProps) {
+  const { t } = useTranslation("gateway");
+  if (isLoading) {
+    return (
+      <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" />
+        {t("models.credentials.loading")}
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <div className="flex min-h-48 items-center justify-center text-sm text-destructive">
+        {t("models.credentials.loadFailed")}
+      </div>
+    );
+  }
+  if (credentials.length === 0) {
+    return (
+      <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border p-6 text-center">
+        <div className="grid size-11 place-items-center rounded-xl bg-muted">
+          <KeyRound className="size-5 text-muted-foreground" />
+        </div>
+        <h3 className="mt-3 text-sm font-semibold">{t("models.credentials.emptyTitle")}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t(hasSearch ? "models.credentials.searchEmpty" : "models.credentials.emptyDescription")}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {credentials.map((credential) => (
+        <CredentialCard
+          key={credential.credential_name}
+          credential={credential}
+          canModify={canModify}
+          onEdit={() => onEdit(credential)}
+          onDelete={() => onDelete(credential)}
+        />
+      ))}
+    </div>
+  );
 }
 
 function CredentialCard({
@@ -201,38 +264,15 @@ export function FocusLlmCredentialsPanel() {
         />
       </div>
 
-      {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          {t("models.credentials.loading")}
-        </div>
-      ) : isError ? (
-        <div className="flex min-h-48 items-center justify-center text-sm text-destructive">
-          {t("models.credentials.loadFailed")}
-        </div>
-      ) : credentials.length === 0 ? (
-        <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border p-6 text-center">
-          <div className="grid size-11 place-items-center rounded-xl bg-muted">
-            <KeyRound className="size-5 text-muted-foreground" />
-          </div>
-          <h3 className="mt-3 text-sm font-semibold">{t("models.credentials.emptyTitle")}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {search ? t("models.credentials.searchEmpty") : t("models.credentials.emptyDescription")}
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {credentials.map((credential) => (
-            <CredentialCard
-              key={credential.credential_name}
-              credential={credential}
-              canModify={canModify}
-              onEdit={() => openEdit(credential)}
-              onDelete={() => setCredentialToDelete(credential)}
-            />
-          ))}
-        </div>
-      )}
+      <CredentialList
+        credentials={credentials}
+        isLoading={isLoading}
+        isError={isError}
+        hasSearch={Boolean(search.trim())}
+        canModify={canModify}
+        onEdit={openEdit}
+        onDelete={setCredentialToDelete}
+      />
 
       {modalMode && (
         <FocusCredentialModal
