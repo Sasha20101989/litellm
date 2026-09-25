@@ -7,12 +7,15 @@ export const groupNameByModel = (groups: RoutingGroup[], excludeGroupName?: stri
       .flatMap((group) => group.models.map((model) => [model, group.group_name] as const)),
   );
 
-export const modelConflictError = (
+export interface ModelConflict {
+  claims: Array<{ model: string; groupName: string }>;
+}
+
+export const modelConflict = (
   models: string[] | undefined,
   ownerByModel: Record<string, string>,
-): string | null => {
+): ModelConflict | null => {
   const conflicts = (models ?? []).filter((model) => Object.hasOwn(ownerByModel, model));
   if (conflicts.length === 0) return null;
-  const detail = conflicts.map((model) => `${model} (in "${ownerByModel[model]}")`).join(", ");
-  return `Each model may belong to at most one non-priority group. Already claimed: ${detail}`;
+  return { claims: conflicts.map((model) => ({ model, groupName: ownerByModel[model] })) };
 };

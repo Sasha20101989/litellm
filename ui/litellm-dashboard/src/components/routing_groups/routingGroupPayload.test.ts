@@ -74,7 +74,7 @@ describe("buildRoutingGroupPayload", () => {
   it("reports invalid JSON instead of a payload", () => {
     expect(
       buildRoutingGroupPayload(values({ routing_strategy: "latency-based-routing", routing_strategy_args: "{ttl:}" })),
-    ).toStrictEqual({ ok: false, field: "routing_strategy_args", message: "Must be valid JSON" });
+    ).toStrictEqual({ ok: false, field: "routing_strategy_args", code: "invalidStrategyArgs" });
   });
 
   it("trims the group name", () => {
@@ -135,7 +135,7 @@ describe("priority payloads", () => {
       ).toStrictEqual({
         ok: false,
         field: "model_priorities",
-        message: "Priorities must be whole numbers from 1 to 9007199254740991",
+        code: "invalidPriority",
       });
     },
   );

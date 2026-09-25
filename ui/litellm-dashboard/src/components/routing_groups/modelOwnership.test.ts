@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { groupNameByModel, modelConflictError } from "./modelOwnership";
+import { groupNameByModel, modelConflict } from "./modelOwnership";
 import type { RoutingGroup } from "./types";
 
 const groups: RoutingGroup[] = [
@@ -28,21 +28,26 @@ describe("groupNameByModel", () => {
   });
 });
 
-describe("modelConflictError", () => {
+describe("modelConflict", () => {
   it("passes models that no other group claims", () => {
-    expect(modelConflictError(["m4"], groupNameByModel(groups, "cheap"))).toBeNull();
-    expect(modelConflictError(undefined, groupNameByModel(groups))).toBeNull();
+    expect(modelConflict(["m4"], groupNameByModel(groups, "cheap"))).toBeNull();
+    expect(modelConflict(undefined, groupNameByModel(groups))).toBeNull();
   });
 
-  it("names every model already claimed by another group", () => {
-    const error = modelConflictError(["m1", "m3", "m4"], groupNameByModel(groups));
-    expect(error).toBe(
-      'Each model may belong to at most one non-priority group. Already claimed: m1 (in "cheap"), m3 (in "security")',
-    );
+  it("returns every model already claimed by another group", () => {
+    const conflict = modelConflict(["m1", "m3", "m4"], groupNameByModel(groups));
+    expect(conflict).toStrictEqual({
+      claims: [
+        { model: "m1", groupName: "cheap" },
+        { model: "m3", groupName: "security" },
+      ],
+    });
   });
 
   it("only treats own model-name keys as ownership", () => {
-    expect(modelConflictError(["constructor", "__proto__"], {})).toBeNull();
-    expect(modelConflictError(["constructor"], { constructor: "legacy" })).toContain('constructor (in "legacy")');
+    expect(modelConflict(["constructor", "__proto__"], {})).toBeNull();
+    expect(modelConflict(["constructor"], { constructor: "legacy" })).toStrictEqual({
+      claims: [{ model: "constructor", groupName: "legacy" }],
+    });
   });
 });

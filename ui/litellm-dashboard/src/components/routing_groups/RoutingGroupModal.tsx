@@ -29,9 +29,10 @@ import {
   buildRoutingGroupPayload,
   prioritiesForModels,
   toRoutingGroupFormValues,
+  type RoutingGroupPayloadErrorCode,
 } from "./routingGroupPayload";
 import type { RoutingGroup } from "./types";
-import { modelConflictError } from "./modelOwnership";
+import { modelConflict } from "./modelOwnership";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -82,6 +83,12 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
     return new Set(others.map((n) => n.toLowerCase()));
   }, [existingGroupNames, initialValue]);
 
+  const payloadErrorMessage: Record<RoutingGroupPayloadErrorCode, string> = {
+    priorityMembershipMismatch: t("routingGroups.priorityMembershipMismatch"),
+    invalidPriority: t("routingGroups.invalidPriority"),
+    invalidStrategyArgs: t("routingGroups.invalidStrategyArgs"),
+  };
+
   const schema = useMemo(() => {
     const shape = {
       group_name: z
@@ -97,12 +104,15 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
     };
     return z.object(shape).superRefine((values, ctx) => {
       if (values.routing_strategy === "priority") return;
-      const conflict = modelConflictError(values.models, groupNameByModel);
+      const conflict = modelConflict(values.models, groupNameByModel);
       if (conflict !== null) {
-        ctx.addIssue({ code: "custom", message: conflict, path: ["models"] });
+        const claims = conflict.claims
+          .map((claim) => t("routingGroups.modelConflictClaim", claim))
+          .join(", ");
+        ctx.addIssue({ code: "custom", message: t("routingGroups.modelConflict", { claims }), path: ["models"] });
       }
     });
-  }, [reservedNames, groupNameByModel]);
+  }, [reservedNames, groupNameByModel, t]);
 
   const form = useZodForm(schema, { defaultValues: toRoutingGroupFormValues(initialValue, availableStrategies) });
 
@@ -116,7 +126,7 @@ const RoutingGroupModal: React.FC<RoutingGroupModalProps> = ({
   const handleSubmit = async (values: z.infer<typeof schema>) => {
     const payload = buildRoutingGroupPayload(values);
     if (!payload.ok) {
-      form.setError(payload.field, { message: payload.message });
+      form.setError(payload.field, { message: payloadErrorMessage[payload.code] });
       return;
     }
     await onSubmit(payload.group);

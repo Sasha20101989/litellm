@@ -17,9 +17,18 @@ export interface RoutingGroupFormValues {
   model_priorities: ModelPriorityDraft[];
 }
 
+export type RoutingGroupPayloadErrorCode =
+  | "priorityMembershipMismatch"
+  | "invalidPriority"
+  | "invalidStrategyArgs";
+
 export type RoutingGroupPayload =
   | { readonly ok: true; readonly group: RoutingGroup }
-  | { readonly ok: false; readonly field: "routing_strategy_args" | "model_priorities"; readonly message: string };
+  | {
+      readonly ok: false;
+      readonly field: "routing_strategy_args" | "model_priorities";
+      readonly code: RoutingGroupPayloadErrorCode;
+    };
 
 export const prioritiesForModels = (models: string[], current: ModelPriorityDraft[]): ModelPriorityDraft[] =>
   models.map((model, index) => ({
@@ -69,7 +78,7 @@ export const buildRoutingGroupPayload = (values: RoutingGroupFormValues): Routin
       return {
         ok: false,
         field: "model_priorities",
-        message: "Set a priority for each selected model and remove unused priorities",
+        code: "priorityMembershipMismatch",
       };
     }
     if (
@@ -81,7 +90,7 @@ export const buildRoutingGroupPayload = (values: RoutingGroupFormValues): Routin
       return {
         ok: false,
         field: "model_priorities",
-        message: "Priorities must be whole numbers from 1 to 9007199254740991",
+        code: "invalidPriority",
       };
     }
     return {
@@ -101,6 +110,6 @@ export const buildRoutingGroupPayload = (values: RoutingGroupFormValues): Routin
   try {
     return { ok: true, group: { ...base, routing_strategy_args: JSON.parse(args) as Record<string, unknown> } };
   } catch {
-    return { ok: false, field: "routing_strategy_args", message: "Must be valid JSON" };
+    return { ok: false, field: "routing_strategy_args", code: "invalidStrategyArgs" };
   }
 };
