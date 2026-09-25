@@ -6,78 +6,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
 import { useUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUISettings";
-import { all_admin_roles, internalUserRoles } from "@/utils/roles";
-import { autoRouterCreationScope, canCreateModels } from "@/utils/modelPermissions";
+import { all_admin_roles } from "@/utils/roles";
 import BetaBadge from "@/components/BetaBadge";
 import CostOptimizationFeedbackBanner from "@/components/molecules/cost_optimization_feedback_banner";
 import ModelInfoView from "@/components/model_info_view";
 import TeamInfoView from "@/components/team/TeamInfo";
 import { useModelDetailRouting } from "@/app/(dashboard)/models-and-endpoints/detailNavigation";
 import { useModelDashboardData } from "@/app/(dashboard)/models-and-endpoints/useModelDashboardData";
-import AllModelsPanel from "@/app/(dashboard)/models-and-endpoints/panels/AllModelsPanel";
-import AutoRoutersTabPanel from "@/app/(dashboard)/models-and-endpoints/panels/AutoRoutersTabPanel";
-import AddModelPanel from "@/app/(dashboard)/models-and-endpoints/panels/AddModelPanel";
-import LlmCredentialsPanel from "@/app/(dashboard)/models-and-endpoints/panels/LlmCredentialsPanel";
-import PassThroughPanel from "@/app/(dashboard)/models-and-endpoints/panels/PassThroughPanel";
-import HealthStatusPanel from "@/app/(dashboard)/models-and-endpoints/panels/HealthStatusPanel";
-import ModelRetrySettingsPanel from "@/app/(dashboard)/models-and-endpoints/panels/ModelRetrySettingsPanel";
-import ModelGroupAliasPanel from "@/app/(dashboard)/models-and-endpoints/panels/ModelGroupAliasPanel";
-import AccessGroupBudgetsPanel from "@/app/(dashboard)/models-and-endpoints/panels/AccessGroupBudgetsPanel";
-import PriceDataPanel from "@/app/(dashboard)/models-and-endpoints/panels/PriceDataPanel";
+import {
+  getVisibleModelSections,
+  renderModelSection,
+  type ModelSectionContext,
+  type ModelSectionId,
+} from "@/features/models-and-endpoints/modelSections";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type ModelTabSlug =
-  | "add"
-  | "auto-routers"
-  | "llm-credentials"
-  | "pass-through"
-  | "health"
-  | "retry-settings"
-  | "model-group-alias"
-  | "access-group-budgets"
-  | "price-data";
-
-const BASE_TAB_KEY = "all-models";
-
-const TAB_LABELS: Record<ModelTabSlug, string> = {
-  add: "Add Model",
-  "auto-routers": "Auto-Routers",
-  "llm-credentials": "LLM Credentials",
-  "pass-through": "Pass-Through Endpoints",
-  health: "Health Status",
-  "retry-settings": "Model Retry Settings",
-  "model-group-alias": "Model Group Alias",
-  "access-group-budgets": "Model Access Group Budgets",
-  "price-data": "Price Data Reload",
-};
-
-const renderPanel = (key: string) => {
-  switch (key) {
-    case BASE_TAB_KEY:
-      return <AllModelsPanel />;
-    case "auto-routers":
-      return <AutoRoutersTabPanel />;
-    case "add":
-      return <AddModelPanel />;
-    case "llm-credentials":
-      return <LlmCredentialsPanel />;
-    case "pass-through":
-      return <PassThroughPanel />;
-    case "health":
-      return <HealthStatusPanel />;
-    case "retry-settings":
-      return <ModelRetrySettingsPanel />;
-    case "model-group-alias":
-      return <ModelGroupAliasPanel />;
-    case "access-group-budgets":
-      return <AccessGroupBudgetsPanel />;
-    case "price-data":
-      return <PriceDataPanel />;
-    default:
-      return null;
-  }
-};
 
 export default function ModelsAndEndpointsPage() {
   const { accessToken, userRole, userId: userID, premiumUser, isViewOnly } = useAuthorized();
@@ -87,53 +30,32 @@ export default function ModelsAndEndpointsPage() {
   const { modelId, teamId, close } = useModelDetailRouting();
   const { availableModelAccessGroups, allModelsOnProxy } = useModelDashboardData();
 
-  const [activeKey, setActiveKey] = useState<string>(BASE_TAB_KEY);
+  const [activeKey, setActiveKey] = useState<ModelSectionId>("all-models");
   const [lastRefreshed, setLastRefreshed] = useState("");
 
-  const isInternalUser = userRole && internalUserRoles.includes(userRole);
-  const canCreate = canCreateModels(
-    { userRole, userID, isViewOnly },
-    {
-      teams: teams ?? null,
-      disabledForInternalUsers:
-        isInternalUser === true && uiSettings?.values?.disable_model_add_for_internal_users === true,
-    },
-  );
   const isAdmin = all_admin_roles.includes(userRole);
-  const canViewAutoRouters =
-    autoRouterCreationScope(
-      { userRole, userID, isViewOnly },
-      { teams: teams ?? null, disabledForInternalUsers: false },
-    ) !== "forbidden";
-
-  const visibleSlugs = useMemo<Array<"" | ModelTabSlug>>(
-    () => [
-      "",
-      ...(canCreate ? (["add"] as const) : []),
-      ...(isAdmin || canViewAutoRouters ? (["auto-routers"] as const) : []),
-      // effectiveSessionRole reports proxy_admin_viewer as "Admin", so isAdmin alone would show a
-      // viewer these write-only panels; only the raw-role isViewOnly separates them. Health Status
-      // stays: it is the bucket's one read view, and viewers keep read parity with admins.
-      ...(isAdmin && !isViewOnly ? (["llm-credentials", "pass-through"] as const) : []),
-      ...(isAdmin ? (["health"] as const) : []),
-      ...(isAdmin && !isViewOnly
-        ? (["retry-settings", "model-group-alias", "access-group-budgets", "price-data"] as const)
-        : []),
-    ],
-    [canCreate, canViewAutoRouters, isAdmin, isViewOnly],
+  const sectionContext = useMemo<ModelSectionContext>(
+    () => ({
+      userRole,
+      userID,
+      isViewOnly,
+      teams: teams ?? null,
+      disableModelAddForInternalUsers: uiSettings?.values?.disable_model_add_for_internal_users === true,
+    }),
+    [isViewOnly, teams, uiSettings?.values?.disable_model_add_for_internal_users, userID, userRole],
   );
+  const visibleSections = useMemo(() => getVisibleModelSections(sectionContext), [sectionContext]);
+  const selectedSection = visibleSections.find((section) => section.id === activeKey) ?? visibleSections[0];
 
-  const allModelsLabel = isAdmin ? "All Models" : "Your Models";
-  const tabLabel = (slug: "" | ModelTabSlug): React.ReactNode => {
-    if (!slug) return allModelsLabel;
-    if (slug === "auto-routers" || slug === "access-group-budgets") {
+  const tabLabel = (section: (typeof visibleSections)[number]): React.ReactNode => {
+    if (section.showBetaBadge) {
       return (
         <span className="flex items-center gap-2">
-          {TAB_LABELS[slug]} <BetaBadge />
+          {section.legacyLabel(sectionContext)} <BetaBadge />
         </span>
       );
     }
-    return TAB_LABELS[slug];
+    return section.legacyLabel(sectionContext);
   };
 
   const handleRefreshClick = () => {
@@ -191,15 +113,21 @@ export default function ModelsAndEndpointsPage() {
             modelAccessGroups={availableModelAccessGroups}
           />
         ) : (
-          <Tabs value={activeKey} onValueChange={setActiveKey}>
+          <Tabs
+            value={selectedSection?.id}
+            onValueChange={(sectionId) => {
+              if (visibleSections.some((section) => section.id === sectionId)) {
+                setActiveKey(sectionId as ModelSectionId);
+              }
+            }}
+          >
             <div className="flex min-w-0 flex-nowrap items-center gap-3 border-b">
               <div className="no-scrollbar scroll-fade-e -mb-1.5 min-w-0 flex-1 overflow-x-auto pb-1.5">
                 <TabsList variant="line" className="w-max justify-start">
-                  {visibleSlugs.map((slug) => {
-                    const key = slug || BASE_TAB_KEY;
+                  {visibleSections.map((section) => {
                     return (
-                      <TabsTrigger key={key} value={key} className="flex-none">
-                        {tabLabel(slug)}
+                      <TabsTrigger key={section.id} value={section.id} className="flex-none">
+                        {tabLabel(section)}
                       </TabsTrigger>
                     );
                   })}
@@ -214,11 +142,10 @@ export default function ModelsAndEndpointsPage() {
                 </Button>
               </div>
             </div>
-            {visibleSlugs.map((slug) => {
-              const key = slug || BASE_TAB_KEY;
+            {visibleSections.map((section) => {
               return (
-                <TabsContent key={key} value={key} className="pt-4">
-                  {renderPanel(key)}
+                <TabsContent key={section.id} value={section.id} className="pt-4">
+                  {renderModelSection(section)}
                 </TabsContent>
               );
             })}

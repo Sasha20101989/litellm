@@ -3,39 +3,60 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
+import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
+import { useUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUISettings";
+import {
+  FOCUS_MODEL_SECTION_GROUPS,
+  getVisibleModelSections,
+  renderModelSection,
+  type FocusModelSectionGroup,
+  type ModelSection,
+  type ModelSectionContext,
+  type ModelSectionId,
+} from "@/features/models-and-endpoints/modelSections";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/localStorageUtils";
 import { uiHref } from "@/utils/uiHref";
 import { KeyRound, Menu, Network } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FocusAddModelPanel } from "./FocusAddModelPanel";
 import { FocusAppearanceControls } from "./FocusAppearanceControls";
-import { FocusModelsList } from "./FocusModelsList";
-import { FocusLlmCredentialsPanel } from "./FocusLlmCredentialsPanel";
 
 type FocusTheme = "light" | "dark";
 
 const FOCUS_THEME_STORAGE_KEY = "litellm_focus_virtual_keys_theme";
-const TABS = ["models", "endpoints", "routing", "accessAndCost"] as const;
-
-const INNER_TABS = {
-  models: ["allModels", "addModel", "llmCredentials", "healthStatus"],
-  endpoints: ["passThroughEndpoints"],
-  routing: ["autoRouters", "modelRetrySettings", "modelGroupAlias"],
-  accessAndCost: ["modelAccessGroupBudgets", "priceDataReload"],
-} as const;
-
-type FocusModelsTab = (typeof TABS)[number];
-type FocusModelsInnerTab = (typeof INNER_TABS)[FocusModelsTab][number];
-
 function getInitialTheme(): FocusTheme {
   return getLocalStorageItem(FOCUS_THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
 }
 
 export default function FocusModelsAndEndpointsPage() {
   const { t } = useTranslation("gateway");
+  const { userRole, userId: userID, isViewOnly } = useAuthorized();
+  const { data: teams } = useTeams();
+  const { data: uiSettings } = useUISettings();
   const [theme, setTheme] = useState<FocusTheme>(getInitialTheme);
+  const [activeGroup, setActiveGroup] = useState<FocusModelSectionGroup>("models");
+
+  const sectionContext = useMemo<ModelSectionContext>(
+    () => ({
+      userRole,
+      userID,
+      isViewOnly,
+      teams: teams ?? null,
+      disableModelAddForInternalUsers: uiSettings?.values?.disable_model_add_for_internal_users === true,
+    }),
+    [isViewOnly, teams, uiSettings?.values?.disable_model_add_for_internal_users, userID, userRole],
+  );
+  const visibleSections = useMemo(() => getVisibleModelSections(sectionContext), [sectionContext]);
+  const visibleGroups = useMemo(
+    () =>
+      FOCUS_MODEL_SECTION_GROUPS.filter((group) =>
+        visibleSections.some((section) => section.focus.group === group.id),
+      ),
+    [visibleSections],
+  );
+  const selectedGroup = visibleGroups.find((group) => group.id === activeGroup) ?? visibleGroups[0];
 
   useEffect(() => {
     const previousTheme = document.documentElement.getAttribute("data-focus-theme");
@@ -139,23 +160,37 @@ export default function FocusModelsAndEndpointsPage() {
             onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
           />
         </header>
-        <Tabs defaultValue="models" className="mt-5 gap-5">
+        <Tabs
+          value={selectedGroup?.id}
+          onValueChange={(group) => {
+            if (visibleGroups.some((candidate) => candidate.id === group)) {
+              setActiveGroup(group as FocusModelSectionGroup);
+            }
+          }}
+          className="mt-5 gap-5"
+        >
           <div className="min-w-0 border-b border-border">
             <TabsList
               variant="line"
               className="h-auto max-w-full flex-wrap justify-start"
               aria-label={t("focusModelsAndEndpoints.tabs.label")}
             >
-              {TABS.map((tab) => (
-                <TabsTrigger key={tab} value={tab} className="flex-none px-3">
-                  {t(`focusModelsAndEndpoints.tabs.${tab}`)}
+              {visibleGroups.map((group) => (
+                <TabsTrigger key={group.id} value={group.id} className="flex-none px-3">
+                  {t(`focusModelsAndEndpoints.tabs.${group.id}`)}
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
-          {TABS.map((tab) => (
-            <TabsContent key={tab} value={tab} className="min-h-80">
-              <InnerTabs section={tab} t={t} />
+          {visibleGroups.map((group) => (
+            <TabsContent key={group.id} value={group.id} className="min-h-80">
+              <InnerTabs
+                group={group.id}
+                sections={visibleSections
+                  .filter((section) => section.focus.group === group.id)
+                  .sort((left, right) => left.focus.order - right.focus.order)}
+                t={t}
+              />
             </TabsContent>
           ))}
         </Tabs>
@@ -164,29 +199,48 @@ export default function FocusModelsAndEndpointsPage() {
   );
 }
 
-function InnerTabs({ section, t }: { section: FocusModelsTab; t: (key: string) => string }) {
-  const innerTabs = INNER_TABS[section];
+function InnerTabs({
+  group,
+  sections,
+  t,
+}: {
+  group: FocusModelSectionGroup;
+  sections: readonly ModelSection[];
+  t: (key: string) => string;
+}) {
+  const [activeSection, setActiveSection] = useState<ModelSectionId>(sections[0]?.id ?? "all-models");
+  const selectedSection = sections.find((section) => section.id === activeSection) ?? sections[0];
+
+  if (selectedSection == null) {
+    return null;
+  }
 
   return (
-    <Tabs defaultValue={innerTabs[0]} className="gap-5">
+    <Tabs
+      value={selectedSection.id}
+      onValueChange={(sectionId) => {
+        if (sections.some((section) => section.id === sectionId)) {
+          setActiveSection(sectionId as ModelSectionId);
+        }
+      }}
+      className="gap-5"
+    >
       <div className="min-w-0">
         <TabsList
           variant="default"
           className="h-auto max-w-full flex-wrap justify-start"
-          aria-label={t(`focusModelsAndEndpoints.tabs.${section}`)}
+          aria-label={t(`focusModelsAndEndpoints.tabs.${group}`)}
         >
-          {innerTabs.map((tab) => (
-            <TabsTrigger key={tab} value={tab} className="flex-none">
-              {t(`focusModelsAndEndpoints.innerTabs.${tab}`)}
+          {sections.map((section) => (
+            <TabsTrigger key={section.id} value={section.id} className="flex-none">
+              {t(section.translationKey)}
             </TabsTrigger>
           ))}
         </TabsList>
       </div>
-      {innerTabs.map((tab) => (
-        <TabsContent key={tab} value={tab} className="min-h-64">
-          {section === "models" && tab === "allModels" ? <FocusModelsList /> : null}
-          {section === "models" && tab === "addModel" ? <FocusAddModelPanel /> : null}
-          {section === "models" && tab === "llmCredentials" ? <FocusLlmCredentialsPanel /> : null}
+      {sections.map((section) => (
+        <TabsContent key={section.id} value={section.id} className="min-h-64">
+          {renderModelSection(section, "focus")}
         </TabsContent>
       ))}
     </Tabs>
