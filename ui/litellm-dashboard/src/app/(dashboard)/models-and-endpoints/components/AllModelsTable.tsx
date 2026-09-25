@@ -17,12 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { ToolbarSeparator } from "@/components/shared/ToolbarSeparator";
 import { cn } from "@/lib/cva.config";
+import { MODEL_TABLE_DEFAULT_COLUMN_VISIBILITY } from "@/features/models-and-endpoints/modelFields";
 
 import {
   ACCESS_GROUPS_COLUMN_ID,
   getModelsTableColumns,
   MODEL_NAME_COLUMN_ID,
-  STATUS_COLUMN_ID,
 } from "./ModelsTableColumns";
 
 export type ModelViewMode = "all" | "current_team";
@@ -189,7 +189,7 @@ export function AllModelsTable({
       filterMode="server"
       columnFilters={columnFilters}
       onColumnFiltersChange={onColumnFiltersChange}
-      defaultColumnVisibility={{ [STATUS_COLUMN_ID]: false }}
+      defaultColumnVisibility={MODEL_TABLE_DEFAULT_COLUMN_VISIBILITY}
       enableColumnResizing
       maxBodyHeight={MODEL_TABLE_BODY_HEIGHT}
       isLoading={isLoading}

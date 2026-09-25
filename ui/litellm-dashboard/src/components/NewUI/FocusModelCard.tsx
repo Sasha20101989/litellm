@@ -20,22 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { getDisplayModelName } from "@/components/view_model/model_name_display";
+import { FOCUS_MODEL_CARD_FIELD_IDS, type ModelFieldId } from "@/features/models-and-endpoints/modelFields";
 import { Columns3, Loader2, MoreHorizontal, Pause, Play, Trash2 } from "lucide-react";
 import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-
-const FOCUS_MODEL_FIELDS = [
-  "team",
-  "source",
-  "costs",
-  "modelId",
-  "credentials",
-  "createdBy",
-  "updatedAt",
-  "accessGroups",
-] as const;
-
-export type FocusModelField = (typeof FOCUS_MODEL_FIELDS)[number];
 
 function formatDate(value: string | null | undefined, locale: string): string {
   if (!value || Number.isNaN(Date.parse(value))) return "-";
@@ -59,7 +47,7 @@ export function FocusModelCard({
   selected: boolean;
   teamName: string;
   locale: string;
-  visibleFields: Record<FocusModelField, boolean>;
+  visibleFields: Record<ModelFieldId, boolean>;
   canEdit: boolean;
   canTogglePause: boolean;
   isPausing: boolean;
@@ -75,14 +63,7 @@ export function FocusModelCard({
   const credentialName = model.litellm_params?.litellm_credential_name;
   const createdBy = isConfigModel ? t("models.definedInConfig") : model.model_info?.created_by || t("models.unknown");
   const accessGroups = model.model_info?.access_groups ?? [];
-  const fields: Array<[FocusModelField, string, ReactNode]> = [
-    [
-      "modelId",
-      t("focusModelsAndEndpoints.list.fields.modelId"),
-      <span key="model-id" className="font-mono text-xs">
-        {model.model_info?.id || "-"}
-      </span>,
-    ],
+  const fields: Array<[ModelFieldId, string, ReactNode]> = [
     [
       "credentials",
       t("focusModelsAndEndpoints.list.fields.credentials"),
@@ -254,7 +235,7 @@ export function FocusModelFieldsVisibility({
           <DialogDescription>{t("focusModelsAndEndpoints.list.visibility.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
-          {FOCUS_MODEL_FIELDS.map((field) => (
+          {FOCUS_MODEL_CARD_FIELD_IDS.map((field) => (
             <label key={field} className="flex items-center justify-between gap-4 text-sm">
               <span>{t(`focusModelsAndEndpoints.list.fields.${field}`)}</span>
               <Switch
