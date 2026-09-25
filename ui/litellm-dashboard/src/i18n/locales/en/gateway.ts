@@ -984,6 +984,10 @@ export const enGateway = {
     credentials: {
       description: "Configured credentials for different AI providers. Add and manage your API credentials.",
       add: "Add Credential",
+      search: "Search by name or provider",
+      searchEmpty: "No credentials match your search.",
+      loadFailed: "Failed to load credentials.",
+      unknownProvider: "Provider not specified",
       loading: "Loading credentials…",
       emptyTitle: "No credentials configured",
       emptyDescription: "Add a credential to connect an AI provider.",

@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { FocusAddModelPanel } from "./FocusAddModelPanel";
 import { FocusAppearanceControls } from "./FocusAppearanceControls";
 import { FocusModelsList } from "./FocusModelsList";
+import { FocusLlmCredentialsPanel } from "./FocusLlmCredentialsPanel";
 
 type FocusTheme = "light" | "dark";
 
@@ -185,6 +186,7 @@ function InnerTabs({ section, t }: { section: FocusModelsTab; t: (key: string) =
         <TabsContent key={tab} value={tab} className="min-h-64">
           {section === "models" && tab === "allModels" ? <FocusModelsList /> : null}
           {section === "models" && tab === "addModel" ? <FocusAddModelPanel /> : null}
+          {section === "models" && tab === "llmCredentials" ? <FocusLlmCredentialsPanel /> : null}
         </TabsContent>
       ))}
     </Tabs>
