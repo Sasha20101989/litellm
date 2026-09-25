@@ -1,7 +1,7 @@
 "use client";
 
 import { useModelCostMap } from "@/app/(dashboard)/hooks/models/useModelCostMap";
-import { useModelsInfo } from "@/app/(dashboard)/hooks/models/useModels";
+import { type PaginatedModelInfoResponse, useModelsInfo } from "@/app/(dashboard)/hooks/models/useModels";
 import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import {
@@ -10,9 +10,11 @@ import {
 } from "@/app/(dashboard)/models-and-endpoints/detailNavigation";
 import { transformModelData } from "@/app/(dashboard)/models-and-endpoints/utils/modelDataTransformer";
 import { ModelData } from "@/components/model_dashboard/types";
-import { modelDeleteCall, modelPatchUpdateCall } from "@/components/networking";
+import { modelDeleteCall, modelInfoCall, modelPatchUpdateCall } from "@/components/networking";
 import { toast } from "@/lib/toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { canModifyModel } from "@/utils/modelPermissions";
+import { isProxyAdminRole } from "@/utils/roles";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@tanstack/react-pacer/debouncer";
 import { ColumnFiltersState, functionalUpdate, OnChangeFn, PaginationState, SortingState } from "@tanstack/react-table";
 import { createParser, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
@@ -22,7 +24,6 @@ import {
   ACCESS_GROUPS_COLUMN_ID,
   isModelTableSortColumnId,
   MODEL_NAME_COLUMN_ID,
-  MODEL_TABLE_SORT_COLUMN_IDS,
   toServerSortField,
 } from "@/app/(dashboard)/models-and-endpoints/components/ModelsTableColumns";
 import {
@@ -52,7 +53,7 @@ const TABLE_STATE = {
   view_mode: parseAsStringLiteral(MODEL_VIEW_MODES).withDefault("current_team"),
   filter_team: parseAsString.withDefault(PERSONAL_TEAM_VALUE),
   access_group: parseAsString.withDefault(""),
-  sort_by: parseAsStringLiteral(MODEL_TABLE_SORT_COLUMN_IDS),
+  sort_by: parseAsString,
   sort_order: parseAsStringLiteral(["asc", "desc"] as const).withDefault("asc"),
   page: boundedInteger(1, MAX_PAGE, 1),
   page_size: boundedInteger(1, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE),
@@ -62,18 +63,19 @@ interface UseModelsWorkspaceOptions {
   selectedModelGroup?: string | null;
   setSelectedModelGroup?: (modelGroup: string) => void;
   availableModelGroups?: string[];
+  availableModelGroupOptions?: Array<{ value: string; label: string }>;
   availableModelAccessGroups?: string[];
   onModelSelect?: (modelId: string) => void;
   onTeamSelect?: (teamId: string) => void;
 }
 
 export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
-  const { accessToken, userId, userRole, isViewOnly } = useAuthorized();
+  const { accessToken, userId, userRole, isViewOnly, premiumUser } = useAuthorized();
   const { data: teams, isLoading: isLoadingTeams } = useTeams();
   const { data: modelCostMap, isLoading: isLoadingModelCostMap } = useModelCostMap();
   const queryClient = useQueryClient();
   const { modelGroup: routedModelGroup, setModelGroup: setRoutedModelGroup } = useModelGroupFilterRouting();
-  const { modelId: selectedModelId, openModel, openTeam, close } = useModelDetailRouting();
+  const { selectedTarget, openModel, openTeam, close } = useModelDetailRouting();
   const [tableState, setTableState] = useQueryStates(TABLE_STATE);
   const [debouncedSearch] = useDebouncedValue(tableState.model_search, { wait: SEARCH_DEBOUNCE_WAIT_MS });
   const [isModelSettingsModalVisible, setIsModelSettingsModalVisible] = useState(false);
@@ -82,7 +84,8 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
   const [pausingModelId, setPausingModelId] = useState<string | null>(null);
 
   const selectedModelGroup = options.selectedModelGroup ?? routedModelGroup ?? ALL_MODEL_GROUPS_VALUE;
-  const availableModelGroups = options.availableModelGroups ?? [];
+  const availableModelGroupOptions = options.availableModelGroupOptions ?? (options.availableModelGroups ?? []).map((value) => ({ value, label: value }));
+  const availableModelGroups = availableModelGroupOptions.map(({ value }) => value);
   const availableModelAccessGroups = options.availableModelAccessGroups ?? [];
   const setSelectedModelGroup = useCallback(
     (modelGroup: string) => {
@@ -120,7 +123,7 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
     [tableState.page, tableState.page_size],
   );
   const sorting = useMemo<SortingState>(
-    () => (tableState.sort_by ? [{ id: tableState.sort_by, desc: tableState.sort_order === "desc" }] : []),
+    () => (tableState.sort_by && isModelTableSortColumnId(tableState.sort_by) ? [{ id: tableState.sort_by, desc: tableState.sort_order === "desc" }] : []),
     [tableState.sort_by, tableState.sort_order],
   );
   const selectedModelAccessGroupFilter = tableState.access_group || null;
@@ -167,6 +170,33 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
   const modelData = useMemo<ModelData[]>(
     () => transformModelData(rawModelData, getProviderFromModel).data as ModelData[],
     [getProviderFromModel, rawModelData],
+  );
+  const selectedModelId = selectedTarget.kind === "model" ? selectedTarget.id : null;
+  const hasModelDetailActor = Boolean(accessToken) && Boolean(userId) && Boolean(userRole);
+  const {
+    data: rawSelectedModelData,
+    isLoading: isLoadingSelectedModel,
+    isError: isSelectedModelError,
+    refetch: refetchSelectedModel,
+  } = useQuery<PaginatedModelInfoResponse>({
+    queryKey: ["models", "list", { filters: { modelId: selectedModelId } }],
+    queryFn: async () =>
+      await modelInfoCall(accessToken!, userId!, userRole!, 1, DEFAULT_PAGE_SIZE, undefined, selectedModelId!),
+    enabled: hasModelDetailActor && Boolean(selectedModelId),
+  });
+  const selectedModel = useMemo(
+    () => transformModelData(rawSelectedModelData, getProviderFromModel).data[0] as ModelData | undefined,
+    [getProviderFromModel, rawSelectedModelData],
+  );
+  const selectedTeamId = selectedTarget.kind === "team" ? selectedTarget.id : null;
+  const { data: rawSelectedTeamModels } = useQuery<PaginatedModelInfoResponse>({
+    queryKey: ["models", "list", { filters: { teamDetail: selectedTeamId } }],
+    queryFn: async () => await modelInfoCall(accessToken!, userId!, userRole!, 1, 1000),
+    enabled: hasModelDetailActor && Boolean(selectedTeamId),
+  });
+  const allModelsOnProxy = useMemo(
+    () => rawSelectedTeamModels?.data?.map((model) => model.model_name).filter((model): model is string => Boolean(model)) ?? [],
+    [rawSelectedTeamModels?.data],
   );
   const columnFilters = useMemo<ColumnFiltersState>(
     () =>
@@ -243,7 +273,10 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
     void setTableState(null);
   }, [setSelectedModelGroup, setTableState]);
   const invalidateModels = useCallback(() => queryClient.invalidateQueries({ queryKey: ["models", "list"] }), [queryClient]);
-  const refresh = useCallback(() => void refetch(), [refetch]);
+  const refresh = useCallback(async () => {
+    await invalidateModels();
+    await Promise.all([refetch(), selectedModelId ? refetchSelectedModel() : Promise.resolve()]);
+  }, [invalidateModels, refetch, refetchSelectedModel, selectedModelId]);
   const togglePause = useCallback(
     async (modelId: string, blocked: boolean) => {
       if (!accessToken) return;
@@ -285,18 +318,21 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
       setDeleteModalModelId(null);
     }
   }, [accessToken, close, deleteModalModelId, invalidateModels, pagination.pageIndex, pagination.pageSize, refetch, selectedModelId, setTableState]);
-  const getModelPermissions = useCallback(
+  const getModelCapabilities = useCallback(
     (model: ModelData) => {
-      if (isViewOnly || !model.model_info?.db_model) {
-        return { canEdit: false, canTogglePause: false };
-      }
-      const isAdmin = userRole === "Admin";
+      const canModify = canModifyModel(
+        { userRole, userID: userId, isViewOnly },
+        teams ?? null,
+        { teamId: model.model_info?.team_id, isDbModel: model.model_info?.db_model === true },
+      );
       return {
-        canEdit: isAdmin || model.model_info.created_by === userId,
-        canTogglePause: isAdmin,
+        canModify,
+        canEdit: canModify,
+        canDelete: canModify,
+        canTogglePause: Boolean(model.model_info?.db_model) && !isViewOnly && isProxyAdminRole(userRole ?? ""),
       };
     },
-    [isViewOnly, userId, userRole],
+    [isViewOnly, teams, userId, userRole],
   );
 
   return {
@@ -315,13 +351,25 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
     selectedModelGroup,
     selectedAccessGroup: selectedModelAccessGroupFilter ?? ALL_MODEL_GROUPS_VALUE,
     selectedModelId,
+    selectedTarget,
+    selectedModelDetail: {
+      model: selectedModel,
+      isLoading: isLoadingSelectedModel,
+      isError: isSelectedModelError,
+      refresh,
+    },
     availableModelGroups,
+    availableModelGroupOptions,
     availableModelAccessGroups,
     teamOptions,
     isLoadingTeams,
     userId,
     userRole,
     isViewOnly,
+    accessToken,
+    premiumUser,
+    isProxyAdmin: !isViewOnly && isProxyAdminRole(userRole ?? ""),
+    allModelsOnProxy,
     modelToDelete,
     deleteModalModelId,
     deleteLoading,
@@ -345,6 +393,6 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
     togglePause,
     deleteModel,
     invalidateModels,
-    getModelPermissions,
+    getModelCapabilities,
   };
 }

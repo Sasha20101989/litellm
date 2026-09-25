@@ -12,6 +12,7 @@ interface AllModelsTabProps {
   selectedModelGroup?: string | null;
   setSelectedModelGroup?: (selectedModelGroup: string) => void;
   availableModelGroups?: string[];
+  availableModelGroupOptions?: Array<{ value: string; label: string }>;
   availableModelAccessGroups?: string[];
   setSelectedModelId?: (id: string) => void;
   setSelectedTeamId?: (id: string) => void;
@@ -21,6 +22,7 @@ const AllModelsTab = ({
   selectedModelGroup,
       setSelectedModelGroup,
   availableModelGroups,
+  availableModelGroupOptions,
   availableModelAccessGroups,
   setSelectedModelId,
   setSelectedTeamId,
@@ -29,6 +31,7 @@ const AllModelsTab = ({
     selectedModelGroup,
     setSelectedModelGroup,
     availableModelGroups,
+    availableModelGroupOptions,
     availableModelAccessGroups,
     onModelSelect: setSelectedModelId,
     onTeamSelect: setSelectedTeamId,
@@ -62,6 +65,7 @@ const AllModelsTab = ({
           onViewModeChange={workspace.setViewMode}
           onOpenModelSettings={() => workspace.setIsModelSettingsModalVisible(true)}
           availableModelGroups={workspace.availableModelGroups}
+          availableModelGroupOptions={workspace.availableModelGroupOptions}
           availableModelAccessGroups={workspace.availableModelAccessGroups}
           userRole={workspace.userRole}
           userID={workspace.userId}
@@ -71,6 +75,7 @@ const AllModelsTab = ({
           onDeleteClick={workspace.setDeleteModalModelId}
           onTogglePauseClick={workspace.togglePause}
           pausingModelId={workspace.pausingModelId}
+          getModelCapabilities={workspace.getModelCapabilities}
         />
 
         {workspace.viewMode === "current_team" && (

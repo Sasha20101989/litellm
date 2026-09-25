@@ -1,10 +1,5 @@
 "use client";
 
-import { useModelCostMap } from "@/app/(dashboard)/hooks/models/useModelCostMap";
-import { useModelFilterFacets, useModelsInfo } from "@/app/(dashboard)/hooks/models/useModels";
-import { useTeams } from "@/app/(dashboard)/hooks/teams/useTeams";
-import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
-import { transformModelData } from "@/app/(dashboard)/models-and-endpoints/utils/modelDataTransformer";
 import ReuseCredentialsModal from "@/components/model_add/reuse_credentials";
 import { ModelData } from "@/components/model_dashboard/types";
 import {
@@ -24,8 +19,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/utils/dataUtils";
-import { canModifyModel } from "@/utils/modelPermissions";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Check,
@@ -40,12 +33,21 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FocusModelEditor } from "./FocusModelEditor";
 
 interface FocusModelDetailsPanelProps {
   modelId: string;
+  model: ModelData | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  canEdit: boolean;
+  isProxyAdmin: boolean;
+  accessToken: string | null;
+  modelAccessGroups: string[];
+  teamAlias: string | null;
+  onRefresh: () => Promise<void>;
   onBack: () => void;
   onDelete: (modelId: string) => void;
 }
@@ -77,13 +79,21 @@ function ConnectionTestStatus({ result, modelId }: { result: ConnectionTestResul
   );
 }
 
-export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModelDetailsPanelProps) {
+export function FocusModelDetailsPanel({
+  modelId,
+  model,
+  isLoading,
+  isError,
+  canEdit,
+  isProxyAdmin,
+  accessToken,
+  modelAccessGroups,
+  teamAlias,
+  onRefresh,
+  onBack,
+  onDelete,
+}: FocusModelDetailsPanelProps) {
   const { t } = useTranslation("gateway");
-  const { accessToken, userId, userRole, isViewOnly } = useAuthorized();
-  const { data: teams } = useTeams();
-  const { data: modelCostMap } = useModelCostMap();
-  const { availableModelAccessGroups } = useModelFilterFacets();
-  const queryClient = useQueryClient();
   const [isTesting, setIsTesting] = useState(false);
   const [connectionTestResult, setConnectionTestResult] = useState<ConnectionTestResult | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -92,36 +102,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
   const [isReuseCredentialsOpen, setIsReuseCredentialsOpen] = useState(false);
   const [existingCredential, setExistingCredential] = useState<CredentialItem | null>(null);
   const [isLoadingCredential, setIsLoadingCredential] = useState(false);
-  const { data: rawModelData, isLoading, isError, refetch } = useModelsInfo(1, 50, undefined, modelId);
-
-  const getProviderFromModel = useCallback(
-    (model: string) => {
-      if (modelCostMap && typeof modelCostMap === "object" && model in modelCostMap) {
-        return modelCostMap[model].litellm_provider;
-      }
-      return "openai";
-    },
-    [modelCostMap],
-  );
-  const model = useMemo(
-    () => transformModelData(rawModelData, getProviderFromModel).data[0] as ModelData | undefined,
-    [getProviderFromModel, rawModelData],
-  );
-  const canEdit = Boolean(
-    model &&
-      canModifyModel({ userRole, userID: userId, isViewOnly }, teams ?? null, {
-        teamId: model.model_info?.team_id,
-        isDbModel: model.model_info?.db_model === true,
-      }),
-  );
-  const isAdmin = userRole === "Admin" && !isViewOnly;
   const publicName = model?.model_name || model?.litellm_model_name || t("models.unknown");
-  const teamAlias = teams?.find((team) => team.team_id === model?.model_info?.team_id)?.team_alias ?? null;
-
-  const refreshModel = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["models", "list"] });
-    await refetch();
-  };
   const handleCopyModelId = async () => {
     if (!(await copyToClipboard(modelId))) return;
     setIsCopied(true);
@@ -186,7 +167,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
       });
       toast.success(t("models.reuseCredentials.success"));
       setIsReuseCredentialsOpen(false);
-      await refreshModel();
+      await onRefresh();
     } catch (error) {
       console.error("Failed to store model credentials:", error);
       toast.fromError(t("models.reuseCredentials.error"));
@@ -252,7 +233,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
           {isTesting ? t("models.details.testingConnection") : t("models.details.testConnection")}
         </Button>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" className="gap-2" disabled={!canEdit && !isAdmin} />}>
+          <DropdownMenuTrigger render={<Button variant="outline" className="gap-2" disabled={!canEdit && !isProxyAdmin} />}>
             <KeyRound className="size-4" />
             {t("models.details.credentials")}
             <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -262,7 +243,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
               <KeyRound className="size-4" />
               {t("models.details.updateApiKey")}
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={!isAdmin || isLoadingCredential} onClick={() => void openReuseCredentials()}>
+            <DropdownMenuItem disabled={!isProxyAdmin || isLoadingCredential} onClick={() => void openReuseCredentials()}>
               {isLoadingCredential ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               {t("models.details.reuseCredentials")}
             </DropdownMenuItem>
@@ -282,10 +263,10 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
             model={model}
             modelId={modelId}
             accessToken={accessToken}
-            modelAccessGroups={availableModelAccessGroups}
+          modelAccessGroups={modelAccessGroups}
             teamAlias={teamAlias}
             onCancel={() => setIsEditing(false)}
-            onSaved={refreshModel}
+            onSaved={onRefresh}
           />
         </div>
       )}
@@ -311,7 +292,7 @@ export function FocusModelDetailsPanel({ modelId, onBack, onDelete }: FocusModel
           onCancel={() => setIsUpdateApiKeyOpen(false)}
           accessToken={accessToken}
           modelId={modelId}
-          onUpdated={() => void refreshModel()}
+          onUpdated={() => void onRefresh()}
         />
       )}
       <ReuseCredentialsModal

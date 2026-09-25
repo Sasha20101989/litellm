@@ -2,6 +2,7 @@
 
 import { useModelsWorkspace } from "@/features/models-and-endpoints/useModelsWorkspace";
 import { useModelFilterFacets } from "@/app/(dashboard)/hooks/models/useModels";
+import TeamInfoView from "@/components/team/TeamInfo";
 import DeleteResourceModal from "@/components/common_components/DeleteResourceModal";
 import ModelSettingsModal from "@/components/model_dashboard/ModelSettingsModal/ModelSettingsModal";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,8 @@ import { DEFAULT_FOCUS_MODEL_FIELD_VISIBILITY, type ModelFieldId } from "@/featu
 import { FocusModelCard, FocusModelFieldsVisibility } from "./FocusModelCard";
 import { FocusModelDetailsPanel } from "./FocusModelDetailsPanel";
 
-function getFocusListLayout(selectedModelId: string | null) {
-  if (selectedModelId) {
+function getFocusListLayout(hasSelection: boolean) {
+  if (hasSelection) {
     return {
       grid: "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]",
       list: "hidden border-r border-border lg:block",
@@ -75,7 +76,7 @@ function ModelsListResults({
 
   return workspace.data.map((model) => {
     const modelId = model.model_info?.id;
-    const permissions = workspace.getModelPermissions(model);
+    const capabilities = workspace.getModelCapabilities(model);
     const teamId = model.model_info?.team_id;
     const teamName = !teamId
       ? t("focusModelsAndEndpoints.list.personal")
@@ -84,14 +85,15 @@ function ModelsListResults({
       <FocusModelCard
         key={modelId || model.litellm_model_name}
         model={model}
-        selected={workspace.selectedModelId === modelId}
+        selected={workspace.selectedTarget.kind === "model" && workspace.selectedTarget.id === modelId}
         teamName={teamName}
         locale={locale}
         visibleFields={workspace.visibleFields}
-        canEdit={permissions.canEdit}
-        canTogglePause={permissions.canTogglePause}
+        canEdit={capabilities.canEdit}
+        canTogglePause={capabilities.canTogglePause}
         isPausing={workspace.pausingModelId === modelId}
         onSelect={() => modelId && workspace.setSelectedModelId(modelId)}
+        onTeamSelect={workspace.setSelectedTeamId}
         onPauseToggle={() => modelId && void workspace.togglePause(modelId, model.model_info?.blocked !== true)}
         onDelete={() => workspace.setDeleteModalModelId(modelId || null)}
       />
@@ -118,10 +120,52 @@ function ModelsAccessHint({ selectedTeam, teamName, visible }: { selectedTeam: s
   );
 }
 
+function FocusSelectedDetail({ workspace }: { workspace: ReturnType<typeof useModelsWorkspace> }) {
+  if (workspace.selectedTarget.kind === "model") {
+    const selectedModelCapabilities = workspace.selectedModelDetail.model
+      ? workspace.getModelCapabilities(workspace.selectedModelDetail.model)
+      : { canEdit: false };
+    return (
+      <FocusModelDetailsPanel
+        modelId={workspace.selectedTarget.id}
+        model={workspace.selectedModelDetail.model}
+        isLoading={workspace.selectedModelDetail.isLoading}
+        isError={workspace.selectedModelDetail.isError}
+        canEdit={selectedModelCapabilities.canEdit}
+        isProxyAdmin={workspace.isProxyAdmin}
+        accessToken={workspace.accessToken}
+        modelAccessGroups={workspace.availableModelAccessGroups}
+        teamAlias={workspace.teamOptions.find((team) => team.value === workspace.selectedModelDetail.model?.model_info?.team_id)?.label ?? null}
+        onRefresh={workspace.selectedModelDetail.refresh}
+        onBack={workspace.closeSelection}
+        onDelete={workspace.setDeleteModalModelId}
+      />
+    );
+  }
+  if (workspace.selectedTarget.kind === "team") {
+    return (
+      <section className="min-w-0 border-l border-border" aria-label={workspace.selectedTarget.id}>
+        <TeamInfoView
+          teamId={workspace.selectedTarget.id}
+          onClose={workspace.closeSelection}
+          accessToken={workspace.accessToken}
+          is_team_admin={workspace.isProxyAdmin}
+          is_proxy_admin={workspace.isProxyAdmin}
+          userModels={workspace.allModelsOnProxy}
+          editTeam={false}
+          onUpdate={workspace.invalidateModels}
+          premiumUser={workspace.premiumUser === true}
+        />
+      </section>
+    );
+  }
+  return null;
+}
+
 export function FocusModelsList() {
   const { t, i18n } = useTranslation("gateway");
-  const { availableModelGroups, availableModelAccessGroups } = useModelFilterFacets();
-  const workspace = useModelsWorkspace({ availableModelGroups, availableModelAccessGroups });
+  const { availableModelGroups, availableModelGroupOptions, availableModelAccessGroups } = useModelFilterFacets();
+  const workspace = useModelsWorkspace({ availableModelGroups, availableModelGroupOptions, availableModelAccessGroups });
   const { columnVisibility, onColumnVisibilityChange } = usePersistedColumnVisibility(
     "focus-models-and-endpoints",
     DEFAULT_FOCUS_MODEL_FIELD_VISIBILITY,
@@ -136,12 +180,12 @@ export function FocusModelsList() {
   const selectedModelGroupLabel = useMemo(() => {
     if (workspace.selectedModelGroup === "all") return t("focusModelsAndEndpoints.list.allModels");
     if (workspace.selectedModelGroup === "wildcard") return t("focusModelsAndEndpoints.list.wildcardModels");
-    return workspace.selectedModelGroup;
-  }, [t, workspace.selectedModelGroup]);
+    return workspace.availableModelGroupOptions.find((option) => option.value === workspace.selectedModelGroup)?.label ?? workspace.selectedModelGroup;
+  }, [t, workspace.availableModelGroupOptions, workspace.selectedModelGroup]);
   const selectedAccessGroupLabel =
     workspace.selectedAccessGroup === "all" ? t("focusModelsAndEndpoints.list.allAccessGroups") : workspace.selectedAccessGroup;
   const totalPages = Math.max(1, Math.ceil(workspace.rowCount / workspace.pagination.pageSize));
-  const layout = getFocusListLayout(workspace.selectedModelId);
+  const layout = getFocusListLayout(workspace.selectedTarget.kind !== "none");
   const setPage = (pageIndex: number) =>
     workspace.onPaginationChange({ pageIndex, pageSize: workspace.pagination.pageSize } as PaginationState);
 
@@ -165,7 +209,7 @@ export function FocusModelsList() {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Filter className="size-4 text-muted-foreground" aria-hidden="true" />
-            <Select value={workspace.selectedModelGroup} onValueChange={(value) => workspace.setModelGroup(String(value))}><SelectTrigger size="sm" aria-label={t("models.filters.publicName")} className="w-full min-w-72 gap-2 sm:w-88"><span className="text-muted-foreground">{t("models.filters.publicName")}</span><span className="truncate">{selectedModelGroupLabel}</span></SelectTrigger><SelectContent className="min-w-88"><SelectItem value="all">{t("focusModelsAndEndpoints.list.allModels")}</SelectItem><SelectItem value="wildcard">{t("focusModelsAndEndpoints.list.wildcardModels")}</SelectItem>{workspace.availableModelGroups.map((group) => <SelectItem key={group} value={group}><span className="truncate">{group}</span></SelectItem>)}</SelectContent></Select>
+            <Select value={workspace.selectedModelGroup} onValueChange={(value) => workspace.setModelGroup(String(value))}><SelectTrigger size="sm" aria-label={t("models.filters.publicName")} className="w-full min-w-72 gap-2 sm:w-88"><span className="text-muted-foreground">{t("models.filters.publicName")}</span><span className="truncate">{selectedModelGroupLabel}</span></SelectTrigger><SelectContent className="min-w-88"><SelectItem value="all">{t("focusModelsAndEndpoints.list.allModels")}</SelectItem><SelectItem value="wildcard">{t("focusModelsAndEndpoints.list.wildcardModels")}</SelectItem>{workspace.availableModelGroupOptions.map((group) => <SelectItem key={group.value} value={group.value}><span className="truncate">{group.label}</span></SelectItem>)}</SelectContent></Select>
             <Select value={workspace.selectedAccessGroup} onValueChange={(value) => workspace.setAccessGroup(String(value))}><SelectTrigger size="sm" aria-label={t("models.filters.accessGroup")} className="w-full min-w-72 gap-2 sm:w-88"><span className="text-muted-foreground">{t("models.filters.accessGroup")}</span><span className="truncate">{selectedAccessGroupLabel}</span></SelectTrigger><SelectContent className="min-w-88"><SelectItem value="all">{t("focusModelsAndEndpoints.list.allAccessGroups")}</SelectItem>{workspace.availableModelAccessGroups.map((group) => <SelectItem key={group} value={group}>{group}</SelectItem>)}</SelectContent></Select>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -177,7 +221,7 @@ export function FocusModelsList() {
         <div className="space-y-2 p-3 sm:p-4"><ModelsListResults workspace={workspaceWithFields} locale={locale} /><ModelsAccessHint selectedTeam={workspace.selectedTeamValue} teamName={selectedTeamLabel} visible={workspace.viewMode === "current_team"} /></div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border p-3 text-sm text-muted-foreground sm:p-4"><span>{t("focusModelsAndEndpoints.list.pagination.total", { count: workspace.rowCount })}</span><div className="flex items-center gap-2"><Select value={String(workspace.pagination.pageSize)} onValueChange={(value) => workspace.onPaginationChange({ pageIndex: 0, pageSize: Number(value) } as PaginationState)}><SelectTrigger size="sm" aria-label={t("focusModelsAndEndpoints.list.pagination.pageSize")}><SelectValue /></SelectTrigger><SelectContent>{[10, 25, 50].map((size) => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}</SelectContent></Select><Button variant="outline" size="icon-sm" disabled={workspace.pagination.pageIndex <= 0} onClick={() => setPage(workspace.pagination.pageIndex - 1)} aria-label={t("focusModelsAndEndpoints.list.pagination.previous")}><ChevronLeft className="size-4" /></Button><span className="tabular-nums">{workspace.pagination.pageIndex + 1} / {totalPages}</span><Button variant="outline" size="icon-sm" disabled={workspace.pagination.pageIndex + 1 >= totalPages} onClick={() => setPage(workspace.pagination.pageIndex + 1)} aria-label={t("focusModelsAndEndpoints.list.pagination.next")}><ChevronRight className="size-4" /></Button></div></div>
       </section>
-      {workspace.selectedModelId && <FocusModelDetailsPanel modelId={workspace.selectedModelId} onBack={workspace.closeSelection} onDelete={workspace.setDeleteModalModelId} />}
+      <FocusSelectedDetail workspace={workspace} />
       <ModelSettingsModal isVisible={workspace.isModelSettingsModalVisible} onCancel={() => workspace.setIsModelSettingsModalVisible(false)} onSuccess={() => workspace.setIsModelSettingsModalVisible(false)} />
       <DeleteResourceModal isOpen={Boolean(workspace.deleteModalModelId)} title={t("models.deleteModal.title")} alertMessage={t("models.deleteModal.warning")} message={t("models.deleteModal.confirmation")} resourceInformationTitle={t("models.deleteModal.information")} resourceInformation={workspace.modelToDelete ? [{ label: t("models.deleteModal.modelName"), value: workspace.modelToDelete.model_name || "-" }, { label: t("models.deleteModal.litellmName"), value: workspace.modelToDelete.litellm_model_name || "-" }, { label: t("models.deleteModal.provider"), value: workspace.modelToDelete.provider || "-" }, { label: t("models.deleteModal.createdBy"), value: workspace.modelToDelete.model_info?.created_by || "-" }] : []} onCancel={() => workspace.setDeleteModalModelId(null)} onOk={workspace.deleteModel} confirmLoading={workspace.deleteLoading} />
     </div>

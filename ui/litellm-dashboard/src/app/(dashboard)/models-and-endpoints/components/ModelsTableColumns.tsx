@@ -13,28 +13,25 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Switch } from "@/components/ui/switch";
 import { getDisplayModelName } from "@/components/view_model/model_name_display";
 import { copyToClipboard } from "@/utils/dataUtils";
+import { getModelField, MODEL_TABLE_FIELD_IDS, type ModelFieldId } from "@/features/models-and-endpoints/modelFields";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 
-export const MODEL_ID_COLUMN_ID = "model_info_id";
-export const MODEL_NAME_COLUMN_ID = "model_name";
-export const CREDENTIALS_COLUMN_ID = "litellm_credential_name";
-export const CREATED_BY_COLUMN_ID = "model_info_created_by";
-export const UPDATED_AT_COLUMN_ID = "model_info_updated_at";
-export const COSTS_COLUMN_ID = "input_cost";
-export const TEAM_ID_COLUMN_ID = "model_info_team_id";
-export const ACCESS_GROUPS_COLUMN_ID = "model_info_access_groups";
-export const STATUS_COLUMN_ID = "model_info_db_model";
+export const MODEL_ID_COLUMN_ID = getModelField("modelId").table.columnId;
+export const MODEL_NAME_COLUMN_ID = getModelField("modelName").table.columnId;
+export const CREDENTIALS_COLUMN_ID = getModelField("credentials").table.columnId;
+export const CREATED_BY_COLUMN_ID = getModelField("createdBy").table.columnId;
+export const UPDATED_AT_COLUMN_ID = getModelField("updatedAt").table.columnId;
+export const COSTS_COLUMN_ID = getModelField("costs").table.columnId;
+export const TEAM_ID_COLUMN_ID = getModelField("team").table.columnId;
+export const ACCESS_GROUPS_COLUMN_ID = getModelField("accessGroups").table.columnId;
+export const STATUS_COLUMN_ID = getModelField("source").table.columnId;
 
-export const MODEL_TABLE_SORT_COLUMN_IDS = [
-  MODEL_NAME_COLUMN_ID,
-  CREATED_BY_COLUMN_ID,
-  UPDATED_AT_COLUMN_ID,
-  COSTS_COLUMN_ID,
-  STATUS_COLUMN_ID,
-] as const;
+export const MODEL_TABLE_SORT_COLUMN_IDS = MODEL_TABLE_FIELD_IDS.filter((field) => getModelField(field).table.sortable).map(
+  (field) => getModelField(field).table.columnId,
+);
 
-export type ModelTableSortColumnId = (typeof MODEL_TABLE_SORT_COLUMN_IDS)[number];
+export type ModelTableSortColumnId = string;
 
 export const isModelTableSortColumnId = (columnId: string): columnId is ModelTableSortColumnId =>
   (MODEL_TABLE_SORT_COLUMN_IDS as readonly string[]).includes(columnId);
@@ -122,7 +119,7 @@ function CredentialsHeader() {
   const { t } = useTranslation("gateway");
   return (
     <span className="flex items-center gap-1">
-      {t("models.columns.credentials")}
+      {t(getModelField("credentials").table.translationKey)}
       <HoverCard>
         <HoverCardTrigger
           render={
@@ -203,8 +200,12 @@ function CreatedByCell({ model }: { model: ModelData }) {
 function CostsCell({ model }: { model: ModelData }) {
   const { t } = useTranslation("gateway");
   const { input_cost: inputCost, output_cost: outputCost } = model;
+  const outputCostPerSecond = model.output_cost_per_second;
+  const hideZeroTokenCost = outputCostPerSecond != null;
+  const showInputCost = inputCost != null && (!hideZeroTokenCost || inputCost !== "0.00");
+  const showOutputCost = outputCost != null && (!hideZeroTokenCost || outputCost !== "0.00");
 
-  if (inputCost == null && outputCost == null) {
+  if (!showInputCost && !showOutputCost && outputCostPerSecond == null) {
     return <span className="text-sm text-muted-foreground">-</span>;
   }
 
@@ -213,16 +214,24 @@ function CostsCell({ model }: { model: ModelData }) {
       content={t("models.costPerMillion")}
       trigger={
         <div className="flex flex-col gap-0.5 whitespace-nowrap">
-          {inputCost != null && (
+          {showInputCost && (
             <span className="flex items-baseline gap-1.5">
               <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">{t("models.input")}</span>
               <span className="text-xs font-medium tabular-nums text-foreground">${inputCost}</span>
             </span>
           )}
-          {outputCost != null && (
+          {showOutputCost && (
             <span className="flex items-baseline gap-1.5">
               <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">{t("models.output")}</span>
               <span className="text-xs font-medium tabular-nums text-foreground">${outputCost}</span>
+            </span>
+          )}
+          {outputCostPerSecond != null && (
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">{t("models.output")}</span>
+              <span className="text-xs font-medium tabular-nums text-foreground">
+                ${outputCostPerSecond.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}/s
+              </span>
             </span>
           )}
         </div>
@@ -266,19 +275,22 @@ function AccessGroupsCell({ accessGroups }: { accessGroups: string[] | null }) {
 
 interface ModelRowActionsProps {
   model: ModelData;
-  userRole: string;
-  userID: string;
-  isViewOnly: boolean;
+  capabilities: ModelCapabilities;
   isPausing: boolean;
   onDeleteClick?: (modelId: string) => void;
   onTogglePauseClick?: (modelId: string, blocked: boolean) => void | Promise<void>;
 }
 
+export interface ModelCapabilities {
+  canModify: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canTogglePause: boolean;
+}
+
 function ModelRowActions({
   model,
-  userRole,
-  userID,
-  isViewOnly,
+  capabilities,
   isPausing,
   onDeleteClick,
   onTogglePauseClick,
@@ -286,16 +298,14 @@ function ModelRowActions({
   const { t } = useTranslation("gateway");
   const modelId = model.model_info?.id;
   const isConfigModel = !model.model_info?.db_model;
-  const isAdmin = userRole === "Admin" && !isViewOnly;
-  const canEditModel = !isViewOnly && (isAdmin || model.model_info?.created_by === userID);
   const isBlocked = model.model_info?.blocked === true;
-  const isPauseToggleable = !isConfigModel && isAdmin && Boolean(onTogglePauseClick);
+  const isPauseToggleable = !isConfigModel && capabilities.canTogglePause && Boolean(onTogglePauseClick);
 
   const resolvePauseTooltip = (): string => {
     if (isConfigModel) {
       return t("models.pause.configDisabled");
     }
-    if (!isAdmin) {
+    if (!capabilities.canTogglePause) {
       return t("models.pause.adminOnly");
     }
     return isBlocked ? t("models.pause.resumeTooltip") : t("models.pause.pauseTooltip");
@@ -342,7 +352,7 @@ function ModelRowActions({
               size="icon-sm"
               aria-label={t("models.delete.action")}
               data-testid={`model-delete-${modelId}`}
-              disabled={isConfigModel || !canEditModel}
+              disabled={isConfigModel || !capabilities.canDelete}
               className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               onClick={() => {
                 if (onDeleteClick && modelId) {
@@ -360,9 +370,7 @@ function ModelRowActions({
 }
 
 export interface ModelsTableColumnDeps {
-  userRole: string;
-  userID: string;
-  isViewOnly: boolean;
+  getModelCapabilities: (model: ModelData) => ModelCapabilities;
   onModelIdClick: (modelId: string) => void;
   onTeamIdClick: (teamId: string) => void;
   onDeleteClick?: (modelId: string) => void;
@@ -372,21 +380,20 @@ export interface ModelsTableColumnDeps {
 }
 
 export const getModelsTableColumns = ({
-  userRole,
-  userID,
-  isViewOnly,
+  getModelCapabilities,
   onModelIdClick,
   onTeamIdClick,
   onDeleteClick,
   onTogglePauseClick,
   pausingModelId,
   t,
-}: ModelsTableColumnDeps): ColumnDef<ModelData>[] => [
-  {
+}: ModelsTableColumnDeps): ColumnDef<ModelData>[] => {
+  const columnsByField: Record<ModelFieldId, ColumnDef<ModelData>> = {
+  modelId: {
     id: MODEL_ID_COLUMN_ID,
     accessorFn: (row) => row.model_info.id,
-    meta: { title: t("models.columns.modelId") },
-    header: t("models.columns.modelId"),
+    meta: { title: t(getModelField("modelId").table.translationKey) },
+    header: t(getModelField("modelId").table.translationKey),
     enableSorting: false,
     size: 140,
     minSize: 90,
@@ -398,11 +405,11 @@ export const getModelsTableColumns = ({
       />
     ),
   },
-  {
+  modelName: {
     id: MODEL_NAME_COLUMN_ID,
     accessorFn: (row) => row.model_name ?? "",
-    meta: { title: t("models.columns.information"), skeleton: "twoLine" },
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("models.columns.information")} />,
+    meta: { title: t(getModelField("modelName").table.translationKey), skeleton: "twoLine" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t(getModelField("modelName").table.translationKey)} />,
     enableSorting: true,
     size: 280,
     minSize: 160,
@@ -410,51 +417,51 @@ export const getModelsTableColumns = ({
       <ModelInformationCell model={row.original} displayName={getDisplayModelName(row.original) || "-"} />
     ),
   },
-  {
+  credentials: {
     id: CREDENTIALS_COLUMN_ID,
     accessorFn: (row) => row.litellm_params?.litellm_credential_name ?? "",
-    meta: { title: t("models.columns.credentials") },
+    meta: { title: t(getModelField("credentials").table.translationKey) },
     header: () => <CredentialsHeader />,
     enableSorting: false,
     size: 180,
     minSize: 110,
     cell: ({ row }) => <CredentialsCell credentialName={row.original.litellm_params?.litellm_credential_name} />,
   },
-  {
+  createdBy: {
     id: CREATED_BY_COLUMN_ID,
     accessorFn: (row) => row.model_info.created_by ?? "",
-    meta: { title: t("models.columns.createdBy"), skeleton: "twoLine" },
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("models.columns.createdBy")} />,
+    meta: { title: t(getModelField("createdBy").table.translationKey), skeleton: "twoLine" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t(getModelField("createdBy").table.translationKey)} />,
     enableSorting: true,
     size: 180,
     minSize: 110,
     cell: ({ row }) => <CreatedByCell model={row.original} />,
   },
-  {
+  updatedAt: {
     id: UPDATED_AT_COLUMN_ID,
     accessorFn: (row) => row.model_info.updated_at ?? "",
-    meta: { title: t("models.columns.updatedAt") },
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("models.columns.updatedAt")} />,
+    meta: { title: t(getModelField("updatedAt").table.translationKey) },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t(getModelField("updatedAt").table.translationKey)} />,
     enableSorting: true,
     size: 140,
     minSize: 100,
     cell: ({ row }) => <DateCell value={row.original.model_info.updated_at} precision="date" />,
   },
-  {
+  costs: {
     id: COSTS_COLUMN_ID,
     accessorFn: (row) => row.input_cost,
-    meta: { title: t("models.columns.costs") },
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("models.columns.costs")} />,
+    meta: { title: t(getModelField("costs").table.translationKey) },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t(getModelField("costs").table.translationKey)} />,
     enableSorting: true,
     size: 130,
     minSize: 90,
     cell: ({ row }) => <CostsCell model={row.original} />,
   },
-  {
+  team: {
     id: TEAM_ID_COLUMN_ID,
     accessorFn: (row) => row.model_info.team_id ?? "",
-    meta: { title: t("models.columns.teamId") },
-    header: t("models.columns.teamId"),
+    meta: { title: t(getModelField("team").table.translationKey) },
+    header: t(getModelField("team").table.translationKey),
     enableSorting: false,
     size: 140,
     minSize: 90,
@@ -466,21 +473,21 @@ export const getModelsTableColumns = ({
       />
     ),
   },
-  {
+  accessGroups: {
     id: ACCESS_GROUPS_COLUMN_ID,
     accessorFn: (row) => row.model_info.access_groups ?? [],
-    meta: { title: t("models.columns.accessGroup"), skeleton: "chips" },
-    header: t("models.columns.accessGroup"),
+    meta: { title: t(getModelField("accessGroups").table.translationKey), skeleton: "chips" },
+    header: t(getModelField("accessGroups").table.translationKey),
     enableSorting: false,
     size: 200,
     minSize: 120,
     cell: ({ row }) => <AccessGroupsCell accessGroups={row.original.model_info.access_groups} />,
   },
-  {
+  source: {
     id: STATUS_COLUMN_ID,
     accessorFn: (row) => row.model_info.db_model,
-    meta: { title: t("models.columns.source"), skeleton: "badge" },
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("models.columns.source")} />,
+    meta: { title: t(getModelField("source").table.translationKey), skeleton: "badge" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t(getModelField("source").table.translationKey)} />,
     enableSorting: true,
     size: 140,
     minSize: 100,
@@ -491,7 +498,11 @@ export const getModelsTableColumns = ({
         <StatusBadge tone="neutral" label={t("models.configModel")} />
       ),
   },
-  {
+  };
+
+  return [
+    ...MODEL_TABLE_FIELD_IDS.map((field) => columnsByField[field]),
+    {
     id: "actions",
     meta: { title: t("models.columns.actions"), className: "text-right", headerClassName: "text-right" },
     header: t("models.columns.actions"),
@@ -503,13 +514,12 @@ export const getModelsTableColumns = ({
     cell: ({ row }) => (
       <ModelRowActions
         model={row.original}
-        userRole={userRole}
-        userID={userID}
-        isViewOnly={isViewOnly}
+        capabilities={getModelCapabilities(row.original)}
         isPausing={pausingModelId === row.original.model_info?.id}
         onDeleteClick={onDeleteClick}
         onTogglePauseClick={onTogglePauseClick}
       />
     ),
-  },
-];
+    },
+  ];
+};

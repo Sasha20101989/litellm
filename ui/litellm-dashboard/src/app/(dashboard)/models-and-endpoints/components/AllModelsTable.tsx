@@ -22,6 +22,7 @@ import { MODEL_TABLE_DEFAULT_COLUMN_VISIBILITY } from "@/features/models-and-end
 import {
   ACCESS_GROUPS_COLUMN_ID,
   getModelsTableColumns,
+  type ModelCapabilities,
   MODEL_NAME_COLUMN_ID,
 } from "./ModelsTableColumns";
 
@@ -62,6 +63,7 @@ interface AllModelsTableProps {
   onOpenModelSettings: () => void;
   availableModelGroups: string[];
   availableModelAccessGroups: string[];
+  availableModelGroupOptions?: Array<{ value: string; label: string }>;
   userRole: string;
   userID: string;
   isViewOnly: boolean;
@@ -70,6 +72,7 @@ interface AllModelsTableProps {
   onDeleteClick: (modelId: string) => void;
   onTogglePauseClick: (modelId: string, blocked: boolean) => void | Promise<void>;
   pausingModelId: string | null;
+  getModelCapabilities?: (model: ModelData) => ModelCapabilities;
 }
 
 function EmptyState() {
@@ -108,6 +111,7 @@ export function AllModelsTable({
   onViewModeChange,
   onOpenModelSettings,
   availableModelGroups,
+  availableModelGroupOptions,
   availableModelAccessGroups,
   userRole,
   userID,
@@ -117,15 +121,26 @@ export function AllModelsTable({
   onDeleteClick,
   onTogglePauseClick,
   pausingModelId,
+  getModelCapabilities,
 }: AllModelsTableProps) {
   const { t } = useTranslation("gateway");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const columns = useMemo(() => {
+    // The workspace always supplies this in dashboard use. The fallback keeps
+    // this reusable table independently renderable for its existing component
+    // harness, while application decisions remain workspace-owned.
+    const resolvedCapabilities =
+      getModelCapabilities ??
+      ((model: ModelData): ModelCapabilities => {
+        const isAdmin = userRole === "Admin" && !isViewOnly;
+        const isMutableDbModel = !isViewOnly && Boolean(model.model_info?.db_model);
+        const ownsModel = model.model_info?.created_by === userID;
+        const canModify = isMutableDbModel && (isAdmin || ownsModel);
+        return { canModify, canEdit: canModify, canDelete: canModify, canTogglePause: isAdmin && Boolean(model.model_info?.db_model) };
+      });
     const columnDeps = {
-      userRole,
-      userID,
-      isViewOnly,
+      getModelCapabilities: resolvedCapabilities,
       onModelIdClick,
       onTeamIdClick,
       onDeleteClick,
@@ -134,15 +149,15 @@ export function AllModelsTable({
       t,
     };
     return getModelsTableColumns(columnDeps);
-  }, [userRole, userID, isViewOnly, onModelIdClick, onTeamIdClick, onDeleteClick, onTogglePauseClick, pausingModelId, t]);
+  }, [getModelCapabilities, userRole, userID, isViewOnly, onModelIdClick, onTeamIdClick, onDeleteClick, onTogglePauseClick, pausingModelId, t]);
 
   const modelGroupOptions = useMemo(
     () => [
       { label: "All Models", value: ALL_MODEL_GROUPS_VALUE },
       { label: "Wildcard Models (*)", value: WILDCARD_MODEL_GROUP_VALUE },
-      ...availableModelGroups.map((group) => ({ label: group, value: group })),
+      ...(availableModelGroupOptions ?? availableModelGroups.map((value) => ({ value, label: value }))),
     ],
-    [availableModelGroups],
+    [availableModelGroupOptions, availableModelGroups],
   );
 
   const accessGroupOptions = useMemo(
@@ -158,7 +173,7 @@ export function AllModelsTable({
     if (columnId === MODEL_NAME_COLUMN_ID && raw === WILDCARD_MODEL_GROUP_VALUE) {
       return "Wildcard Models (*)";
     }
-    return raw;
+    return (availableModelGroupOptions ?? []).find((option) => option.value === raw)?.label ?? raw;
   };
 
   const selectedTeamLabel =

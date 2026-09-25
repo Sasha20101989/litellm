@@ -1,9 +1,9 @@
 "use client";
 
 import AllModelsTab from "@/app/(dashboard)/models-and-endpoints/components/AllModelsTab";
-import { useModelDashboardData } from "@/app/(dashboard)/models-and-endpoints/useModelDashboardData";
+import { useModelFilterFacets } from "@/app/(dashboard)/hooks/models/useModels";
 
 export default function AllModelsPanel() {
-  const { availableModelGroups, availableModelAccessGroups } = useModelDashboardData();
-  return <AllModelsTab availableModelGroups={availableModelGroups} availableModelAccessGroups={availableModelAccessGroups} />;
+  const { availableModelGroups, availableModelGroupOptions, availableModelAccessGroups } = useModelFilterFacets();
+  return <AllModelsTab availableModelGroups={availableModelGroups} availableModelGroupOptions={availableModelGroupOptions} availableModelAccessGroups={availableModelAccessGroups} />;
 }

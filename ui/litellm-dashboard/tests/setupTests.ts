@@ -1,6 +1,25 @@
 import "@testing-library/jest-dom";
 import { cleanup } from "@testing-library/react";
+import { createInstance } from "i18next";
+import { initReactI18next, setI18n } from "react-i18next";
 import { afterEach, vi } from "vitest";
+import { resources, TRANSLATION_NAMESPACES } from "@/i18n/catalog";
+
+// The component project renders individual dashboard controls as well as
+// provider-wrapped pages. Initialize the same catalog used in production so
+// direct component renders never fall back to translation keys.
+const componentTestI18n = createInstance().use(initReactI18next);
+void componentTestI18n.init({
+  resources,
+  ns: TRANSLATION_NAMESPACES,
+  defaultNS: "common",
+  lng: "en",
+  fallbackLng: "en",
+  fallbackNS: "common",
+  interpolation: { escapeValue: false },
+  initAsync: false,
+});
+setI18n(componentTestI18n);
 
 const ensureTestLocalStorage = () => {
   if (typeof window === "undefined" || typeof window.Storage === "undefined") {

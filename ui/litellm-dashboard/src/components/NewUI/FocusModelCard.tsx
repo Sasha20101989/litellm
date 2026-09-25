@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { getDisplayModelName } from "@/components/view_model/model_name_display";
-import { FOCUS_MODEL_CARD_FIELD_IDS, type ModelFieldId } from "@/features/models-and-endpoints/modelFields";
+import { FOCUS_MODEL_CARD_FIELD_IDS, getModelField, type ModelFieldId } from "@/features/models-and-endpoints/modelFields";
 import { Columns3, Loader2, MoreHorizontal, Pause, Play, Trash2 } from "lucide-react";
 import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -40,6 +40,7 @@ export function FocusModelCard({
   canTogglePause,
   isPausing,
   onSelect,
+  onTeamSelect,
   onPauseToggle,
   onDelete,
 }: {
@@ -52,6 +53,7 @@ export function FocusModelCard({
   canTogglePause: boolean;
   isPausing: boolean;
   onSelect: () => void;
+  onTeamSelect: (teamId: string) => void;
   onPauseToggle: () => void;
   onDelete: () => void;
 }) {
@@ -66,7 +68,7 @@ export function FocusModelCard({
   const fields: Array<[ModelFieldId, string, ReactNode]> = [
     [
       "credentials",
-      t("focusModelsAndEndpoints.list.fields.credentials"),
+      t(getModelField("credentials").focusTranslationKey),
       credentialName ? (
         credentialName
       ) : (
@@ -77,7 +79,7 @@ export function FocusModelCard({
     ],
     [
       "createdBy",
-      t("focusModelsAndEndpoints.list.fields.createdBy"),
+      t(getModelField("createdBy").focusTranslationKey),
       <span key="created-by">
         {createdBy}
         {!isConfigModel && (
@@ -87,10 +89,10 @@ export function FocusModelCard({
         )}
       </span>,
     ],
-    ["updatedAt", t("focusModelsAndEndpoints.list.fields.updatedAt"), formatDate(model.model_info?.updated_at, locale)],
+    ["updatedAt", t(getModelField("updatedAt").focusTranslationKey), formatDate(model.model_info?.updated_at, locale)],
     [
       "accessGroups",
-      t("focusModelsAndEndpoints.list.fields.accessGroups"),
+      t(getModelField("accessGroups").focusTranslationKey),
       accessGroups.length ? (
         <span className="flex flex-wrap gap-1">
           {accessGroups.map((group) => (
@@ -164,15 +166,28 @@ export function FocusModelCard({
       <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-t border-border pt-3 text-sm">
         {visibleFields.team && (
           <div className="min-w-0">
-            <dt className="text-xs text-muted-foreground">{t("focusModelsAndEndpoints.list.team")}</dt>
+            <dt className="text-xs text-muted-foreground">{t(getModelField("team").focusTranslationKey)}</dt>
             <dd className="mt-0.5 truncate text-foreground" title={teamName}>
-              {teamName}
+              {model.model_info?.team_id ? (
+                <button
+                  type="button"
+                  className="max-w-full cursor-pointer truncate text-left text-info hover:underline"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTeamSelect(model.model_info.team_id!);
+                  }}
+                >
+                  {teamName}
+                </button>
+              ) : (
+                teamName
+              )}
             </dd>
           </div>
         )}
         {visibleFields.source && (
           <div className="min-w-0">
-            <dt className="text-xs text-muted-foreground">{t("focusModelsAndEndpoints.list.source")}</dt>
+            <dt className="text-xs text-muted-foreground">{t(getModelField("source").focusTranslationKey)}</dt>
             <dd className="mt-0.5 truncate text-foreground">
               {model.model_info?.db_model ? t("models.dbModel") : t("models.configModel")}
             </dd>
@@ -180,7 +195,7 @@ export function FocusModelCard({
         )}
         {visibleFields.costs && (
           <div className="col-span-2 min-w-0">
-            <dt className="text-xs text-muted-foreground">{t("focusModelsAndEndpoints.list.costs")}</dt>
+            <dt className="text-xs text-muted-foreground">{t(getModelField("costs").focusTranslationKey)}</dt>
             <dd className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 tabular-nums text-foreground">
               {hasCosts ? (
                 <>
@@ -237,11 +252,11 @@ export function FocusModelFieldsVisibility({
         <div className="grid gap-3">
           {FOCUS_MODEL_CARD_FIELD_IDS.map((field) => (
             <label key={field} className="flex items-center justify-between gap-4 text-sm">
-              <span>{t(`focusModelsAndEndpoints.list.fields.${field}`)}</span>
+              <span>{t(getModelField(field).focusTranslationKey)}</span>
               <Switch
                 checked={visibility[field]}
                 onCheckedChange={(checked) => onChange({ ...visibility, [field]: checked })}
-                aria-label={t(`focusModelsAndEndpoints.list.fields.${field}`)}
+                aria-label={t(getModelField(field).focusTranslationKey)}
               />
             </label>
           ))}
