@@ -18,6 +18,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DEFAULT_FOCUS_MODEL_FIELD_VISIBILITY, type ModelFieldId } from "@/features/models-and-endpoints/modelFields";
+import { type ModelViewMode } from "@/features/models-and-endpoints/modelWorkspaceContract";
 import { FocusModelCard, FocusModelFieldsVisibility } from "./FocusModelCard";
 import { FocusModelDetailsPanel } from "./FocusModelDetailsPanel";
 
@@ -209,6 +210,7 @@ export function FocusModelsList() {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Filter className="size-4 text-muted-foreground" aria-hidden="true" />
+            <Select value={workspace.viewMode} onValueChange={(value) => workspace.setViewMode(value as ModelViewMode)}><SelectTrigger size="sm" aria-label={t("models.view")} className="w-full min-w-64 gap-2 sm:w-72"><span className="text-muted-foreground">{t("models.view")}</span><span className="truncate">{workspace.viewMode === "current_team" ? t("models.currentTeamModels") : t("models.allAvailableModels")}</span></SelectTrigger><SelectContent className="min-w-72"><SelectItem value="current_team">{t("models.currentTeamModels")}</SelectItem><SelectItem value="all">{t("models.allAvailableModels")}</SelectItem></SelectContent></Select>
             <Select value={workspace.selectedModelGroup} onValueChange={(value) => workspace.setModelGroup(String(value))}><SelectTrigger size="sm" aria-label={t("models.filters.publicName")} className="w-full min-w-72 gap-2 sm:w-88"><span className="text-muted-foreground">{t("models.filters.publicName")}</span><span className="truncate">{selectedModelGroupLabel}</span></SelectTrigger><SelectContent className="min-w-88"><SelectItem value="all">{t("focusModelsAndEndpoints.list.allModels")}</SelectItem><SelectItem value="wildcard">{t("focusModelsAndEndpoints.list.wildcardModels")}</SelectItem>{workspace.availableModelGroupOptions.map((group) => <SelectItem key={group.value} value={group.value}><span className="truncate">{group.label}</span></SelectItem>)}</SelectContent></Select>
             <Select value={workspace.selectedAccessGroup} onValueChange={(value) => workspace.setAccessGroup(String(value))}><SelectTrigger size="sm" aria-label={t("models.filters.accessGroup")} className="w-full min-w-72 gap-2 sm:w-88"><span className="text-muted-foreground">{t("models.filters.accessGroup")}</span><span className="truncate">{selectedAccessGroupLabel}</span></SelectTrigger><SelectContent className="min-w-88"><SelectItem value="all">{t("focusModelsAndEndpoints.list.allAccessGroups")}</SelectItem>{workspace.availableModelAccessGroups.map((group) => <SelectItem key={group} value={group}>{group}</SelectItem>)}</SelectContent></Select>
           </div>

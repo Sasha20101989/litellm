@@ -30,6 +30,9 @@ const makeModel = (overrides: Partial<ModelData> = {}): ModelData =>
     },
   }) as ModelData;
 
+const writableCapabilities = { canModify: true, canEdit: true, canDelete: true, canTogglePause: true };
+const readOnlyCapabilities = { canModify: false, canEdit: false, canDelete: false, canTogglePause: false };
+
 const baseProps = {
   data: [makeModel()],
   rowCount: 1,
@@ -57,14 +60,12 @@ const baseProps = {
   onOpenModelSettings: vi.fn(),
   availableModelGroups: ["gpt-4", "gpt-3.5-turbo"],
   availableModelAccessGroups: ["sales-team"],
-  userRole: "Admin",
-  userID: "alice",
-  isViewOnly: false,
   onModelIdClick: vi.fn(),
   onTeamIdClick: vi.fn(),
   onDeleteClick: vi.fn(),
   onTogglePauseClick: vi.fn(),
   pausingModelId: null,
+  getModelCapabilities: () => writableCapabilities,
 };
 
 const row = (modelId: string): HTMLElement => {
@@ -275,7 +276,7 @@ describe("AllModelsTable", () => {
     it("does not let a non-admin toggle a model", async () => {
       const user = userEvent.setup();
       const onTogglePauseClick = vi.fn();
-      render(<AllModelsTable {...baseProps} userRole="Internal User" onTogglePauseClick={onTogglePauseClick} />);
+      render(<AllModelsTable {...baseProps} getModelCapabilities={() => ({ ...writableCapabilities, canTogglePause: false })} onTogglePauseClick={onTogglePauseClick} />);
 
       const toggle = screen.getByTestId("model-pause-toggle-model-1");
       expect(toggle).toHaveAttribute("data-disabled");
@@ -286,7 +287,7 @@ describe("AllModelsTable", () => {
     it("does not let a view-only admin toggle a model", async () => {
       const user = userEvent.setup();
       const onTogglePauseClick = vi.fn();
-      render(<AllModelsTable {...baseProps} isViewOnly onTogglePauseClick={onTogglePauseClick} />);
+      render(<AllModelsTable {...baseProps} getModelCapabilities={() => readOnlyCapabilities} onTogglePauseClick={onTogglePauseClick} />);
 
       const toggle = screen.getByTestId("model-pause-toggle-model-1");
       expect(toggle).toHaveAttribute("data-disabled");
@@ -323,7 +324,7 @@ describe("AllModelsTable", () => {
     it("lets an admin delete a DB model", async () => {
       const user = userEvent.setup();
       const onDeleteClick = vi.fn();
-      render(<AllModelsTable {...baseProps} userID="someone-else" onDeleteClick={onDeleteClick} />);
+      render(<AllModelsTable {...baseProps} onDeleteClick={onDeleteClick} />);
 
       await user.click(screen.getByTestId("model-delete-model-1"));
       expect(onDeleteClick).toHaveBeenCalledWith("model-1");
@@ -332,7 +333,7 @@ describe("AllModelsTable", () => {
     it("lets the creator delete their own DB model", async () => {
       const user = userEvent.setup();
       const onDeleteClick = vi.fn();
-      render(<AllModelsTable {...baseProps} userRole="Internal User" userID="alice" onDeleteClick={onDeleteClick} />);
+      render(<AllModelsTable {...baseProps} onDeleteClick={onDeleteClick} />);
 
       await user.click(screen.getByTestId("model-delete-model-1"));
       expect(onDeleteClick).toHaveBeenCalledWith("model-1");
@@ -341,7 +342,7 @@ describe("AllModelsTable", () => {
     it("blocks deleting a model the user did not create", async () => {
       const user = userEvent.setup();
       const onDeleteClick = vi.fn();
-      render(<AllModelsTable {...baseProps} userRole="Internal User" userID="bob" onDeleteClick={onDeleteClick} />);
+      render(<AllModelsTable {...baseProps} getModelCapabilities={() => readOnlyCapabilities} onDeleteClick={onDeleteClick} />);
 
       const deleteButton = screen.getByTestId("model-delete-model-1");
       expect(deleteButton).toBeDisabled();
@@ -352,7 +353,7 @@ describe("AllModelsTable", () => {
     it("blocks a view-only admin from deleting a DB model they created", async () => {
       const user = userEvent.setup();
       const onDeleteClick = vi.fn();
-      render(<AllModelsTable {...baseProps} isViewOnly onDeleteClick={onDeleteClick} />);
+      render(<AllModelsTable {...baseProps} getModelCapabilities={() => readOnlyCapabilities} onDeleteClick={onDeleteClick} />);
 
       const deleteButton = screen.getByTestId("model-delete-model-1");
       expect(deleteButton).toBeDisabled();

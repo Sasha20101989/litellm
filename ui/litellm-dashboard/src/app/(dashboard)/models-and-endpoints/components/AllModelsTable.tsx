@@ -18,19 +18,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { ToolbarSeparator } from "@/components/shared/ToolbarSeparator";
 import { cn } from "@/lib/cva.config";
 import { MODEL_TABLE_DEFAULT_COLUMN_VISIBILITY } from "@/features/models-and-endpoints/modelFields";
+import {
+  ALL_MODEL_GROUPS_VALUE,
+  PERSONAL_TEAM_VALUE,
+  type ModelCapabilities,
+  type ModelViewMode,
+  WILDCARD_MODEL_GROUP_VALUE,
+} from "@/features/models-and-endpoints/modelWorkspaceContract";
 
 import {
   ACCESS_GROUPS_COLUMN_ID,
   getModelsTableColumns,
-  type ModelCapabilities,
   MODEL_NAME_COLUMN_ID,
 } from "./ModelsTableColumns";
 
-export type ModelViewMode = "all" | "current_team";
-
-export const PERSONAL_TEAM_VALUE = "personal";
-export const ALL_MODEL_GROUPS_VALUE = "all";
-export const WILDCARD_MODEL_GROUP_VALUE = "wildcard";
+export { ALL_MODEL_GROUPS_VALUE, PERSONAL_TEAM_VALUE, type ModelViewMode, WILDCARD_MODEL_GROUP_VALUE } from "@/features/models-and-endpoints/modelWorkspaceContract";
 
 const MODEL_TABLE_BODY_HEIGHT = 600;
 
@@ -64,15 +66,12 @@ interface AllModelsTableProps {
   availableModelGroups: string[];
   availableModelAccessGroups: string[];
   availableModelGroupOptions?: Array<{ value: string; label: string }>;
-  userRole: string;
-  userID: string;
-  isViewOnly: boolean;
   onModelIdClick: (modelId: string) => void;
   onTeamIdClick: (teamId: string) => void;
   onDeleteClick: (modelId: string) => void;
   onTogglePauseClick: (modelId: string, blocked: boolean) => void | Promise<void>;
   pausingModelId: string | null;
-  getModelCapabilities?: (model: ModelData) => ModelCapabilities;
+  getModelCapabilities: (model: ModelData) => ModelCapabilities;
 }
 
 function EmptyState() {
@@ -113,9 +112,6 @@ export function AllModelsTable({
   availableModelGroups,
   availableModelGroupOptions,
   availableModelAccessGroups,
-  userRole,
-  userID,
-  isViewOnly,
   onModelIdClick,
   onTeamIdClick,
   onDeleteClick,
@@ -127,20 +123,8 @@ export function AllModelsTable({
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const columns = useMemo(() => {
-    // The workspace always supplies this in dashboard use. The fallback keeps
-    // this reusable table independently renderable for its existing component
-    // harness, while application decisions remain workspace-owned.
-    const resolvedCapabilities =
-      getModelCapabilities ??
-      ((model: ModelData): ModelCapabilities => {
-        const isAdmin = userRole === "Admin" && !isViewOnly;
-        const isMutableDbModel = !isViewOnly && Boolean(model.model_info?.db_model);
-        const ownsModel = model.model_info?.created_by === userID;
-        const canModify = isMutableDbModel && (isAdmin || ownsModel);
-        return { canModify, canEdit: canModify, canDelete: canModify, canTogglePause: isAdmin && Boolean(model.model_info?.db_model) };
-      });
     const columnDeps = {
-      getModelCapabilities: resolvedCapabilities,
+      getModelCapabilities,
       onModelIdClick,
       onTeamIdClick,
       onDeleteClick,
@@ -149,7 +133,7 @@ export function AllModelsTable({
       t,
     };
     return getModelsTableColumns(columnDeps);
-  }, [getModelCapabilities, userRole, userID, isViewOnly, onModelIdClick, onTeamIdClick, onDeleteClick, onTogglePauseClick, pausingModelId, t]);
+  }, [getModelCapabilities, onModelIdClick, onTeamIdClick, onDeleteClick, onTogglePauseClick, pausingModelId, t]);
 
   const modelGroupOptions = useMemo(
     () => [

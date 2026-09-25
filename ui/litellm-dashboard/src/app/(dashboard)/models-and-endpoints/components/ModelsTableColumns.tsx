@@ -14,36 +14,39 @@ import { Switch } from "@/components/ui/switch";
 import { getDisplayModelName } from "@/components/view_model/model_name_display";
 import { copyToClipboard } from "@/utils/dataUtils";
 import { getModelField, MODEL_TABLE_FIELD_IDS, type ModelFieldId } from "@/features/models-and-endpoints/modelFields";
+import {
+  ACCESS_GROUPS_COLUMN_ID,
+  COSTS_COLUMN_ID,
+  CREATED_BY_COLUMN_ID,
+  CREDENTIALS_COLUMN_ID,
+  MODEL_ID_COLUMN_ID,
+  MODEL_NAME_COLUMN_ID,
+  MODEL_TABLE_SORT_COLUMN_IDS,
+  STATUS_COLUMN_ID,
+  TEAM_ID_COLUMN_ID,
+  toServerSortField,
+  type ModelCapabilities,
+  type ModelTableSortColumnId,
+  UPDATED_AT_COLUMN_ID,
+} from "@/features/models-and-endpoints/modelWorkspaceContract";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 
-export const MODEL_ID_COLUMN_ID = getModelField("modelId").table.columnId;
-export const MODEL_NAME_COLUMN_ID = getModelField("modelName").table.columnId;
-export const CREDENTIALS_COLUMN_ID = getModelField("credentials").table.columnId;
-export const CREATED_BY_COLUMN_ID = getModelField("createdBy").table.columnId;
-export const UPDATED_AT_COLUMN_ID = getModelField("updatedAt").table.columnId;
-export const COSTS_COLUMN_ID = getModelField("costs").table.columnId;
-export const TEAM_ID_COLUMN_ID = getModelField("team").table.columnId;
-export const ACCESS_GROUPS_COLUMN_ID = getModelField("accessGroups").table.columnId;
-export const STATUS_COLUMN_ID = getModelField("source").table.columnId;
-
-export const MODEL_TABLE_SORT_COLUMN_IDS = MODEL_TABLE_FIELD_IDS.filter((field) => getModelField(field).table.sortable).map(
-  (field) => getModelField(field).table.columnId,
-);
-
-export type ModelTableSortColumnId = string;
-
-export const isModelTableSortColumnId = (columnId: string): columnId is ModelTableSortColumnId =>
-  (MODEL_TABLE_SORT_COLUMN_IDS as readonly string[]).includes(columnId);
-
-const COLUMN_ID_TO_SERVER_SORT_FIELD: Record<string, string> = {
-  [COSTS_COLUMN_ID]: "costs",
-  [STATUS_COLUMN_ID]: "status",
-  [CREATED_BY_COLUMN_ID]: "created_at",
-  [UPDATED_AT_COLUMN_ID]: "updated_at",
+export {
+  ACCESS_GROUPS_COLUMN_ID,
+  COSTS_COLUMN_ID,
+  CREATED_BY_COLUMN_ID,
+  CREDENTIALS_COLUMN_ID,
+  MODEL_ID_COLUMN_ID,
+  MODEL_NAME_COLUMN_ID,
+  MODEL_TABLE_SORT_COLUMN_IDS,
+  STATUS_COLUMN_ID,
+  TEAM_ID_COLUMN_ID,
+  toServerSortField,
+  type ModelCapabilities,
+  type ModelTableSortColumnId,
+  UPDATED_AT_COLUMN_ID,
 };
-
-export const toServerSortField = (columnId: string): string => COLUMN_ID_TO_SERVER_SORT_FIELD[columnId] ?? columnId;
 
 const formatShortDate = (value: string | null | undefined): string | null => {
   if (!value) {
@@ -279,13 +282,6 @@ interface ModelRowActionsProps {
   isPausing: boolean;
   onDeleteClick?: (modelId: string) => void;
   onTogglePauseClick?: (modelId: string, blocked: boolean) => void | Promise<void>;
-}
-
-export interface ModelCapabilities {
-  canModify: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
-  canTogglePause: boolean;
 }
 
 function ModelRowActions({

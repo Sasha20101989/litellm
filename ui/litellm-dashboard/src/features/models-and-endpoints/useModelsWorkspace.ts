@@ -19,25 +19,24 @@ import { useDebouncedValue } from "@tanstack/react-pacer/debouncer";
 import { ColumnFiltersState, functionalUpdate, OnChangeFn, PaginationState, SortingState } from "@tanstack/react-table";
 import { createParser, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   ACCESS_GROUPS_COLUMN_ID,
   isModelTableSortColumnId,
   MODEL_NAME_COLUMN_ID,
-  toServerSortField,
-} from "@/app/(dashboard)/models-and-endpoints/components/ModelsTableColumns";
-import {
+  MODEL_VIEW_MODES,
+  type ModelViewMode,
   ALL_MODEL_GROUPS_VALUE,
-  ModelViewMode,
   PERSONAL_TEAM_VALUE,
+  toServerSortField,
   WILDCARD_MODEL_GROUP_VALUE,
-} from "@/app/(dashboard)/models-and-endpoints/components/AllModelsTable";
+} from "@/features/models-and-endpoints/modelWorkspaceContract";
 
 const SEARCH_DEBOUNCE_WAIT_MS = 200;
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 const MAX_PAGE = 100_000;
-const MODEL_VIEW_MODES = ["current_team", "all"] as const satisfies readonly ModelViewMode[];
 
 const boundedInteger = (min: number, max: number, fallback: number) =>
   createParser({
@@ -70,6 +69,7 @@ interface UseModelsWorkspaceOptions {
 }
 
 export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
+  const { t } = useTranslation("gateway");
   const { accessToken, userId, userRole, isViewOnly, premiumUser } = useAuthorized();
   const { data: teams, isLoading: isLoadingTeams } = useTeams();
   const { data: modelCostMap, isLoading: isLoadingModelCostMap } = useModelCostMap();
@@ -127,7 +127,8 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
     [tableState.sort_by, tableState.sort_order],
   );
   const selectedModelAccessGroupFilter = tableState.access_group || null;
-  const teamIdForQuery = tableState.filter_team === PERSONAL_TEAM_VALUE ? undefined : tableState.filter_team;
+  const teamIdForQuery =
+    tableState.view_mode === "all" || tableState.filter_team === PERSONAL_TEAM_VALUE ? undefined : tableState.filter_team;
   const isConcreteModelGroup =
     selectedModelGroup !== ALL_MODEL_GROUPS_VALUE && selectedModelGroup !== WILDCARD_MODEL_GROUP_VALUE;
   const modelNameForQuery = isConcreteModelGroup ? selectedModelGroup : undefined;
@@ -208,12 +209,12 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
   );
   const teamOptions = useMemo(
     () => [
-      { value: PERSONAL_TEAM_VALUE, label: "Personal" },
+      { value: PERSONAL_TEAM_VALUE, label: t("models.personal") },
       ...(teams ?? [])
         .filter((team) => Boolean(team.team_id))
         .map((team) => ({ value: team.team_id, label: team.team_alias || team.team_id })),
     ],
-    [teams],
+    [t, teams],
   );
   const selectedTeam = useMemo(
     () => (teams ?? []).find((team) => team.team_id === tableState.filter_team) ?? null,
@@ -259,7 +260,7 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
     [pagination, setTableState],
   );
   const setTeam = useCallback((teamId: string) => resetPage({ filter_team: teamId }), [resetPage]);
-  const setViewMode = useCallback((viewMode: ModelViewMode) => void setTableState({ view_mode: viewMode }), [setTableState]);
+  const setViewMode = useCallback((viewMode: ModelViewMode) => resetPage({ view_mode: viewMode }), [resetPage]);
   const setModelGroup = useCallback(
     (modelGroup: string) => {
       setSelectedModelGroup(modelGroup);
@@ -283,7 +284,7 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
       try {
         setPausingModelId(modelId);
         await modelPatchUpdateCall(accessToken, { blocked }, modelId);
-        toast.success(blocked ? "Model paused" : "Model resumed");
+        toast.success(blocked ? t("models.paused") : t("models.resumed"));
         await invalidateModels();
       } catch (error) {
         console.error("Error toggling model pause state:", error);
@@ -292,14 +293,14 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
         setPausingModelId(null);
       }
     },
-    [accessToken, invalidateModels],
+    [accessToken, invalidateModels, t],
   );
   const deleteModel = useCallback(async () => {
     if (!accessToken || !deleteModalModelId) return;
     try {
       setDeleteLoading(true);
       await modelDeleteCall(accessToken, deleteModalModelId);
-      toast.success("Model deleted successfully");
+      toast.success(t("models.deleted"));
       await invalidateModels();
       const refreshed = await refetch();
       const totalPages = Math.max(
@@ -317,7 +318,7 @@ export function useModelsWorkspace(options: UseModelsWorkspaceOptions = {}) {
       setDeleteLoading(false);
       setDeleteModalModelId(null);
     }
-  }, [accessToken, close, deleteModalModelId, invalidateModels, pagination.pageIndex, pagination.pageSize, refetch, selectedModelId, setTableState]);
+  }, [accessToken, close, deleteModalModelId, invalidateModels, pagination.pageIndex, pagination.pageSize, refetch, selectedModelId, setTableState, t]);
   const getModelCapabilities = useCallback(
     (model: ModelData) => {
       const canModify = canModifyModel(

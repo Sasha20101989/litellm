@@ -25,7 +25,7 @@ export function useModelDetailRouting(): ModelDetailRouting {
   // shared hand-authored links, then clean the redundant selector once.
   useEffect(() => {
     if (model && team) {
-      void setParams({ model: null, team });
+      void setParams({ model: null, team }, { history: "replace" });
     }
   }, [model, setParams, team]);
 
