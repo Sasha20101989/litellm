@@ -2,7 +2,6 @@ import { useCallback, useState } from "react";
 import { useDebouncedValue } from "@tanstack/react-pacer/debouncer";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { ColumnFiltersState, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { resolveLogoSrc } from "@/lib/assetPaths";
 import { DEBOUNCE_WAIT_MS } from "@/utils/debounceConstants";
 import { uiAuditLogsCall } from "../networking";
 import { AuditLogEntry } from "./AuditLogsTableColumns";

@@ -59,9 +59,12 @@ const SORT_FIELDS = ["key_alias", "token", "created_at", "updated_at", "spend", 
 const FOCUS_THEME_STORAGE_KEY = "litellm_focus_virtual_keys_theme";
 
 type FilterColumn = (typeof FILTER_COLUMNS)[number];
+type SortField = (typeof SORT_FIELDS)[number];
 type KeyStatus = (typeof KEY_STATUS_VALUES)[number];
 type FocusTheme = "light" | "dark";
 type BudgetState = "warning" | "exceeded";
+
+const isSortField = (value: string): value is SortField => (SORT_FIELDS as readonly string[]).includes(value);
 
 const TABLE_STATE_OPTIONS: UrlTableStateOptions<FilterColumn> = {
   sortFields: SORT_FIELDS,
@@ -122,7 +125,7 @@ const formatDate = (value: string | null | undefined, locale: string, fallback: 
 const formatMoney = (value: number | null | undefined): string => `$${formatNumberWithCommas(value, 2)}`;
 
 const getBudgetState = (spend: number | null | undefined, maxBudget: number | null | undefined): BudgetState | null => {
-  if (!Number.isFinite(maxBudget) || !maxBudget || maxBudget <= 0 || !Number.isFinite(spend)) return null;
+  if (typeof spend !== "number" || typeof maxBudget !== "number" || !Number.isFinite(spend) || !Number.isFinite(maxBudget) || maxBudget <= 0) return null;
 
   const ratio = spend / maxBudget;
   if (ratio >= 1) return "exceeded";
@@ -389,7 +392,7 @@ function FocusVirtualKeysPage() {
     id: filter.id as FilterColumn,
     label: filterLabel(filter, teams, organizations, t),
   }));
-  const sortLabels: Record<(typeof SORT_FIELDS)[number], string> = {
+  const sortLabels: Record<SortField, string> = {
     key_alias: t("focusKeys.sort.keyAlias"),
     token: t("focusKeys.sort.keyId"),
     created_at: t("focusKeys.sort.createdAt"),
@@ -595,7 +598,7 @@ function FocusVirtualKeysPage() {
                 }}
               >
                 <SelectTrigger size="sm" aria-label={t("focusKeys.sort.label")}>
-                  <SelectValue>{sortLabels[sort.id]}</SelectValue>
+                  <SelectValue>{isSortField(sort.id) ? sortLabels[sort.id] : sortLabels.created_at}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {SORT_FIELDS.map((field) => (
