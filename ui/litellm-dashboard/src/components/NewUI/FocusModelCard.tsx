@@ -218,8 +218,8 @@ export function FocusModelFieldsVisibility({
   visibility,
   onChange,
 }: {
-  visibility: Record<FocusModelField, boolean>;
-  onChange: (next: Record<FocusModelField, boolean>) => void;
+  visibility: Record<ModelFieldId, boolean>;
+  onChange: (next: Record<ModelFieldId, boolean>) => void;
 }) {
   const { t } = useTranslation("gateway");
 
