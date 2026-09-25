@@ -51,7 +51,13 @@ const ModelConnectionTest: React.FC<ModelConnectionTestProps> = ({
       }
 
       const { litellmParamsObj, modelInfoObj } = result[0];
-      const response = await testConnectionRequest(accessToken, litellmParamsObj, modelInfoObj, modelInfoObj?.mode);
+      const modelInfo = (modelInfoObj ?? {}) as Record<string, unknown>;
+      const response = await testConnectionRequest(
+        accessToken,
+        litellmParamsObj,
+        modelInfo,
+        String(modelInfo.mode ?? "chat"),
+      );
 
       if (response.status === "success") {
         toast.success("Connection test successful!");

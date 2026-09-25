@@ -182,7 +182,7 @@ function createModelInfo(values: ModelCreateValues, messages: ModelCreateMessage
     if (value != null && value !== "") info[field] = Number(value);
   }
   for (const field of PTU_DATE_FIELDS) {
-    const value = values[field];
+    const value = values[field] as Dayjs | null | undefined;
     const converted = ptuPickerToUtcIso(value);
     if (converted !== null) info[field] = converted;
   }
