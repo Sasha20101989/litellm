@@ -117,6 +117,14 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
   onBackToDiscovery,
 }) => {
   const { t } = useTranslation("gateway");
+  const transportItems = React.useMemo(
+    () => TRANSPORT_ITEMS.map((item) => ({ value: item.value, label: t(item.labelKey) })),
+    [t],
+  );
+  const authTypeItems = React.useMemo(
+    () => AUTH_TYPE_ITEMS.map((item) => ({ value: item.value, label: t(item.labelKey) })),
+    [t],
+  );
   const form = useForm<MountedFormValues>({ mode: "onChange", defaultValues: CREATE_DEFAULTS });
   const registry = useMountRegistry();
   const [isLoading, setIsLoading] = useState(false);
@@ -670,7 +678,7 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
                       </span>
                     }
                     name="server_name"
-                    rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value) }) }}
+                    rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value, t) }) }}
                   >
                     {(control) => (
                       <Input
@@ -691,7 +699,7 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
                       </span>
                     }
                     name="alias"
-                    rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value) }) }}
+                    rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value, t) }) }}
                   >
                     {(control) => (
                       <Input
@@ -742,7 +750,7 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
                   >
                     {(control) => (
                       <Select
-                        items={TRANSPORT_ITEMS}
+                        items={transportItems}
                         value={(control.value as string | undefined) ?? null}
                         onValueChange={handleTransportSelected(control.onChange)}
                       >
@@ -750,7 +758,7 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
                           <SelectValue placeholder={t("mcpServers.create.selectTransport")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {TRANSPORT_ITEMS.map((item) => (
+                          {transportItems.map((item) => (
                             <SelectItem key={item.value} value={item.value}>
                               {item.label}
                             </SelectItem>
@@ -769,7 +777,7 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
                       rules={{
                         validate: {
                           required: requiredRule(t("mcpServers.create.serverUrlRequired")),
-                          ...validatorRules({ validator: (_, value) => validateMCPServerUrl(value) }),
+                          ...validatorRules({ validator: (_, value) => validateMCPServerUrl(value, t) }),
                         },
                       }}
                     >
@@ -837,12 +845,12 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
                           rules={{ validate: { required: requiredRule(t("mcpServers.create.authRequired")) } }}
                         >
                           {(control) => (
-                            <Select {...selectControl<string>(control)} items={AUTH_TYPE_ITEMS}>
+                            <Select {...selectControl<string>(control)} items={authTypeItems}>
                               <SelectTrigger {...selectTriggerControl(control)} className="w-full rounded-lg">
                                 <SelectValue placeholder={t("mcpServers.create.selectAuth")} />
                               </SelectTrigger>
                               <SelectContent>
-                                {AUTH_TYPE_ITEMS.map((item) => (
+                                {authTypeItems.map((item) => (
                                   <SelectItem key={item.value} value={item.value}>
                                     {item.label}
                                   </SelectItem>

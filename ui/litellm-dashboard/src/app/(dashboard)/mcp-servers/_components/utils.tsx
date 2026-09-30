@@ -1,4 +1,5 @@
 import { MCPEnvVar, MCPEnvVarScope, type MCPServer } from "@/components/mcp_tools/types";
+import type { TFunction } from "i18next";
 
 export const getMCPNetworkAccess = (
   server: Pick<MCPServer, "available_on_public_internet" | "mcp_info">,
@@ -83,26 +84,28 @@ export const getMaskedAndFullUrl = (url: string): { maskedUrl: string; hasToken:
 };
 
 // Validation utilities for MCP server forms
-export const validateMCPServerUrl = (value: string) => {
+const validationMessage = (t: TFunction<"gateway"> | undefined, key: string) => t?.(key) ?? key;
+
+export const validateMCPServerUrl = (value: string, t?: TFunction<"gateway">) => {
   if (!value) return Promise.resolve();
   // More flexible URL validation that allows Kubernetes service names and various URL formats
   const urlPattern = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
   return urlPattern.test(value)
     ? Promise.resolve()
-    : Promise.reject("Please enter a valid URL (e.g., http://service-name.domain:1234/path or https://example.com)");
+    : Promise.reject(validationMessage(t, "mcpServers.create.validation.invalidUrl"));
 };
 
-export const validateMCPServerName = (value: string) => {
+export const validateMCPServerName = (value: string, t?: TFunction<"gateway">) => {
   return value && (value.includes("-") || value.includes(" "))
-    ? Promise.reject("Cannot contain '-' (hyphen) or spaces. Please use '_' (underscore) instead.")
+    ? Promise.reject(validationMessage(t, "mcpServers.create.validation.invalidServerName"))
     : Promise.resolve();
 };
 
 export const TOOL_DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
-export const validateToolDisplayName = (value: string) => {
+export const validateToolDisplayName = (value: string, t?: TFunction<"gateway">) => {
   return value && !TOOL_DISPLAY_NAME_PATTERN.test(value)
-    ? Promise.reject("Only letters, digits, underscores, and hyphens are allowed (no spaces).")
+    ? Promise.reject(validationMessage(t, "mcpServers.create.validation.invalidToolDisplayName"))
     : Promise.resolve();
 };
 

@@ -47,17 +47,17 @@ export const AUTH_TYPE = {
 };
 
 export const AUTH_TYPE_ITEMS = [
-  { value: AUTH_TYPE.NONE, label: "None" },
-  { value: AUTH_TYPE.API_KEY, label: "API Key" },
-  { value: AUTH_TYPE.BEARER_TOKEN, label: "Bearer Token" },
-  { value: AUTH_TYPE.TOKEN, label: "Token" },
-  { value: AUTH_TYPE.BASIC, label: "Basic Auth" },
-  { value: AUTH_TYPE.OAUTH2, label: "OAuth" },
-  { value: AUTH_TYPE.OAUTH2_TOKEN_EXCHANGE, label: "OAuth Token Exchange (OBO)" },
-  { value: AUTH_TYPE.OAUTH2_ID_JAG, label: "ID-JAG (Okta Cross App Access)" },
-  { value: AUTH_TYPE.AWS_SIGV4, label: "AWS SigV4 (Bedrock AgentCore MCPs)" },
-  { value: AUTH_TYPE.TRUE_PASSTHROUGH, label: "True Passthrough (no Nexoplane auth)" },
-  { value: AUTH_TYPE.OAUTH_DELEGATE, label: "OAuth Delegate (client-supplied upstream token)" },
+  { value: AUTH_TYPE.NONE, labelKey: "mcpServers.create.authTypes.none" },
+  { value: AUTH_TYPE.API_KEY, labelKey: "mcpServers.create.authTypes.apiKey" },
+  { value: AUTH_TYPE.BEARER_TOKEN, labelKey: "mcpServers.create.authTypes.bearer" },
+  { value: AUTH_TYPE.TOKEN, labelKey: "mcpServers.create.authTypes.token" },
+  { value: AUTH_TYPE.BASIC, labelKey: "mcpServers.create.authTypes.basic" },
+  { value: AUTH_TYPE.OAUTH2, labelKey: "mcpServers.create.authTypes.oauth" },
+  { value: AUTH_TYPE.OAUTH2_TOKEN_EXCHANGE, labelKey: "mcpServers.create.authTypes.exchange" },
+  { value: AUTH_TYPE.OAUTH2_ID_JAG, labelKey: "mcpServers.create.authTypes.idJag" },
+  { value: AUTH_TYPE.AWS_SIGV4, labelKey: "mcpServers.create.authTypes.aws" },
+  { value: AUTH_TYPE.TRUE_PASSTHROUGH, labelKey: "mcpServers.create.authTypes.passthrough" },
+  { value: AUTH_TYPE.OAUTH_DELEGATE, labelKey: "mcpServers.create.authTypes.delegate" },
 ];
 
 // The two client-forwarded token modes: the caller supplies the upstream Authorization (forwarded
@@ -265,10 +265,10 @@ export const TRANSPORT = {
 };
 
 export const TRANSPORT_ITEMS = [
-  { value: TRANSPORT.HTTP, label: "Streamable HTTP (Recommended)" },
-  { value: TRANSPORT.SSE, label: "Server-Sent Events (SSE)" },
-  { value: TRANSPORT.STDIO, label: "Standard Input/Output (stdio)" },
-  { value: TRANSPORT.OPENAPI, label: "OpenAPI Spec" },
+  { value: TRANSPORT.HTTP, labelKey: "mcpServers.create.streamableHttp" },
+  { value: TRANSPORT.SSE, labelKey: "mcpServers.create.sse" },
+  { value: TRANSPORT.STDIO, labelKey: "mcpServers.create.stdio" },
+  { value: TRANSPORT.OPENAPI, labelKey: "mcpServers.create.openapi" },
 ];
 
 export const handleTransport = (transport?: string | null, specPath?: string | null): string => {

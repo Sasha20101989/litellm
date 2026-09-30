@@ -30,6 +30,7 @@ interface MCPServerViewProps {
   userID: string | null;
   isViewOnly?: boolean;
   availableAccessGroups: string[];
+  existingServers?: MCPServer[];
   initialTabIndex?: number;
 }
 
@@ -61,6 +62,7 @@ export const MCPServerView: React.FC<MCPServerViewProps> = ({
   userID,
   isViewOnly = false,
   availableAccessGroups,
+  existingServers,
   initialTabIndex = 0,
 }) => {
   const { t } = useTranslation("gateway");
@@ -254,6 +256,7 @@ export const MCPServerView: React.FC<MCPServerViewProps> = ({
                 onCancel={() => setEditing(false)}
                 onSuccess={handleSuccess}
                 availableAccessGroups={availableAccessGroups}
+                existingServers={existingServers}
               />
             ) : (
               <div className="divide-y divide-border">

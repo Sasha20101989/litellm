@@ -106,6 +106,14 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
   existingServers,
 }) => {
   const { t } = useTranslation("gateway");
+  const transportItems = React.useMemo(
+    () => TRANSPORT_ITEMS.map((item) => ({ value: item.value, label: t(item.labelKey) })),
+    [t],
+  );
+  const authTypeItems = React.useMemo(
+    () => AUTH_TYPE_ITEMS.map((item) => ({ value: item.value, label: t(item.labelKey) })),
+    [t],
+  );
   const initialStaticHeaders = React.useMemo(() => {
     if (!mcpServer.static_headers) {
       return [];
@@ -824,7 +832,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
                 <MountedFormField
                   label={t("mcpServers.create.serverName")}
                   name="server_name"
-                  rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value) }) }}
+                  rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value, t) }) }}
                 >
                   {(control) => (
                     <Input
@@ -836,7 +844,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
                 <MountedFormField
                   label={t("mcpServers.create.alias")}
                   name="alias"
-                  rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value) }) }}
+                  rules={{ validate: validatorRules({ validator: (_, value) => validateMCPServerName(value, t) }) }}
                 >
                   {(control) => (
                     <Input
@@ -866,7 +874,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
                 >
                   {(control) => (
                     <Select
-                      items={TRANSPORT_ITEMS}
+                      items={transportItems}
                       value={(control.value as string | undefined) ?? null}
                       onValueChange={handleTransportSelected(control.onChange)}
                     >
@@ -874,7 +882,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TRANSPORT_ITEMS.map((item) => (
+                        {transportItems.map((item) => (
                           <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
@@ -893,7 +901,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
                     rules={{
                       validate: {
                         required: requiredRule(t("mcpServers.create.serverUrlRequired")),
-                        ...validatorRules({ validator: (_, value) => validateMCPServerUrl(value) }),
+                        ...validatorRules({ validator: (_, value) => validateMCPServerUrl(value, t) }),
                       },
                     }}
                   >
@@ -964,12 +972,12 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
                       rules={{ validate: { required: requiredRule(t("mcpServers.create.authRequired")) } }}
                     >
                       {(control) => (
-                        <Select {...selectControl<string>(control)} items={AUTH_TYPE_ITEMS}>
+                        <Select {...selectControl<string>(control)} items={authTypeItems}>
                           <SelectTrigger {...selectTriggerControl(control)} className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {AUTH_TYPE_ITEMS.map((item) => (
+                            {authTypeItems.map((item) => (
                               <SelectItem key={item.value} value={item.value}>
                                 {item.label}
                               </SelectItem>

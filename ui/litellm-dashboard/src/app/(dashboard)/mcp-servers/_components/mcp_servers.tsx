@@ -274,11 +274,11 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
   // Get unique MCP access groups from all servers
   const teamSelectItems = React.useMemo(
     () => ({
-      all: isInternalUser ? "All Available Servers" : "All Servers",
-      personal: "Personal",
+      all: isInternalUser ? t("mcpServers.filters.allAvailable") : t("mcpServers.filters.allServers"),
+      personal: t("mcpServers.filters.personal"),
       ...Object.fromEntries(uniqueTeams.map((team) => [team.team_id, team.team_alias || team.team_id])),
     }),
-    [isInternalUser, uniqueTeams],
+    [isInternalUser, t, uniqueTeams],
   );
 
   const uniqueMcpAccessGroups = React.useMemo(() => {
@@ -294,10 +294,10 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
 
   const accessGroupSelectItems = React.useMemo(
     () => ({
-      all: "All Access Groups",
+      all: t("mcpServers.filters.allAccessGroups"),
       ...Object.fromEntries(uniqueMcpAccessGroups.map((group) => [group, group])),
     }),
-    [uniqueMcpAccessGroups],
+    [t, uniqueMcpAccessGroups],
   );
 
   // Filtering logic for both team and access group
@@ -628,7 +628,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">
-                              {isInternalUser ? "All Available Servers" : "All Servers"}
+                              {isInternalUser ? t("mcpServers.filters.allAvailable") : t("mcpServers.filters.allServers")}
                             </SelectItem>
                             <SelectItem value="personal">{t("mcpServers.filters.personal")}</SelectItem>
                             {uniqueTeams.map((team) => (
@@ -722,8 +722,8 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
                     <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">
                       <p className="text-sm text-muted-foreground">
                         {filteredServers.length === 0
-                          ? "No MCP servers configured. Click '+ Add New MCP Server' to get started."
-                          : "No servers match the current filters or search."}
+                          ? t("mcpServers.empty")
+                          : t("mcpServers.emptyFiltered")}
                       </p>
                     </div>
                   ) : (

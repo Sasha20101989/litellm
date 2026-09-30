@@ -6257,6 +6257,11 @@ export const ruGateway = {
         passthrough: "Прямой прокси без аутентификации Nexoplane",
         delegate: "Делегирование OAuth (токен клиента для вышестоящего сервера)",
       },
+      validation: {
+        invalidUrl: "Введите корректный URL (например, http://service-name.domain:1234/path или https://example.com).",
+        invalidServerName: "Названия не могут содержать дефисы или пробелы. Используйте подчёркивания.",
+        invalidToolDisplayName: "Разрешены только буквы, цифры, подчёркивания и дефисы; пробелы запрещены.",
+      },
       authValue: "Данные аутентификации",
       authValueHint: "Токен, пароль или значение заголовка, отправляемое с каждым запросом.",
       authValueWhitespace: "Значение аутентификации не может состоять из пробелов",

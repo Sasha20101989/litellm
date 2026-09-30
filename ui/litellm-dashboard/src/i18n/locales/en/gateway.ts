@@ -6256,6 +6256,11 @@ export const enGateway = {
         passthrough: "True Passthrough (no Nexoplane auth)",
         delegate: "OAuth Delegate (client-supplied upstream token)",
       },
+      validation: {
+        invalidUrl: "Please enter a valid URL (for example, http://service-name.domain:1234/path or https://example.com).",
+        invalidServerName: "Names cannot contain hyphens or spaces. Use underscores instead.",
+        invalidToolDisplayName: "Only letters, digits, underscores, and hyphens are allowed; spaces are not allowed.",
+      },
       authValue: "Authentication Value",
       authValueHint: "Token, password, or header value sent with each request for the selected auth type.",
       authValueWhitespace: "Authentication value cannot be empty whitespace",
