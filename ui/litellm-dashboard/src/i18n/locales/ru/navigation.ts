@@ -47,6 +47,7 @@ export const ruNavigation = {
       "vector-stores": "Векторные хранилища",
       "tool-policies": "Политики инструментов",
       new_usage: "Использование",
+      "model-insights": "Рейтинг моделей",
       "cost-optimization": "Оптимизация затрат",
       logs: "Логи",
       "guardrails-monitor": "Мониторинг ограничителей",

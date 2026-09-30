@@ -5564,6 +5564,10 @@ export const enGateway = {
       network: "Network Settings",
       submitted: "Submitted MCPs",
     },
+    sessions: {
+      description:
+        "Stateful Streamable HTTP sessions currently open on this proxy worker, grouped by the AI client that sent the MCP initialize request and by the authenticated Nexoplane user. Stateless requests and SSE connections are not counted.",
+    },
     myConnections: "My Connections",
     newBadge: "New",
     import: {

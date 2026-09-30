@@ -5560,6 +5560,10 @@ export const ruGateway = {
       network: "Сетевые настройки",
       submitted: "Предложенные MCP",
     },
+    sessions: {
+      description:
+        "Активные stateful Streamable HTTP-сессии на этом воркере прокси, сгруппированные по AI-клиенту, отправившему MCP-запрос initialize, и аутентифицированному пользователю Nexoplane. Запросы без состояния и SSE-подключения не учитываются.",
+    },
     myConnections: "Мои подключения",
     newBadge: "Новое",
     import: {

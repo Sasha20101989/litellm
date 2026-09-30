@@ -47,6 +47,7 @@ export const enNavigation = {
       "vector-stores": "Vector Stores",
       "tool-policies": "Tool Policies",
       new_usage: "Usage",
+      "model-insights": "Model Leaderboard",
       "cost-optimization": "Cost Optimization",
       logs: "Logs",
       "guardrails-monitor": "Guardrails Monitor",

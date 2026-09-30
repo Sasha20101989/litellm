@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Unplug } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -257,6 +258,7 @@ interface MCPGatewaySessionsTabProps {
 }
 
 export function MCPGatewaySessionsTab({ accessToken, canTerminate }: MCPGatewaySessionsTabProps) {
+  const { t } = useTranslation("gateway");
   const queryClient = useQueryClient();
   const [pendingSelector, setPendingSelector] = useState<MCPGatewaySessionSelector | null>(null);
   const queryOptions = {
@@ -280,11 +282,9 @@ export function MCPGatewaySessionsTab({ accessToken, canTerminate }: MCPGatewayS
     <div className="mt-4 space-y-4" data-testid="mcp-gateway-sessions-tab">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Live Connections</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("mcpServers.tabs.liveConnections")}</h2>
           <p className="text-sm text-muted-foreground">
-            Stateful Streamable HTTP sessions currently open on this proxy worker, grouped by the AI client that sent
-            the MCP initialize request and by the authenticated LiteLLM user. Stateless requests and SSE connections are
-            not counted.
+            {t("mcpServers.sessions.description")}
           </p>
         </div>
         <Button
