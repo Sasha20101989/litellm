@@ -172,11 +172,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("created_desc");
-  const normalizedUserRole = userRole ?? "";
-  const isInternalUser = normalizedUserRole === "Internal User";
-  const isProxyAdmin = isProxyAdminTierRole(normalizedUserRole);
-  const canModify = isProxyAdminRole(normalizedUserRole) && !isViewOnly;
-  const canSubmit = !isViewOnly && !isAdminRole(normalizedUserRole);
+  const isInternalUser = userRole === "Internal User";
 
   // Single bulk fetch of this user's per-server env-var status. Drives the
   // red "N user fields missing" footer on each card with no per-row request.
@@ -509,7 +505,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
               <Plug />
               {t("mcpServers.myConnections")}
             </Link>
-            {canModify && (
+            {isAdminRole(userRole) ? (
               <>
                 <Button className="shrink-0" variant="secondary" onClick={() => setImportVisible(true)}>
                   {t("mcpServers.import.fromJson")}
@@ -518,8 +514,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
                   {t("mcpServers.add")}
                 </Button>
               </>
-            )}
-            {canSubmit && (
+            ) : (
               <Button
                 className="shrink-0"
                 onClick={() => {
@@ -565,31 +560,27 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
             <TabsTrigger value="connect" className="flex-none rounded-none px-4 py-2">
               {t("mcpServers.tabs.connect")}
             </TabsTrigger>
-            {canModify && (
-              <TabsTrigger value="semantic-filter" className="flex-none rounded-none px-4 py-2">
-                {t("mcpServers.tabs.semanticFilter")}
-              </TabsTrigger>
+            {isAdminRole(userRole) && (
+              <>
+                <TabsTrigger value="semantic-filter" className="flex-none rounded-none px-4 py-2">
+                  {t("mcpServers.tabs.semanticFilter")}
+                </TabsTrigger>
+                <TabsTrigger value="tool-search" className="flex-none rounded-none px-4 py-2">
+                  {t("mcpServers.tabs.toolSearch")}
+                </TabsTrigger>
+                <TabsTrigger value="network-settings" className="flex-none rounded-none px-4 py-2">
+                  {t("mcpServers.tabs.network")}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="submitted"
+                  className="flex-none gap-2 rounded-none px-4 py-2"
+                  aria-label={t("mcpServers.tabs.submitted")}
+                >
+                  {t("mcpServers.tabs.submitted")} <Badge variant="secondary">{t("mcpServers.newBadge")}</Badge>
+                </TabsTrigger>
+              </>
             )}
-            {canModify && (
-              <TabsTrigger value="tool-search" className="flex-none rounded-none px-4 py-2">
-                {t("mcpServers.tabs.toolSearch")}
-              </TabsTrigger>
-            )}
-            {canModify && (
-              <TabsTrigger value="network-settings" className="flex-none rounded-none px-4 py-2">
-                {t("mcpServers.tabs.network")}
-              </TabsTrigger>
-            )}
-            {canModify && (
-              <TabsTrigger
-                value="submitted"
-                className="flex-none gap-2 rounded-none px-4 py-2"
-                aria-label={t("mcpServers.tabs.submitted")}
-              >
-                {t("mcpServers.tabs.submitted")} <Badge variant="secondary">{t("mcpServers.newBadge")}</Badge>
-              </TabsTrigger>
-            )}
-            {isProxyAdmin && (
+            {isProxyAdminTierRole(userRole) && (
               <TabsTrigger value="connections" className="flex-none rounded-none px-4 py-2">
                 {t("mcpServers.tabs.liveConnections")}
               </TabsTrigger>
@@ -601,12 +592,12 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
                 key={selectedServerId}
                 mcpServer={selectedServer}
                 onBack={handleBack}
-                isProxyAdmin={isProxyAdmin}
-                isEditing={editServer && canModify}
+                isProxyAdmin={isAdminRole(userRole)}
+                isEditing={editServer}
                 accessToken={accessToken}
                 userID={userID}
                 userRole={userRole}
-                isViewOnly={isViewOnly || !canModify}
+                isViewOnly={isViewOnly}
                 availableAccessGroups={uniqueMcpAccessGroups}
                 existingServers={mcpServers}
                 initialTabIndex={selectedServerId === toolsTabServerId ? 1 : 0}
@@ -741,14 +732,14 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
                           isRechecking={recheckingServerIds?.has(server.server_id)}
                           onClick={() => {
                             setSelectedServerId(server.server_id);
-                            setEditServer(canModify);
+                            setEditServer(true);
                           }}
                           onRecheckHealth={
                             recheckServerHealth ? () => recheckServerHealth(server.server_id) : undefined
                           }
                           onByokConnect={server.is_byok ? () => setByokModalServer(server) : undefined}
                           onOpenFillFields={() => setEnvVarsModalServer(server)}
-                          onDelete={canModify ? () => handleDelete(server.server_id) : undefined}
+                          onDelete={isAdminRole(userRole) ? () => handleDelete(server.server_id) : undefined}
                         />
                       ))}
                     </div>
@@ -763,29 +754,28 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, i
           <TabsContent value="connect" keepMounted>
             <MCPConnect />
           </TabsContent>
-          {canModify && (
-            <TabsContent value="semantic-filter" keepMounted>
-              <MCPSemanticFilterSettings accessToken={accessToken} />
-            </TabsContent>
+          {isAdminRole(userRole) && (
+            <>
+              <TabsContent value="semantic-filter" keepMounted>
+                <MCPSemanticFilterSettings accessToken={accessToken} />
+              </TabsContent>
+              <TabsContent value="tool-search" keepMounted>
+                <MCPToolSearchSettings accessToken={accessToken} />
+              </TabsContent>
+              <TabsContent value="network-settings" keepMounted>
+                <MCPNetworkSettings accessToken={accessToken} />
+              </TabsContent>
+              <TabsContent value="submitted" keepMounted>
+                <MCPSubmissionsTab accessToken={accessToken} />
+              </TabsContent>
+            </>
           )}
-          {canModify && (
-            <TabsContent value="tool-search" keepMounted>
-              <MCPToolSearchSettings accessToken={accessToken} />
-            </TabsContent>
-          )}
-          {canModify && (
-            <TabsContent value="network-settings" keepMounted>
-              <MCPNetworkSettings accessToken={accessToken} />
-            </TabsContent>
-          )}
-          {canModify && (
-            <TabsContent value="submitted" keepMounted>
-              <MCPSubmissionsTab accessToken={accessToken} />
-            </TabsContent>
-          )}
-          {isProxyAdmin && (
+          {isProxyAdminTierRole(userRole) && (
             <TabsContent value="connections">
-              <MCPGatewaySessionsTab accessToken={accessToken} canTerminate={canModify} />
+              <MCPGatewaySessionsTab
+                accessToken={accessToken}
+                canTerminate={isProxyAdminRole(userRole) && !isViewOnly}
+              />
             </TabsContent>
           )}
         </Tabs>
