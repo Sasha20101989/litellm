@@ -21,8 +21,10 @@ import {
 } from "@/features/models-and-endpoints/modelSections";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "react-i18next";
 
 export default function ModelsAndEndpointsPage() {
+  const { t } = useTranslation("gateway");
   const { accessToken, userRole, userId: userID, premiumUser, isViewOnly } = useAuthorized();
   const { data: teams } = useTeams();
   const { data: uiSettings } = useUISettings();
@@ -51,11 +53,11 @@ export default function ModelsAndEndpointsPage() {
     if (section.showBetaBadge) {
       return (
         <span className="flex items-center gap-2">
-          {section.legacyLabel(sectionContext)} <BetaBadge />
+          {t(section.legacyTranslationKey(sectionContext))} <BetaBadge />
         </span>
       );
     }
-    return section.legacyLabel(sectionContext);
+    return t(section.legacyTranslationKey(sectionContext));
   };
 
   const handleRefreshClick = () => {
@@ -88,13 +90,11 @@ export default function ModelsAndEndpointsPage() {
       <div className="mt-2 flex w-full flex-col gap-2 p-8">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Model Management</h2>
+            <h2 className="text-lg font-semibold">{t("models.title")}</h2>
             {isAdmin ? (
-              <p className="text-sm text-muted-foreground">Add and manage models for the proxy</p>
+              <p className="text-sm text-muted-foreground">{t("models.adminSubtitle")}</p>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                View your models and manage routers for teams that allow it.
-              </p>
+              <p className="text-sm text-muted-foreground">{t("models.teamSubtitle")}</p>
             )}
           </div>
         </div>
@@ -135,9 +135,9 @@ export default function ModelsAndEndpointsPage() {
               </div>
               <div className="flex shrink-0 items-center gap-2 pb-1">
                 {lastRefreshed && (
-                  <span className="text-xs text-muted-foreground">Last Refreshed: {lastRefreshed}</span>
+                  <span className="text-xs text-muted-foreground">{t("models.lastRefreshed", { time: lastRefreshed })}</span>
                 )}
-                <Button variant="ghost" size="icon-sm" onClick={handleRefreshClick} aria-label="Refresh models">
+                <Button variant="ghost" size="icon-sm" onClick={handleRefreshClick} aria-label={t("models.refresh")}>
                   <RefreshCw />
                 </Button>
               </div>

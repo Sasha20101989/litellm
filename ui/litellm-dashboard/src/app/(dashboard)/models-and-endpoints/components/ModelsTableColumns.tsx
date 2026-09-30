@@ -233,7 +233,7 @@ function CostsCell({ model }: { model: ModelData }) {
             <span className="flex items-baseline gap-1.5">
               <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">{t("models.output")}</span>
               <span className="text-xs font-medium tabular-nums text-foreground">
-                ${outputCostPerSecond.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}/s
+                ${outputCostPerSecond.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}/{t("models.perSecond")}
               </span>
             </span>
           )}

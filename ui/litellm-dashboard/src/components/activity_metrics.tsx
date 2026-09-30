@@ -109,27 +109,35 @@ const ModelSection = ({
             <h3 className="text-lg font-medium text-foreground">{t("activityMetrics.topVirtualKeysBySpend")}</h3>
             <div className="mt-3">
               <div className="grid grid-cols-1 gap-2">
-                {metrics.top_api_keys.map((keyData) => (
-                  <div key={keyData.api_key} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-medium">{keyData.key_alias || `${keyData.api_key.substring(0, 10)}...`}</p>
-                      {keyData.team_id && (
+                {metrics.top_api_keys.map((keyData) => {
+                  const keyLabel = keyData.key_alias || `${keyData.api_key.substring(0, 10)}...`;
+                  return (
+                    <div key={keyData.api_key} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-medium">{keyLabel}</p>
+                        {keyData.team_id && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("activityMetrics.team", { team: keyData.team_id })}
+                          </p>
+                        )}
+                        {keyData.user && keyData.user !== keyLabel && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("activityMetrics.user", { user: keyData.user })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">${formatNumberWithCommas(keyData.spend, 2)}</p>
                         <p className="text-xs text-muted-foreground">
-                          {t("activityMetrics.team", { team: keyData.team_id })}
+                          {t("activityMetrics.requestsAndTokens", {
+                            requests: keyData.requests.toLocaleString(),
+                            tokens: keyData.tokens.toLocaleString(),
+                          })}
                         </p>
-                      )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">${formatNumberWithCommas(keyData.spend, 2)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("activityMetrics.requestsAndTokens", {
-                          requests: keyData.requests.toLocaleString(),
-                          tokens: keyData.tokens.toLocaleString(),
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </CardContent>
@@ -608,6 +616,7 @@ export const processActivityData = (
                 api_key: apiKey,
                 key_alias: keyActivityLabel(keyData.metadata, "") || null,
                 team_id: keyData.metadata.team_id,
+                user: keyData.metadata.user_email ?? keyData.metadata.user_id ?? null,
                 spend: 0,
                 requests: 0,
                 tokens: 0,

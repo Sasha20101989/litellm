@@ -1460,12 +1460,6 @@
   "src/components/add_model/provider_specific_fields.tsx": {
     "local/filename-pascal-case": {
       "count": 1
-    },
-    "no-nested-ternary": {
-      "count": 3
-    },
-    "react-hooks/immutability": {
-      "count": 3
     }
   },
   "src/components/add_pass_through.tsx": {
@@ -1754,7 +1748,7 @@
       "count": 1
     },
     "prefer-const": {
-      "count": 5
+      "count": 1
     },
     "react-hooks/set-state-in-effect": {
       "count": 1

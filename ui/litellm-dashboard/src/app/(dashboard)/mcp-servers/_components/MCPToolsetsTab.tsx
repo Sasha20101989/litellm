@@ -436,7 +436,7 @@ export function MCPToolsetsTab({ accessToken, userRole }: MCPToolsetsTabProps) {
     <div className="mt-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-medium text-foreground">MCP Toolsets</h3>
+          <h3 className="text-lg font-medium text-foreground">{t("mcpServers.toolsets.title")}</h3>
           <p className="text-muted-foreground text-sm">
             Curated collections of tools from one or more MCP servers. Assign toolsets to keys and teams via the MCP
             permissions dropdown.

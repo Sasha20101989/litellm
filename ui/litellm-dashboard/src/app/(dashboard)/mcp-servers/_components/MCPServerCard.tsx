@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/cva.config";
 import { AUTH_TYPE, type MCPServer } from "@/components/mcp_tools/types";
 import { Logo } from "@/components/molecules/logo/Logo";
-import { getMaskedAndFullUrl } from "./utils";
+import { getMaskedAndFullUrl, getMCPNetworkAccess } from "./utils";
 
 interface MCPServerCardProps {
   server: MCPServer;
@@ -34,6 +34,7 @@ interface MCPServerCardProps {
 
 const HEALTH_TONE: Record<string, { dot: string }> = {
   healthy: { dot: "bg-success" },
+  reachable: { dot: "bg-info" },
   unhealthy: { dot: "bg-destructive" },
   unknown: { dot: "bg-border" },
 };
@@ -71,7 +72,7 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
     server.auth_type === AUTH_TYPE.OAUTH2 && !server.oauth2_flow && !server.delegate_auth_to_upstream;
   const status = server.status || "unknown";
   const healthTone = HEALTH_TONE[status] ?? HEALTH_TONE.unknown;
-  const isPublic = server.available_on_public_internet;
+  const networkAccess = getMCPNetworkAccess(server);
   const accessGroups = (server.mcp_access_groups ?? []).filter((g): g is string => typeof g === "string");
 
   const missing = missingUserFields ?? [];
@@ -236,10 +237,17 @@ const MCPServerCard: FC<MCPServerCardProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
-          <Badge variant="outline">
-            <span className={cn("h-1.5 w-1.5 rounded-full", isPublic ? "bg-success" : "bg-warning")} />
-            {isPublic ? t("mcpServers.card.public") : t("mcpServers.card.internal")}
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Badge variant="outline">
+                  <span className={cn("h-1.5 w-1.5 rounded-full", networkAccess.dotClassName)} />
+                  {t(networkAccess.labelKey, { defaultValue: networkAccess.label })}
+                </Badge>
+              }
+            />
+            <TooltipContent>{t(networkAccess.descriptionKey, { defaultValue: networkAccess.description })}</TooltipContent>
+          </Tooltip>
           {accessGroups.slice(0, 2).map((g) => (
             <Tooltip key={g}>
               <TooltipTrigger
@@ -333,6 +341,7 @@ const HealthChip: FC<HealthChipProps> = ({
       </Badge>
     );
   }
+  const hasHealthData = Boolean(lastCheck || error || status === "reachable");
   return (
     <Tooltip>
       <TooltipTrigger
@@ -350,12 +359,17 @@ const HealthChip: FC<HealthChipProps> = ({
             }
           >
             <span className={cn("h-1.5 w-1.5 rounded-full", dotClass)} />
-            {t(`mcpServers.card.${status}`, { defaultValue: status.charAt(0).toUpperCase() + status.slice(1) })}
+            {status === "reachable"
+              ? t("mcpServers.card.reachable")
+              : t(`mcpServers.card.${status}`, { defaultValue: status.charAt(0).toUpperCase() + status.slice(1) })}
           </Badge>
         }
       />
       <TooltipContent side="top" className="max-w-xs">
         <div className="mb-1 font-semibold">{t("mcpServers.card.health", { status })}</div>
+        {status === "reachable" && (
+          <div className="mb-1 text-xs">{t("mcpServers.card.reachableDescription")}</div>
+        )}
         {lastCheck && <div className="mb-1 text-xs">{t("mcpServers.card.lastCheck", { date: new Date(lastCheck).toLocaleString(i18n.language) })}</div>}
         {error && (
           <div className="text-xs">
@@ -363,7 +377,7 @@ const HealthChip: FC<HealthChipProps> = ({
             <div className="wrap-break-word">{error}</div>
           </div>
         )}
-        {!lastCheck && !error && <div className="text-xs">{t("mcpServers.card.noHealth")}</div>}
+        {!hasHealthData && <div className="text-xs">{t("mcpServers.card.noHealth")}</div>}
         {onRecheck && <div className="mt-1 text-xs">{t("mcpServers.card.recheck")}</div>}
       </TooltipContent>
     </Tooltip>

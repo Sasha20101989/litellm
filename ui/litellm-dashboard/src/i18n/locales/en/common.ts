@@ -181,6 +181,7 @@ export const enCommon = {
     timedSuccessfulRequests: "over {{count}} timed successful requests",
     topVirtualKeysBySpend: "Top Virtual Keys by Spend",
     team: "Team: {{team}}",
+    user: "User: {{user}}",
     requestsAndTokens: "{{requests}} requests | {{tokens}} tokens",
     spendPerDay: "Spend per day",
     requestsPerDay: "Requests per day",
@@ -324,6 +325,8 @@ export const enCommon = {
       updatedAt: "Updated At:",
       lastHealthCheck: "Last Health Check:",
       healthCheckError: "Health Check Error:",
+      skillId: "ID: {{id}}",
+      reachableDescription: "Server responded. Authentication and tools were not checked",
       capabilitiesMap: {
         parallel_function_calling: "Parallel function calling",
         vision: "Vision",
@@ -335,6 +338,7 @@ export const enCommon = {
         inactive: "Inactive",
         unknown: "Unknown",
         healthy: "Healthy",
+        reachable: "reachable",
         unhealthy: "Unhealthy",
       },
       auth: { none: "No authentication" },
@@ -369,6 +373,7 @@ export const enCommon = {
       modalTitle: "Public AI Hub",
       shareableLink: "Shareable Link:",
       seePage: "See Page",
+      manageMcpVisibility: "Manage MCP Hub Visibility",
     },
     table: {
       publicModelName: "Public Model Name",
@@ -409,6 +414,10 @@ export const enCommon = {
       transport: "Transport",
       authType: "Auth Type",
       status: "Status",
+      hubListing: "Hub listing",
+      listed: "Listed",
+      unlisted: "Unlisted",
+      manageVisibility: "Manage visibility",
       tools: "Tools",
       toolCount: "{{count}} tool",
       toolCount_other: "{{count}} tools",
@@ -533,6 +542,31 @@ export const enCommon = {
         success_other: "Successfully made {{count}} MCP servers public!",
         more: "+{{count}} more",
         publicBadge: "Public",
+        publicationUpdated: "MCP Hub publication list updated",
+        selectAll: "Select All",
+        selectHubTitle: "Select MCP Servers for the Hub",
+        selectHubDescription:
+          "Select the complete list of MCP servers to publish on the public hub. Uncheck a server to remove it from this list, or uncheck all to clear it. Authentication and access permissions still apply.",
+        legacyModeDescription:
+          "Legacy mode also lists servers with public IP access enabled. Set public_mcp_hub_strict_whitelist to true in your configuration to use only the publication list.",
+        publishServer: "Publish {{name}}",
+        legacyListed: "Listed by legacy mode",
+        configureYaml: "Configure in YAML",
+        yamlDescription:
+          "Merge these settings into your proxy configuration and reload it. Entries use the server IDs shown above, not names or aliases. For servers defined in YAML, pin server_id in each existing mcp_servers entry so the publication list stays stable.",
+        confirmHubTitle: "Confirm MCP Hub Publication",
+        publicationWarning:
+          "Anyone who can open /ui/model_hub_table can discover published servers. Explicitly published server IDs also allow requests from public IPs. Authentication and access permissions still apply.",
+        publicationList: "MCP servers in the publication list:",
+        noPublished: "No explicitly published servers",
+        replaceList:
+          "Saving replaces the publication list with {{count}} MCP server. Legacy mode may still list servers with public IP access enabled.",
+        replaceList_other:
+          "Saving replaces the publication list with {{count}} MCP servers. Legacy mode may still list servers with public IP access enabled.",
+        metadataUnavailable:
+          "This proxy does not provide explicit publication status for every MCP server. Update the proxy to manage visibility here, or edit litellm_settings.public_mcp_servers in its existing configuration.",
+        loading: "Loading publication settings",
+        savePublicationList: "Save Publication List",
       },
     },
   },

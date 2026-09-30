@@ -1,4 +1,48 @@
-import { MCPEnvVar, MCPEnvVarScope } from "@/components/mcp_tools/types";
+import { MCPEnvVar, MCPEnvVarScope, type MCPServer } from "@/components/mcp_tools/types";
+
+export const getMCPNetworkAccess = (
+  server: Pick<MCPServer, "available_on_public_internet" | "mcp_info">,
+): {
+  readonly label: "All Networks" | "Internal Only" | "Unknown";
+  readonly labelKey: string;
+  readonly dotClassName: string;
+  readonly description: string;
+  readonly descriptionKey: string;
+} => {
+  const explicitlyPublished = server.mcp_info?.is_public_explicit;
+  if (server.available_on_public_internet === true || explicitlyPublished === true) {
+    return {
+      label: "All Networks",
+      labelKey: "mcpServers.network.allNetworks",
+      dotClassName: "bg-success",
+      description:
+        server.available_on_public_internet === true
+          ? "Allows requests from public and internal IPs. Authentication and access permissions still apply"
+          : "Allows requests from public and internal IPs because this server is published in MCP Hub. Authentication and access permissions still apply",
+      descriptionKey:
+        server.available_on_public_internet === true
+          ? "mcpServers.network.allNetworksDescription"
+          : "mcpServers.network.allNetworksPublishedDescription",
+    };
+  }
+  if (server.available_on_public_internet === false && explicitlyPublished === false) {
+    return {
+      label: "Internal Only",
+      labelKey: "mcpServers.network.internalOnly",
+      dotClassName: "bg-warning",
+      description:
+        "Allows requests only from internal/private IP ranges. Authentication and access permissions still apply",
+      descriptionKey: "mcpServers.network.internalOnlyDescription",
+    };
+  }
+  return {
+    label: "Unknown",
+    labelKey: "mcpServers.network.unknown",
+    dotClassName: "bg-border",
+    description: "The proxy did not report enough network and publication settings to determine allowed client IPs",
+    descriptionKey: "mcpServers.network.unknownDescription",
+  };
+};
 
 export const extractMCPToken = (url: string): { token: string | null; baseUrl: string } => {
   try {

@@ -37,6 +37,7 @@ import {
   buildCreateServerPayload,
   reduceStaticHeaders,
 } from "./createServerPayload";
+import { DUPLICATE_IDENTIFIER_MESSAGE, findDuplicateMcpServer } from "./duplicateServerCheck";
 import { readCreateUiSnapshot, writeCreateUiSnapshot } from "./createOAuthUiState";
 import AwsSigV4Fields from "./AwsSigV4Fields";
 import OpenApiByokFields from "./OpenApiByokFields";
@@ -80,6 +81,7 @@ interface CreateMCPServerProps {
   isModalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
   availableAccessGroups: string[];
+  existingServers?: MCPServer[];
   prefillData?: DiscoverableMCPServer | null;
   onBackToDiscovery?: () => void;
 }
@@ -110,6 +112,7 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
   isModalVisible,
   setModalVisible,
   availableAccessGroups,
+  existingServers,
   prefillData,
   onBackToDiscovery,
 }) => {
@@ -419,6 +422,16 @@ const CreateMCPServer: React.FC<CreateMCPServerProps> = ({
   };
 
   const handleCreate = async (values: Record<string, unknown>) => {
+    const duplicate = findDuplicateMcpServer(
+      existingServers,
+      typeof values.server_name === "string" ? values.server_name : undefined,
+      typeof values.alias === "string" ? values.alias : undefined,
+    );
+    if (duplicate) {
+      form.setError(duplicate.field, { type: "duplicate", message: DUPLICATE_IDENTIFIER_MESSAGE });
+      toast.fromError(DUPLICATE_IDENTIFIER_MESSAGE);
+      return;
+    }
     const built = buildCreateServerPayload(values, {
       transportType,
       costConfig,

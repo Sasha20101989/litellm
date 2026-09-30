@@ -510,7 +510,7 @@ describe("UserInfoView savings", () => {
 
     await user.click(savingsTab);
 
-    expect(await screen.findByTestId("summary-card-total-recorded-savings")).toHaveTextContent("-$0.6000");
+    expect(await screen.findByTestId("summary-card-total-saved")).toHaveTextContent("-$0.6000");
     expect(screen.getByTestId("summary-card-compression-savings")).toHaveTextContent("$2.00");
     expect(screen.getByTestId("summary-card-prompt-caching-savings")).toHaveTextContent("$0.4000");
     expect(screen.getByTestId("summary-card-prompt-caching-savings")).toHaveTextContent("$1.00Total");
@@ -526,7 +526,7 @@ describe("UserInfoView savings", () => {
     expect(screen.getByTestId("user-savings-scope-note")).toHaveTextContent("JWT-authenticated requests");
     await user.click(screen.getByRole("tab", { name: "Per day" }));
     expect(screen.getByRole("tab", { name: "Per day" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("summary-card-total-recorded-savings")).toHaveTextContent("-$0.6000");
+    expect(screen.getByTestId("summary-card-total-saved")).toHaveTextContent("-$0.6000");
   });
 
   it("removes the prior user's savings while the newly selected user's results are loading", async () => {
@@ -537,12 +537,12 @@ describe("UserInfoView savings", () => {
     const user = userEvent.setup();
     const { rerender } = render(<UserInfoView {...props} />);
     await user.click(await screen.findByRole("tab", { name: "Savings" }));
-    expect(await screen.findByTestId("summary-card-total-recorded-savings")).toHaveTextContent("$42.00");
+    expect(await screen.findByTestId("summary-card-total-saved")).toHaveTextContent("$42.00");
 
     rerender(<UserInfoView {...props} userId="user-456" />);
 
     expect(await screen.findByTestId("user-savings-empty")).toHaveTextContent("Loading savings");
-    expect(screen.queryByTestId("summary-card-total-recorded-savings")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("summary-card-total-saved")).not.toBeInTheDocument();
     expect(mockUserDailyActivityAggregatedCall).toHaveBeenLastCalledWith(
       "admin-token",
       expect.any(Date),
@@ -554,7 +554,7 @@ describe("UserInfoView savings", () => {
     await act(async () => {
       nextUser.resolve(savingsResponse([savingsDay("2026-09-19", { autorouter_savings_spend: -7 })]));
     });
-    expect(await screen.findByTestId("summary-card-total-recorded-savings")).toHaveTextContent("-$7.00");
+    expect(await screen.findByTestId("summary-card-total-saved")).toHaveTextContent("-$7.00");
     expect(screen.queryByText("$42.00")).not.toBeInTheDocument();
   });
 
@@ -569,7 +569,7 @@ describe("UserInfoView savings", () => {
     const committedTotals: Array<string | null> = [];
     const captureNewRange = () => {
       if (screen.queryByText("Running total saved · Sep 1 – Sep 2 (UTC)")) {
-        committedTotals.push(screen.queryByTestId("summary-card-total-recorded-savings")?.textContent ?? null);
+        committedTotals.push(screen.queryByTestId("summary-card-total-saved")?.textContent ?? null);
       }
     };
     const user = userEvent.setup();
@@ -579,7 +579,7 @@ describe("UserInfoView savings", () => {
       </Profiler>,
     );
     await user.click(await screen.findByRole("tab", { name: "Savings" }));
-    expect(await screen.findByTestId("summary-card-total-recorded-savings")).toHaveTextContent("$42.00");
+    expect(await screen.findByTestId("summary-card-total-saved")).toHaveTextContent("$42.00");
 
     await user.click(screen.getByRole("button", { name: / - / }));
     const [startDateInput, endDateInput] = screen.getAllByDisplayValue(/^\d{4}-\d{2}-\d{2}$/);
@@ -593,7 +593,7 @@ describe("UserInfoView savings", () => {
     await act(async () => {
       nextRange.resolve(savingsResponse([savingsDay("2026-09-02", { autorouter_savings_spend: -7 })]));
     });
-    expect(await screen.findByTestId("summary-card-total-recorded-savings")).toHaveTextContent("-$7.00");
+    expect(await screen.findByTestId("summary-card-total-saved")).toHaveTextContent("-$7.00");
   });
 
   it("reports an incomplete paginated read as unavailable instead of displaying a partial savings total", async () => {
@@ -618,7 +618,7 @@ describe("UserInfoView savings", () => {
       true,
       null,
     );
-    expect(screen.queryByTestId("summary-card-total-recorded-savings")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("summary-card-total-saved")).not.toBeInTheDocument();
     expect(screen.queryByText(/No usage recorded/)).not.toBeInTheDocument();
   });
 
@@ -628,7 +628,7 @@ describe("UserInfoView savings", () => {
     await user.click(await screen.findByRole("tab", { name: "Savings" }));
 
     expect(await screen.findByTestId("user-savings-empty")).toHaveTextContent("No usage recorded for this user");
-    expect(screen.getByTestId("summary-card-total-recorded-savings")).toHaveTextContent("$0.00");
+    expect(screen.getByTestId("summary-card-total-saved")).toHaveTextContent("$0.00");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 

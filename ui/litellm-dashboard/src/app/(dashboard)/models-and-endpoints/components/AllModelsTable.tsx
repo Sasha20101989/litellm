@@ -35,7 +35,6 @@ import {
 export { ALL_MODEL_GROUPS_VALUE, PERSONAL_TEAM_VALUE, type ModelViewMode, WILDCARD_MODEL_GROUP_VALUE } from "@/features/models-and-endpoints/modelWorkspaceContract";
 
 const MODEL_TABLE_BODY_HEIGHT = 600;
-
 export interface ModelsTableTeamOption {
   value: string;
   label: string;
@@ -137,25 +136,25 @@ export function AllModelsTable({
 
   const modelGroupOptions = useMemo(
     () => [
-      { label: "All Models", value: ALL_MODEL_GROUPS_VALUE },
-      { label: "Wildcard Models (*)", value: WILDCARD_MODEL_GROUP_VALUE },
+      { label: t("models.filters.allModels"), value: ALL_MODEL_GROUPS_VALUE },
+      { label: t("models.filters.wildcardModels"), value: WILDCARD_MODEL_GROUP_VALUE },
       ...(availableModelGroupOptions ?? availableModelGroups.map((value) => ({ value, label: value }))),
     ],
-    [availableModelGroupOptions, availableModelGroups],
+    [availableModelGroupOptions, availableModelGroups, t],
   );
 
   const accessGroupOptions = useMemo(
     () => [
-      { label: "All Model Access Groups", value: ALL_MODEL_GROUPS_VALUE },
+      { label: t("models.filters.allAccessGroups"), value: ALL_MODEL_GROUPS_VALUE },
       ...availableModelAccessGroups.map((accessGroup) => ({ label: accessGroup, value: accessGroup })),
     ],
-    [availableModelAccessGroups],
+    [availableModelAccessGroups, t],
   );
 
   const formatFilterValue = (columnId: string, value: unknown): string => {
     const raw = String(value);
     if (columnId === MODEL_NAME_COLUMN_ID && raw === WILDCARD_MODEL_GROUP_VALUE) {
-      return "Wildcard Models (*)";
+      return t("models.filters.wildcardModels");
     }
     return (availableModelGroupOptions ?? []).find((option) => option.value === raw)?.label ?? raw;
   };
@@ -168,7 +167,7 @@ export function AllModelsTable({
   };
   const viewModeLabels: Record<ModelViewMode, string> = {
     current_team: t("models.currentTeamModels"),
-    all: t("models.allAvailableModels"),
+    all: t("models.filters.allModels"),
   };
 
   return (

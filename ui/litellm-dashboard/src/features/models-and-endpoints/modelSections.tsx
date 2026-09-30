@@ -51,7 +51,7 @@ type ModelSectionRenderer = "default" | "focus";
 export interface ModelSection {
   id: ModelSectionId;
   translationKey: string;
-  legacyLabel: (context: ModelSectionContext) => string;
+  legacyTranslationKey: (context: ModelSectionContext) => string;
   focus: { group: FocusModelSectionGroup; order: number };
   isVisible: (context: ModelSectionContext) => boolean;
   panel: ComponentType;
@@ -80,7 +80,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "all-models",
     translationKey: "focusModelsAndEndpoints.innerTabs.allModels",
-    legacyLabel: (context) => (isAdmin(context) ? "All Models" : "Your Models"),
+    legacyTranslationKey: (context) => (isAdmin(context) ? "models.tabs.deployed" : "models.tabs.yours"),
     focus: { group: "models", order: 0 },
     isVisible: () => true,
     panel: AllModelsPanel,
@@ -89,7 +89,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "add",
     translationKey: "focusModelsAndEndpoints.innerTabs.addModel",
-    legacyLabel: () => "Add Model",
+    legacyTranslationKey: () => "models.tabs.add",
     focus: { group: "models", order: 1 },
     isVisible: (context) =>
       canCreateModels(
@@ -102,7 +102,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "llm-credentials",
     translationKey: "focusModelsAndEndpoints.innerTabs.llmCredentials",
-    legacyLabel: () => "LLM Credentials",
+    legacyTranslationKey: () => "models.tabs.credentials",
     focus: { group: "models", order: 2 },
     isVisible: isWritableAdmin,
     panel: LlmCredentialsPanel,
@@ -111,7 +111,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "health",
     translationKey: "focusModelsAndEndpoints.innerTabs.healthStatus",
-    legacyLabel: () => "Health Status",
+    legacyTranslationKey: () => "models.tabs.health",
     focus: { group: "models", order: 3 },
     isVisible: isAdmin,
     panel: HealthStatusPanel,
@@ -119,7 +119,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "pass-through",
     translationKey: "focusModelsAndEndpoints.innerTabs.passThroughEndpoints",
-    legacyLabel: () => "Pass-Through Endpoints",
+    legacyTranslationKey: () => "models.tabs.passThrough",
     focus: { group: "endpoints", order: 0 },
     isVisible: isWritableAdmin,
     panel: PassThroughPanel,
@@ -127,7 +127,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "auto-routers",
     translationKey: "focusModelsAndEndpoints.innerTabs.autoRouters",
-    legacyLabel: () => "Auto-Routers",
+    legacyTranslationKey: () => "models.tabs.autoRouters",
     focus: { group: "routing", order: 0 },
     isVisible: (context) =>
       isAdmin(context) ||
@@ -141,7 +141,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "retry-settings",
     translationKey: "focusModelsAndEndpoints.innerTabs.modelRetrySettings",
-    legacyLabel: () => "Model Retry Settings",
+    legacyTranslationKey: () => "models.tabs.retry",
     focus: { group: "routing", order: 1 },
     isVisible: isWritableAdmin,
     panel: ModelRetrySettingsPanel,
@@ -149,7 +149,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "model-group-alias",
     translationKey: "focusModelsAndEndpoints.innerTabs.modelGroupAlias",
-    legacyLabel: () => "Model Group Alias",
+    legacyTranslationKey: () => "models.tabs.alias",
     focus: { group: "routing", order: 2 },
     isVisible: isWritableAdmin,
     panel: ModelGroupAliasPanel,
@@ -157,7 +157,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "access-group-budgets",
     translationKey: "focusModelsAndEndpoints.innerTabs.modelAccessGroupBudgets",
-    legacyLabel: () => "Model Access Group Budgets",
+    legacyTranslationKey: () => "models.tabs.accessGroupBudgets",
     focus: { group: "accessAndCost", order: 0 },
     isVisible: isWritableAdmin,
     panel: AccessGroupBudgetsPanel,
@@ -166,7 +166,7 @@ export const MODEL_SECTIONS: readonly ModelSection[] = [
   {
     id: "price-data",
     translationKey: "focusModelsAndEndpoints.innerTabs.priceDataReload",
-    legacyLabel: () => "Price Data Reload",
+    legacyTranslationKey: () => "models.tabs.priceData",
     focus: { group: "accessAndCost", order: 1 },
     isVisible: isWritableAdmin,
     panel: PriceDataPanel,

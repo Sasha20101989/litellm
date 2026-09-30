@@ -50,6 +50,7 @@ const STATUS_TONES: Record<string, StatusTone> = {
   inactive: "error",
   unknown: "neutral",
   healthy: "success",
+  reachable: "info",
   unhealthy: "error",
 };
 
@@ -161,6 +162,11 @@ export const getMCPHubTableColumns = ({ onServerClick, t }: MCPHubTableColumnsDe
         label={t(`publicHub.details.statuses.${row.original.status || "unknown"}`, {
           defaultValue: row.original.status || "unknown",
         })}
+        tooltip={
+          row.original.status === "reachable"
+            ? t("publicHub.details.reachableDescription")
+            : undefined
+        }
       />
     ),
   },
@@ -208,8 +214,8 @@ export const getMCPHubTableColumns = ({ onServerClick, t }: MCPHubTableColumnsDe
   {
     id: "is_public",
     accessorFn: (row) => row.mcp_info?.is_public === true,
-    meta: { title: t("publicHub.table.public"), skeleton: "badge", className: "hidden md:table-cell" },
-    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.public")} />,
+    meta: { title: t("publicHub.table.hubListing"), skeleton: "badge", className: "hidden md:table-cell" },
+    header: ({ column }) => <DataTableSortHeader column={column} title={t("publicHub.table.hubListing")} />,
     size: 100,
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -220,10 +226,12 @@ export const getMCPHubTableColumns = ({ onServerClick, t }: MCPHubTableColumnsDe
     cell: ({ row }) => {
       const isPublic = row.original.mcp_info?.is_public === true;
       return (
-        <StatusBadge
-          tone={isPublic ? "success" : "neutral"}
-          label={isPublic ? t("publicHub.table.yes") : t("publicHub.table.no")}
-        />
+        <span title={t("publicHub.table.manageVisibility")}>
+          <StatusBadge
+            tone={isPublic ? "success" : "neutral"}
+            label={isPublic ? t("publicHub.table.listed") : t("publicHub.table.unlisted")}
+          />
+        </span>
       );
     },
   },

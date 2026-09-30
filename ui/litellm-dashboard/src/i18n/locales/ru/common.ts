@@ -181,6 +181,7 @@ export const ruCommon = {
     timedSuccessfulRequests: "по {{count}} успешным запросам с замером времени",
     topVirtualKeysBySpend: "Виртуальные ключи с наибольшими расходами",
     team: "Команда: {{team}}",
+    user: "Пользователь: {{user}}",
     requestsAndTokens: "Запросов: {{requests}} | токенов: {{tokens}}",
     spendPerDay: "Расходы по дням",
     requestsPerDay: "Запросы по дням",
@@ -325,6 +326,8 @@ export const ruCommon = {
       updatedAt: "Обновлён:",
       lastHealthCheck: "Последняя проверка состояния:",
       healthCheckError: "Ошибка проверки состояния:",
+      skillId: "ID: {{id}}",
+      reachableDescription: "Сервер ответил. Аутентификация и инструменты не проверялись",
       capabilitiesMap: {
         parallel_function_calling: "Параллельный вызов функций",
         vision: "Работа с изображениями",
@@ -336,6 +339,7 @@ export const ruCommon = {
         inactive: "Неактивен",
         unknown: "Неизвестно",
         healthy: "Работает",
+        reachable: "Доступен",
         unhealthy: "Ошибка",
       },
       auth: { none: "Без аутентификации" },
@@ -370,6 +374,7 @@ export const ruCommon = {
       modalTitle: "Публичный каталог AI",
       shareableLink: "Публичная ссылка:",
       seePage: "Открыть страницу",
+      manageMcpVisibility: "Управление видимостью MCP Hub",
     },
     table: {
       publicModelName: "Публичное имя модели",
@@ -410,6 +415,10 @@ export const ruCommon = {
       transport: "Транспорт",
       authType: "Тип аутентификации",
       status: "Статус",
+      hubListing: "Публикация в каталоге",
+      listed: "Опубликован",
+      unlisted: "Не опубликован",
+      manageVisibility: "Управление видимостью",
       tools: "Инструменты",
       toolCount: "Инструментов: {{count}}",
       toolCount_other: "Инструментов: {{count}}",
@@ -534,6 +543,31 @@ export const ruCommon = {
         success_other: "Опубликовано MCP-серверов: {{count}}",
         more: "+ ещё {{count}}",
         publicBadge: "Опубликован",
+        publicationUpdated: "Список публикации MCP Hub обновлён",
+        selectAll: "Выбрать все",
+        selectHubTitle: "Выберите MCP-серверы для каталога",
+        selectHubDescription:
+          "Выберите полный список MCP-серверов для публикации в каталоге. Снимите отметку с сервера, чтобы убрать его из списка, или со всех серверов, чтобы очистить список. Аутентификация и права доступа продолжают действовать.",
+        legacyModeDescription:
+          "Устаревший режим также отображает серверы с включённым доступом по публичному IP. Установите public_mcp_hub_strict_whitelist в true в конфигурации, чтобы использовать только список публикации.",
+        publishServer: "Опубликовать {{name}}",
+        legacyListed: "Опубликован устаревшим режимом",
+        configureYaml: "Настроить в YAML",
+        yamlDescription:
+          "Добавьте эти настройки в конфигурацию прокси и перезагрузите его. Используются показанные выше ID серверов, а не имена или псевдонимы. Для серверов, заданных в YAML, укажите server_id в каждой существующей записи mcp_servers, чтобы список публикации оставался стабильным.",
+        confirmHubTitle: "Подтвердите публикацию MCP Hub",
+        publicationWarning:
+          "Любой пользователь, открывший /ui/model_hub_table, сможет обнаружить опубликованные серверы. Явно опубликованные ID серверов также разрешают запросы с публичных IP. Аутентификация и права доступа продолжают действовать.",
+        publicationList: "MCP-серверы в списке публикации:",
+        noPublished: "Нет явно опубликованных серверов",
+        replaceList:
+          "Сохранение заменит список публикации на {{count}} MCP-сервер. Устаревший режим всё ещё может отображать серверы с включённым доступом по публичному IP.",
+        replaceList_other:
+          "Сохранение заменит список публикации на {{count}} MCP-серверов. Устаревший режим всё ещё может отображать серверы с включённым доступом по публичному IP.",
+        metadataUnavailable:
+          "Этот прокси не передаёт явный статус публикации для каждого MCP-сервера. Обновите прокси, чтобы управлять видимостью здесь, или измените litellm_settings.public_mcp_servers в его текущей конфигурации.",
+        loading: "Загрузка настроек публикации",
+        savePublicationList: "Сохранить список публикации",
       },
     },
   },

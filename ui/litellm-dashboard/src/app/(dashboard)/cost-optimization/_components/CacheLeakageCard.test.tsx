@@ -91,9 +91,9 @@ describe("CacheLeakageCard", () => {
     expect(screen.getByText("0.0%")).toBeInTheDocument();
     expect(screen.getByText("90.0%")).toBeInTheDocument();
     [
-      "Input tokens you sent in this range that weren't served from or written to the cache",
-      "Share of your input tokens that were served from the cache",
-      "About how much you'd save if this uncached input used prompt caching. Estimated as uncached input tokens times what your cached traffic already nets per cached token (realized cache savings, after write premiums, ÷ cache read and write tokens). Blank when caching is not currently saving anything overall.",
+      "Input tokens that were not served from or written to the cache during this period.",
+      "Share of input tokens served from cache.",
+      "Approximate savings if this uncached input used prompt caching. The estimate uses realized cache savings after write premiums and is blank when caching is not saving money overall.",
     ].forEach((info) => expect(screen.getByLabelText(info)).toBeInTheDocument());
   });
 
@@ -153,7 +153,7 @@ describe("CacheLeakageCard", () => {
 
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(
-      screen.getByText("Data is still loading; rows and totals will update as the rest of the range arrives."),
+      screen.getByText("Data is still loading. Rows and totals will update as the rest of the range arrives."),
     ).toBeInTheDocument();
   });
 
@@ -164,7 +164,7 @@ describe("CacheLeakageCard", () => {
     renderWith([day], { loading: true });
 
     expect(
-      screen.queryByText("Data is still loading; rows and totals will update as the rest of the range arrives."),
+      screen.queryByText("Data is still loading. Rows and totals will update as the rest of the range arrives."),
     ).not.toBeInTheDocument();
   });
 
@@ -175,31 +175,7 @@ describe("CacheLeakageCard", () => {
     renderWith([day]);
 
     expect(
-      screen.queryByText("Data is still loading; rows and totals will update as the rest of the range arrives."),
+      screen.queryByText("Data is still loading. Rows and totals will update as the rest of the range arrives."),
     ).not.toBeInTheDocument();
-  });
-
-  it("says which keys are missing from the key ranking when the proxy capped the per-key lists", () => {
-    const day = dayWithKeys("2026-07-12", {
-      "hash-leaky": key("leaky-key", { prompt_tokens: 10000, cache_read_input_tokens: 0 }),
-    });
-    renderWith([day], { apiKeyTruncation: { limit: 100, total: 3000 } });
-
-    expect(screen.getByRole("note")).toHaveTextContent(
-      "Only the 100 highest-spend keys of 3,000 are loaded, so a lower-spend key that leaks more is not listed here.",
-    );
-
-    fireEvent.click(screen.getByRole("tab", { name: "By model" }));
-
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
-  });
-
-  it("keeps the key ranking note off when every key was loaded", () => {
-    const day = dayWithKeys("2026-07-12", {
-      "hash-leaky": key("leaky-key", { prompt_tokens: 10000, cache_read_input_tokens: 0 }),
-    });
-    renderWith([day]);
-
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });

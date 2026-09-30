@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SimpleTooltip, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ApiError } from "@/lib/http/client";
 import { formatNumberWithCommas } from "@/utils/dataUtils";
 
@@ -53,15 +53,17 @@ const Metric: React.FC<{ label: string; value: string; hint?: string }> = ({ lab
   </Card>
 );
 
-const SpendRow: React.FC<{ label: string; value: string; hint?: string; subdued?: boolean }> = ({
+const SpendRow: React.FC<{ label: string; value: string; hint?: string; subdued?: boolean; tooltip?: string }> = ({
   label,
   value,
   hint,
   subdued,
+  tooltip,
 }) => (
   <dl className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-2">
     <dt className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm text-muted-foreground">
       {label}
+      {tooltip && <SimpleTooltip content={tooltip} />}
       {hint && <span className="text-xs">{hint}</span>}
     </dt>
     <dd
@@ -75,10 +77,11 @@ const SpendRow: React.FC<{ label: string; value: string; hint?: string; subdued?
 const HeroCard: React.FC<{ view: BenchmarkView }> = ({ view }) => {
   const { t } = useTranslation("gateway");
   const stats = view.stats;
-  const savedSpend = stats.saved_spend;
-  const savedPct = stats.saved_pct;
-  const savings = savedSpend != null && savedPct != null ? { savedSpend, savedPct } : null;
-  const cheaper = savings != null && savings.savedSpend >= 0;
+  const cheaper = stats.saved_pct != null && stats.saved_pct >= 0;
+  const completeCoverage = stats.savings_estimated_turns === stats.turns;
+  const coveredClassifierCost =
+    stats.savings_estimated_classifier_cost ?? (completeCoverage ? stats.classifier_cost : null);
+  const classifierCost = stats.baseline_spend == null ? null : coveredClassifierCost;
   return (
     <Card className="overflow-hidden py-0">
       <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -88,57 +91,76 @@ const HeroCard: React.FC<{ view: BenchmarkView }> = ({ view }) => {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <p className="min-w-0 break-all text-center text-4xl font-semibold tracking-tight text-foreground xl:text-6xl">
-              {savings == null ? t("virtualKeys.sharedDetails.unavailable") : usd(savings.savedSpend)}
+              {stats.saved_spend == null ? t("virtualKeys.sharedDetails.unavailable") : usd(stats.saved_spend)}
             </p>
-            {savings != null && (
+            {stats.saved_pct != null && (
               <Badge
                 variant="secondary"
                 className={`h-6 px-2.5 text-sm ${cheaper ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}
               >
-                {savings.savedSpend !== 0 && (cheaper ? "-" : "+")}
-                {Math.abs(savings.savedPct).toFixed(0)}%
+                {stats.saved_pct !== 0 && (cheaper ? "-" : "+")}
+                {Math.abs(stats.saved_pct).toFixed(0)}%
               </Badge>
             )}
           </div>
+          {stats.baseline_spend != null && !completeCoverage && (
+            <p className="text-center text-xs text-muted-foreground">
+              {t("virtualKeys.sharedDetails.savingsBasedOnRequests", {
+                estimated: stats.savings_estimated_turns.toLocaleString(),
+                total: stats.turns.toLocaleString(),
+              })}
+            </p>
+          )}
+          {stats.saved_spend != null && stats.baseline_spend == null && (
+            <p className="text-center text-xs text-muted-foreground">
+              {t("virtualKeys.sharedDetails.historicalSavingsNoMatchingCostDetails")}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col justify-center border-t p-6 md:border-t-0 md:border-l">
-          <SpendRow label={t("virtualKeys.sharedDetails.actualRouterSpend")} value={usd(stats.spend)} />
+          <SpendRow
+            label={t("virtualKeys.sharedDetails.actualRouterSpend")}
+            value={
+              stats.baseline_spend == null
+                ? t("virtualKeys.sharedDetails.unavailable")
+                : usd(stats.savings_estimated_actual_spend)
+            }
+            tooltip={t("virtualKeys.sharedDetails.savingsActualSpendTooltip")}
+          />
           <div className="mb-3 border-l-2 pl-4">
             <SpendRow
               subdued
               label={t("virtualKeys.sharedDetails.llmSpend")}
               value={
-                stats.classifier_cost == null
+                classifierCost == null
                   ? t("virtualKeys.sharedDetails.unavailable")
-                  : usd(stats.spend - stats.classifier_cost)
+                  : usd(stats.savings_estimated_actual_spend - classifierCost)
               }
             />
             <SpendRow
               subdued
               label={t("virtualKeys.sharedDetails.classificationCost")}
-              value={
-                stats.classifier_cost == null ? t("virtualKeys.sharedDetails.unavailable") : usd(stats.classifier_cost)
-              }
+              value={classifierCost == null ? t("virtualKeys.sharedDetails.unavailable") : usd(classifierCost)}
               hint={
-                stats.classifier_cost == null
+                classifierCost == null
                   ? undefined
                   : classificationRatePer1kTurns(
-                      stats.classifier_cost,
-                      stats.turns,
+                      classifierCost,
+                      stats.savings_estimated_turns,
                       t("virtualKeys.sharedDetails.perThousandTurns"),
                     )
               }
             />
           </div>
-          {stats.classifier_cost == null && (
+          {stats.baseline_spend != null && classifierCost == null && (
             <p className="mb-3 text-xs text-muted-foreground">
               {t("virtualKeys.sharedDetails.noClassificationBreakdown")}
             </p>
           )}
           <Separator />
           <SpendRow
-            label={t("virtualKeys.sharedDetails.highestTierSpend")}
+            label={t("virtualKeys.sharedDetails.estimatedBaselineSpend")}
             value={
               stats.baseline_spend == null ? t("virtualKeys.sharedDetails.unavailable") : usd(stats.baseline_spend)
             }
@@ -357,12 +379,13 @@ interface AutoRouterBenchmarksTabProps {
   accessToken: string | null;
   activity: Pick<DailyActivityRange, "dateValue" | "onDateChange">;
   apiKey?: string;
+  userId?: string;
 }
 
-export const AutoRouterUsageView: React.FC<AutoRouterBenchmarksTabProps> = ({ accessToken, activity, apiKey }) => {
+export const AutoRouterUsageView: React.FC<AutoRouterBenchmarksTabProps> = ({ accessToken, activity, apiKey, userId }) => {
   const { t, i18n } = useTranslation("gateway");
   const { dateValue, onDateChange } = activity;
-  const { data, isPending, error } = useAutoRouterBenchmarks(accessToken, dateValue, apiKey);
+  const { data, isPending, error } = useAutoRouterBenchmarks(accessToken, dateValue, apiKey, userId);
   const [selectedKey, setSelectedKey] = useState<string>(ALL_ROUTERS);
   const { data: autoRouters } = useAutoRouters();
 
@@ -397,6 +420,8 @@ export const AutoRouterUsageView: React.FC<AutoRouterBenchmarksTabProps> = ({ ac
           </div>
         </div>
       </div>
+
+      {userId && <p className="text-sm text-muted-foreground">{t("virtualKeys.sharedDetails.userScopedUsage")}</p>}
 
       <BenchmarksBody
         isPending={isPending}

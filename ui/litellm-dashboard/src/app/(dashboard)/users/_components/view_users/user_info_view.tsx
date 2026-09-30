@@ -28,7 +28,7 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { rolesWithWriteAccess } from "@/utils/roles";
+import { hasProxyWideSpendView, rolesWithWriteAccess } from "@/utils/roles";
 import { teamDetailHref } from "@/utils/entityLinks";
 import { BadgeLink } from "@/components/shared/BadgeLink";
 import { UserEditView } from "../user_edit_view";
@@ -44,6 +44,9 @@ import { useMCPServers } from "@/app/(dashboard)/hooks/mcpServers/useMCPServers"
 import { useMCPToolsets } from "@/app/(dashboard)/hooks/mcpServers/useMCPToolsets";
 import { extractMcpEntitlement } from "@/components/mcp_server_management/mcpEntitlement";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ScopedSavingsTab from "@/components/shared/ScopedSavingsTab";
+import { AutoRouterUsageView } from "@/app/(dashboard)/cost-optimization/_components/AutoRouterBenchmarksTab";
+import { useActivityDateRange } from "@/app/(dashboard)/cost-optimization/_components/useDailyActivityRange";
 import { useTranslation } from "react-i18next";
 
 interface UserInfoViewProps {
@@ -87,7 +90,10 @@ export default function UserInfoView({
   startInEditMode = false,
 }: UserInfoViewProps) {
   const { t, i18n } = useTranslation("gateway");
-  const { premiumUser } = useAuthorized();
+  const { premiumUser, userId: signedInUserId } = useAuthorized();
+  const canViewAutoRouterUsage = hasProxyWideSpendView(userRole);
+  const canViewSavings = canViewAutoRouterUsage || (Boolean(userId.trim()) && userId === signedInUserId);
+  const activityDateRange = useActivityDateRange();
   const [userData, setUserData] = useState<UserInfoV2Response | null>(null);
   const [teamDetails, setTeamDetails] = useState<TeamDisplayInfo[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -99,6 +105,8 @@ export default function UserInfoView({
   const [invitationLinkData, setInvitationLinkData] = useState<InvitationLink | null>(null);
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>(initialTab === 1 ? "details" : "overview");
+  const hiddenSavingsTab = activeTab === "savings" && !canViewSavings;
+  const hiddenRouterTab = activeTab === "auto-router-usage" && !canViewAutoRouterUsage;
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const [isTeamsExpanded, setIsTeamsExpanded] = useState(false);
   const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
@@ -469,7 +477,11 @@ export default function UserInfoView({
         confirmLoading={isDeletingUser}
       />
 
-      <Tabs value={activeTab} onValueChange={(v: unknown) => setActiveTab(String(v))} className="gap-0">
+      <Tabs
+        value={hiddenSavingsTab || hiddenRouterTab ? "overview" : activeTab}
+        onValueChange={(v: unknown) => setActiveTab(String(v))}
+        className="gap-0"
+      >
         <TabsList variant="line" className="mb-4">
           <TabsTrigger value="overview" className="flex-none data-active:text-primary after:bg-primary">
             {t("users.details.overview")}
@@ -477,6 +489,16 @@ export default function UserInfoView({
           <TabsTrigger value="details" className="flex-none data-active:text-primary after:bg-primary">
             {t("users.details.details")}
           </TabsTrigger>
+          {canViewSavings && (
+            <TabsTrigger value="savings" className="flex-none data-active:text-primary after:bg-primary">
+              {t("users.details.savings")}
+            </TabsTrigger>
+          )}
+          {canViewAutoRouterUsage && (
+            <TabsTrigger value="auto-router-usage" className="flex-none data-active:text-primary after:bg-primary">
+              {t("users.details.autoRouterUsage")}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Overview Panel */}
@@ -690,6 +712,33 @@ export default function UserInfoView({
             )}
           </Card>
         </TabsContent>
+        {canViewSavings && (
+          <TabsContent value="savings">
+            {activeTab === "savings" &&
+              (userId.trim() ? (
+                <ScopedSavingsTab
+                  key={userId}
+                  accessToken={accessToken}
+                  scope={{ userId }}
+                  activity={activityDateRange}
+                  entityType="user"
+                  scopeNote={t("users.details.userSavingsScope")}
+                />
+              ) : (
+                <p role="alert">{t("users.details.savingsMissingUserId")}</p>
+              ))}
+          </TabsContent>
+        )}
+        {canViewAutoRouterUsage && (
+          <TabsContent value="auto-router-usage">
+            {activeTab === "auto-router-usage" &&
+              (userId.trim() ? (
+                <AutoRouterUsageView key={userId} accessToken={accessToken} userId={userId} activity={activityDateRange} />
+              ) : (
+                <p role="alert">{t("users.details.autoRouterUsageMissingUserId")}</p>
+              ))}
+          </TabsContent>
+        )}
       </Tabs>
       <OnboardingModal
         isInvitationLinkModalVisible={isInvitationLinkModalVisible}

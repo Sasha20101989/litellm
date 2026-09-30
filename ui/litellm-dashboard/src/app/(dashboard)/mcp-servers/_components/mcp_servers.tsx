@@ -1,7 +1,8 @@
-import { isAdminRole } from "@/utils/roles";
-import { CircleHelp, Search } from "lucide-react";
+import { isAdminRole, isProxyAdminRole, isProxyAdminTierRole } from "@/utils/roles";
+import { CircleHelp, Plug, Search } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +25,7 @@ import { useMCPServerHealth } from "@/app/(dashboard)/hooks/mcpServers/useMCPSer
 import { toast } from "@/lib/toast";
 import { deleteMCPServer } from "@/components/networking";
 import { MCPSubmissionsTab } from "./MCPSubmissionsTab";
+import { MCPGatewaySessionsTab } from "./MCPGatewaySessionsTab";
 import { MCPToolsetsTab } from "./MCPToolsetsTab";
 import CreateMCPServer from "./CreateMCPServer";
 import ImportMCPServers from "./ImportMCPServers";
@@ -44,10 +46,12 @@ import MCPDiscovery from "./mcp_discovery";
 import { ByokCredentialModal } from "@/components/mcp_tools/ByokCredentialModal";
 import { getSecureItem } from "@/utils/secureStorage";
 import { TOOLS_OAUTH_UI_STATE_KEY } from "@/hooks/mcpOAuthUtils";
+import { uiHref } from "@/utils/uiHref";
+import { cn } from "@/lib/cva.config";
 import UserEnvVarsModal from "./UserEnvVarsModal";
 import { listMCPUserEnvVarStatus } from "@/components/networking";
 
-type SortKey = "created_desc" | "updated_desc" | "name_asc" | "health";
+export type SortKey = "created_desc" | "updated_desc" | "name_asc" | "health";
 
 const sortOptions = (t: TFunction<"gateway">): { value: SortKey; label: string }[] => [
   { value: "created_desc", label: t("mcpServers.filters.recentlyCreated") },
@@ -59,34 +63,37 @@ const sortOptions = (t: TFunction<"gateway">): { value: SortKey; label: string }
 const HEALTH_RANK: Record<string, number> = {
   unhealthy: 0,
   unknown: 1,
-  healthy: 2,
+  reachable: 2,
+  healthy: 3,
 };
 
-const compareServers = (a: MCPServer, b: MCPServer, sort: SortKey): number => {
+const compareByName = (a: MCPServer, b: MCPServer): number => {
+  const nameA = (a.server_name || a.alias || a.server_id).toLowerCase();
+  const nameB = (b.server_name || b.alias || b.server_id).toLowerCase();
+  return nameA.localeCompare(nameB) || a.server_id.localeCompare(b.server_id);
+};
+
+const compareByTimestampDesc = (a: string | null | undefined, b: string | null | undefined): number => {
+  const ta = a ? new Date(a).getTime() : 0;
+  const tb = b ? new Date(b).getTime() : 0;
+  return tb - ta;
+};
+
+export const compareServers = (a: MCPServer, b: MCPServer, sort: SortKey): number => {
   switch (sort) {
-    case "name_asc": {
-      const nameA = (a.server_name || a.alias || a.server_id).toLowerCase();
-      const nameB = (b.server_name || b.alias || b.server_id).toLowerCase();
-      return nameA.localeCompare(nameB);
-    }
-    case "updated_desc": {
-      const ta = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-      const tb = b.updated_at ? new Date(b.updated_at).getTime() : 0;
-      return tb - ta;
-    }
+    case "name_asc":
+      return compareByName(a, b);
+    case "updated_desc":
+      return compareByTimestampDesc(a.updated_at, b.updated_at) || compareByName(a, b);
     case "health": {
       const ra = HEALTH_RANK[a.status ?? "unknown"] ?? 1;
       const rb = HEALTH_RANK[b.status ?? "unknown"] ?? 1;
       if (ra !== rb) return ra - rb;
-      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return tb - ta;
+      return compareByTimestampDesc(a.created_at, b.created_at) || compareByName(a, b);
     }
     case "created_desc":
     default: {
-      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return tb - ta;
+      return compareByTimestampDesc(a.created_at, b.created_at) || compareByName(a, b);
     }
   }
 };
@@ -110,7 +117,7 @@ const readToolsOAuthServerId = (): string | null => {
   }
 };
 
-const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID }) => {
+const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID, isViewOnly = false }) => {
   const { t } = useTranslation("gateway");
   const sortOptionsForLocale = useMemo(() => sortOptions(t), [t]);
   const { data: mcpServers, isLoading: isLoadingServers, refetch } = useMCPServers();
@@ -134,7 +141,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
       const healthStatus = healthMap.get(server.server_id);
       return {
         ...server,
-        status: healthStatus ? (healthStatus as "healthy" | "unhealthy" | "unknown") : server.status,
+        status: healthStatus ? (healthStatus as MCPServer["status"]) : server.status,
       };
     });
   }, [mcpServers, healthStatuses]);
@@ -165,7 +172,11 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("created_desc");
-  const isInternalUser = userRole === "Internal User";
+  const normalizedUserRole = userRole ?? "";
+  const isInternalUser = normalizedUserRole === "Internal User";
+  const isProxyAdmin = isProxyAdminTierRole(normalizedUserRole);
+  const canModify = isProxyAdminRole(normalizedUserRole) && !isViewOnly;
+  const canSubmit = !isViewOnly && !isAdminRole(normalizedUserRole);
 
   // Single bulk fetch of this user's per-server env-var status. Drives the
   // red "N user fields missing" footer on each card with no per-row request.
@@ -183,6 +194,11 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
     }
     return map;
   }, [envVarStatuses]);
+
+  const serversWithUserFields = useMemo(
+    () => new Set((envVarStatuses ?? []).filter((status) => (status.required ?? []).length > 0).map((s) => s.server_id)),
+    [envVarStatuses],
+  );
 
   // Deep-link via ?fill_env_vars=<server_id> — the link users follow from the
   // friendly error the proxy returns when a per-user var is missing. The id is
@@ -472,6 +488,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
           isModalVisible={isModalVisible}
           setModalVisible={setModalVisible}
           availableAccessGroups={uniqueMcpAccessGroups}
+          existingServers={mcpServers}
           prefillData={prefillData}
           onBackToDiscovery={() => {
             setModalVisible(false);
@@ -487,8 +504,12 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{t("mcpServers.description")}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {isAdminRole(userRole) && (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Link href={uiHref("connect")} className={cn(buttonVariants({ variant: "outline" }), "shrink-0")}>
+              <Plug />
+              {t("mcpServers.myConnections")}
+            </Link>
+            {canModify && (
               <>
                 <Button className="shrink-0" variant="secondary" onClick={() => setImportVisible(true)}>
                   {t("mcpServers.import.fromJson")}
@@ -498,7 +519,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                 </Button>
               </>
             )}
-            {!isAdminRole(userRole) && (
+            {canSubmit && (
               <Button
                 className="shrink-0"
                 onClick={() => {
@@ -544,24 +565,33 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
             <TabsTrigger value="connect" className="flex-none rounded-none px-4 py-2">
               {t("mcpServers.tabs.connect")}
             </TabsTrigger>
-            {isAdminRole(userRole) && (
+            {canModify && (
               <TabsTrigger value="semantic-filter" className="flex-none rounded-none px-4 py-2">
                 {t("mcpServers.tabs.semanticFilter")}
               </TabsTrigger>
             )}
-            {isAdminRole(userRole) && (
+            {canModify && (
               <TabsTrigger value="tool-search" className="flex-none rounded-none px-4 py-2">
                 {t("mcpServers.tabs.toolSearch")}
               </TabsTrigger>
             )}
-            {isAdminRole(userRole) && (
+            {canModify && (
               <TabsTrigger value="network-settings" className="flex-none rounded-none px-4 py-2">
                 {t("mcpServers.tabs.network")}
               </TabsTrigger>
             )}
-            {isAdminRole(userRole) && (
-              <TabsTrigger value="submitted" className="flex-none rounded-none px-4 py-2">
-                {t("mcpServers.tabs.submitted")}
+            {canModify && (
+              <TabsTrigger
+                value="submitted"
+                className="flex-none gap-2 rounded-none px-4 py-2"
+                aria-label={t("mcpServers.tabs.submitted")}
+              >
+                {t("mcpServers.tabs.submitted")} <Badge variant="secondary">{t("mcpServers.newBadge")}</Badge>
+              </TabsTrigger>
+            )}
+            {isProxyAdmin && (
+              <TabsTrigger value="connections" className="flex-none rounded-none px-4 py-2">
+                {t("mcpServers.tabs.liveConnections")}
               </TabsTrigger>
             )}
           </TabsList>
@@ -571,12 +601,14 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                 key={selectedServerId}
                 mcpServer={selectedServer}
                 onBack={handleBack}
-                isProxyAdmin={isAdminRole(userRole)}
-                isEditing={editServer}
+                isProxyAdmin={isProxyAdmin}
+                isEditing={editServer && canModify}
                 accessToken={accessToken}
                 userID={userID}
                 userRole={userRole}
+                isViewOnly={isViewOnly || !canModify}
                 availableAccessGroups={uniqueMcpAccessGroups}
+                existingServers={mcpServers}
                 initialTabIndex={selectedServerId === toolsTabServerId ? 1 : 0}
               />
             ) : (
@@ -591,7 +623,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                           value={selectedTeam}
                           onValueChange={(v: string | null) => handleTeamChange(v ?? "all")}
                         >
-                          <SelectTrigger className="w-55">
+                          <SelectTrigger className="w-55" aria-label={t("mcpServers.filters.team")}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -630,7 +662,7 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                           value={selectedMcpAccessGroup}
                           onValueChange={(v: string | null) => handleMcpAccessGroupChange(v ?? "all")}
                         >
-                          <SelectTrigger className="w-55">
+                          <SelectTrigger className="w-55" aria-label={t("mcpServers.filters.accessGroup")}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -704,18 +736,19 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
                           key={server.server_id}
                           server={server}
                           missingUserFields={missingFieldsByServer[server.server_id]}
+                          hasUserFields={serversWithUserFields.has(server.server_id)}
                           isLoadingHealth={isLoadingHealth}
                           isRechecking={recheckingServerIds?.has(server.server_id)}
                           onClick={() => {
                             setSelectedServerId(server.server_id);
-                            setEditServer(true);
+                            setEditServer(canModify);
                           }}
                           onRecheckHealth={
                             recheckServerHealth ? () => recheckServerHealth(server.server_id) : undefined
                           }
                           onByokConnect={server.is_byok ? () => setByokModalServer(server) : undefined}
                           onOpenFillFields={() => setEnvVarsModalServer(server)}
-                          onDelete={isAdminRole(userRole) ? () => handleDelete(server.server_id) : undefined}
+                          onDelete={canModify ? () => handleDelete(server.server_id) : undefined}
                         />
                       ))}
                     </div>
@@ -730,24 +763,29 @@ const MCPServers: React.FC<MCPServerProps> = ({ accessToken, userRole, userID })
           <TabsContent value="connect" keepMounted>
             <MCPConnect />
           </TabsContent>
-          {isAdminRole(userRole) && (
+          {canModify && (
             <TabsContent value="semantic-filter" keepMounted>
               <MCPSemanticFilterSettings accessToken={accessToken} />
             </TabsContent>
           )}
-          {isAdminRole(userRole) && (
+          {canModify && (
             <TabsContent value="tool-search" keepMounted>
               <MCPToolSearchSettings accessToken={accessToken} />
             </TabsContent>
           )}
-          {isAdminRole(userRole) && (
+          {canModify && (
             <TabsContent value="network-settings" keepMounted>
               <MCPNetworkSettings accessToken={accessToken} />
             </TabsContent>
           )}
-          {isAdminRole(userRole) && (
+          {canModify && (
             <TabsContent value="submitted" keepMounted>
               <MCPSubmissionsTab accessToken={accessToken} />
+            </TabsContent>
+          )}
+          {isProxyAdmin && (
+            <TabsContent value="connections">
+              <MCPGatewaySessionsTab accessToken={accessToken} canTerminate={canModify} />
             </TabsContent>
           )}
         </Tabs>

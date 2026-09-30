@@ -52,6 +52,7 @@ import MCPLogoSelector from "./MCPLogoSelector";
 import EnvVarsSection from "./EnvVarsSection";
 import { validateMCPServerUrl, validateMCPServerName, normalizeToolOverrideMap } from "./utils";
 import { EditServerFormValues, buildEditServerPayload, editPayloadErrorMessage } from "./editServerPayload";
+import { DUPLICATE_IDENTIFIER_MESSAGE, findDuplicateMcpServer } from "./duplicateServerCheck";
 import { toast } from "@/lib/toast";
 import { getEditToolPreview } from "./editToolPreview";
 import { useMcpOAuthFlow } from "@/hooks/useMcpOAuthFlow";
@@ -89,6 +90,7 @@ interface MCPServerEditProps {
   onCancel: () => void;
   onSuccess: (server: MCPServer) => void;
   availableAccessGroups: string[];
+  existingServers?: MCPServer[];
 }
 
 const AUTH_TYPES_REQUIRING_AUTH_VALUE = [AUTH_TYPE.API_KEY, AUTH_TYPE.BEARER_TOKEN, AUTH_TYPE.TOKEN, AUTH_TYPE.BASIC];
@@ -101,6 +103,7 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
   onCancel,
   onSuccess,
   availableAccessGroups,
+  existingServers,
 }) => {
   const { t } = useTranslation("gateway");
   const initialStaticHeaders = React.useMemo(() => {
@@ -724,6 +727,17 @@ const MCPServerEdit: React.FC<MCPServerEditProps> = ({
 
   const handleSave = async (values: EditServerFormValues) => {
     if (!accessToken) return;
+    const duplicate = findDuplicateMcpServer(
+      existingServers,
+      values.server_name || mcpServer.server_name,
+      (values.alias ?? mcpServer.alias) || null,
+      mcpServer.server_id,
+    );
+    if (duplicate) {
+      form.setError(duplicate.field, { type: "duplicate", message: DUPLICATE_IDENTIFIER_MESSAGE });
+      toast.fromError(DUPLICATE_IDENTIFIER_MESSAGE);
+      return;
+    }
     try {
       const built = buildEditServerPayload(values, {
         mcpServer,
